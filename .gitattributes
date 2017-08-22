@@ -1,0 +1,24 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+# * text=auto 
+# Left here to show that it's purposefully not used.  See link below
+# https://stackoverflow.com/questions/21472971/what-is-the-purpose-of-text-auto-in-gitattributes-file/38017715#38017715
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.c       text eol=lf
+*.h       text eol=lf
+*.txt     text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+*.js      text eol=lf
+*.cs      text eol=lf
+*.xaml    text eol=lf
+*.csproj  text eol=lf
+
+# Declare files that will always have CRLF line endings on checkout.
+*.sln text eol=crlf
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+
