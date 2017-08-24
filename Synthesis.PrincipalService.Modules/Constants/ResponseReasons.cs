@@ -8,14 +8,14 @@ namespace Synthesis.PrincipalService.Constants
     public class ResponseReasons
     {
         // Internal server errors
-        public const string InternalServerErrorCreatePrincipalservice = "An error occurred while creating the Principalservice";
+        public const string InternalServerErrorCreateUser = "An error occurred while creating the User";
 
-        public const string InternalServerErrorDeletePrincipalservice = "An error occurred deleting the Principalservice";
-        public const string InternalServerErrorGetPrincipalservice = "An error occurred retrieving the Principalservice";
-        public const string InternalServerErrorGetPrincipalservices = "An error occurred retrieving the Principalservice";
-        public const string InternalServerErrorUpdatePrincipalservice = "An error occurred updating the Principalservice";
+        public const string InternalServerErrorDeleteUser = "An error occurred deleting the User";
+        public const string InternalServerErrorGetUser = "An error occurred retrieving the User";
+        public const string InternalServerErrorGetUsers = "An error occurred retrieving the User";
+        public const string InternalServerErrorUpdateUser = "An error occurred updating the User";
 
         // Not found
-        public const string NotFoundPrincipalservice = "Principalservice Not Found";
+        public const string NotFoundUser = "User Not Found";
     }
 }

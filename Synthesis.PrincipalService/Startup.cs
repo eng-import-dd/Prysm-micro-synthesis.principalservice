@@ -1,6 +1,5 @@
-using Owin;
-using Synthesis.Tracking.Web;
 using Microsoft.Owin.Cors;
+using Owin;
 
 namespace Synthesis.PrincipalService
 {
@@ -11,7 +10,11 @@ namespace Synthesis.PrincipalService
         public static void ConfigureApp(IAppBuilder app)
         {
             app.UseCors(CorsOptions.AllowAll);
-            app.Use(typeof(CorrelationScopeMiddleware));
+
+            // This will have the affect of registering all OwinMiddleware registered with the
+            // root container (including CorrelationScopeMiddleware).
+            app.UseAutofacMiddleware(PrincipalServiceBootstrapper.RootContainer);
+
             app.UseNancy(options =>
             {
                 options.Bootstrapper = new PrincipalServiceBootstrapper();

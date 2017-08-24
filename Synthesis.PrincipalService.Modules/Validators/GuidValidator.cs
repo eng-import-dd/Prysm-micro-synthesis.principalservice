@@ -1,18 +1,13 @@
-using System;
 using FluentValidation;
+using System;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public abstract class GuidValidator : FluentValidation.AbstractValidator<Guid>
-  {
-        public GuidValidator(string name)
+    public abstract class GuidValidator : AbstractValidator<Guid>
+    {
+        protected GuidValidator(string name)
         {
             RuleFor(guid => guid).NotEqual(Guid.Empty).WithMessage($"The {name} must not be empty");
         }
-    }
-
-    public class PrincipalServiceIdValidator : GuidValidator
-    {
-        public PrincipalServiceIdValidator() : base("Id") { }
     }
 }

@@ -1,12 +1,12 @@
+using Microsoft.Owin.Hosting;
+using Microsoft.ServiceFabric.Services.Communication.Runtime;
+using Owin;
+using Synthesis.Logging;
 using System;
 using System.Fabric;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Owin.Hosting;
-using Microsoft.ServiceFabric.Services.Communication.Runtime;
-using Owin;
-using Synthesis.Logging;
 
 namespace Synthesis.PrincipalService
 {
@@ -29,30 +29,10 @@ namespace Synthesis.PrincipalService
 
         public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILogger logger, string endpointName, string appRoot)
         {
-            if (startup == null)
-            {
-                throw new ArgumentNullException(nameof(startup));
-            }
-
-            if (serviceContext == null)
-            {
-                throw new ArgumentNullException(nameof(serviceContext));
-            }
-
-            if (endpointName == null)
-            {
-                throw new ArgumentNullException(nameof(endpointName));
-            }
-
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(log4net));
-            }
-
-            _startup = startup;
-            _serviceContext = serviceContext;
-            _endpointName = endpointName;
-            _logger = logger;
+            _startup = startup ?? throw new ArgumentNullException(nameof(startup));
+            _serviceContext = serviceContext ?? throw new ArgumentNullException(nameof(serviceContext));
+            _endpointName = endpointName ?? throw new ArgumentNullException(nameof(endpointName));
+            _logger = logger ?? throw new ArgumentNullException(nameof(log4net));
             _appRoot = appRoot;
         }
 
@@ -61,7 +41,7 @@ namespace Synthesis.PrincipalService
         public Task<string> OpenAsync(CancellationToken cancellationToken)
         {
             var serviceEndpoint = _serviceContext.CodePackageActivationContext.GetEndpoint(_endpointName);
-            int port = serviceEndpoint.Port;
+            var port = serviceEndpoint.Port;
 
             if (_serviceContext is StatefulServiceContext)
             {
@@ -98,7 +78,7 @@ namespace Synthesis.PrincipalService
 
             try
             {
-                 _logger.Info($"Starting web server on {_listeningAddress}");
+                _logger.Info($"Starting web server on {_listeningAddress}");
 
                 _webApp = WebApp.Start(_listeningAddress, appBuilder => _startup.Invoke(appBuilder));
 
@@ -134,16 +114,13 @@ namespace Synthesis.PrincipalService
 
         private void StopWebServer()
         {
-            if (_webApp != null)
+            try
             {
-                try
-                {
-                    _webApp.Dispose();
-                }
-                catch (ObjectDisposedException)
-                {
-                    // no-op
-                }
+                _webApp?.Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // no-op
             }
         }
     }

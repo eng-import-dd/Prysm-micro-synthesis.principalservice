@@ -1,16 +1,17 @@
-using System;
-using System.Configuration;
-using System.Collections.Generic;
-using System.Fabric;
-using System.Fabric.Health;
-using System.Threading;
-using System.Threading.Tasks;
+using Autofac;
 using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
+using Synthesis.Logging;
+using System;
+using System.Collections.Generic;
+using System.Fabric;
+using System.Fabric.Description;
+using System.Fabric.Health;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
-using Synthesis.Logging.Log4Net;
-using Synthesis.Logging;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Synthesis.PrincipalService
 {
@@ -19,8 +20,7 @@ namespace Synthesis.PrincipalService
     /// </summary>
     internal sealed class PrincipalService : StatelessService
     {
-        private readonly string _host = ConfigurationManager.AppSettings["Host"];
-        private readonly string _protocol = ConfigurationManager.AppSettings["Protocol"];
+        public const string AppRoot = "principal";
 
         public PrincipalService(StatelessServiceContext context)
             : base(context)
@@ -32,12 +32,13 @@ namespace Synthesis.PrincipalService
         /// <returns>The collection of listeners.</returns>
         protected override IEnumerable<ServiceInstanceListener> CreateServiceInstanceListeners()
         {
-            ILogger logger = new LoggerFactory().Get(new LogTopic("Synthesis.PrincipalService"));
-            return new[]
-            {
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, logger, "ServiceEndpoint", "principalservice"), "HTTP"),
-                new ServiceInstanceListener(serviceContext => new OwinCommunicationListener(Startup.ConfigureApp, serviceContext, logger, "SecureEndpoint", "principalservice"), "HTTPS")
-            };
+            var logger = PrincipalServiceBootstrapper.RootContainer.Resolve<ILogger>();
+            return Context.CodePackageActivationContext.GetEndpoints()
+                .Where(ep => ep.Protocol == EndpointProtocol.Http || ep.Protocol == EndpointProtocol.Https)
+                .Select(ep =>
+                    new ServiceInstanceListener(
+                        sc => new OwinCommunicationListener(Startup.ConfigureApp, sc, logger, ep.Name, AppRoot),
+                        ep.Protocol.ToString().ToUpper()));
         }
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
@@ -45,20 +46,23 @@ namespace Synthesis.PrincipalService
             await ReportHealth(Context, cancellationToken);
         }
 
-        private async Task ReportHealth(StatelessServiceContext context, CancellationToken cancellationToken)
+        private async Task ReportHealth(ServiceContext context, CancellationToken cancellationToken)
         {
+            var serviceEndpoint = Context.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
+            var protocol = serviceEndpoint.Protocol.ToString().ToLower();
+            var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri($"{protocol}://localhost:{serviceEndpoint.Port}/{AppRoot}/")
+            };
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(5000);
+                await Task.Delay(5000, cancellationToken);
+
                 try
                 {
-                    var httpClient = new HttpClient
-                    {
-                        BaseAddress = new Uri(new Uri($"{_protocol}://{_host}").ToString())
-                    };
-
                     // Customize this route for the service
-                    var response = httpClient.GetAsync("/principalservice//api/v1/principalservice/health").Result;
+                    var response = await httpClient.GetAsync("v1/health", cancellationToken);
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
                         var info = new HealthInformation(context.NodeContext.NodeName, "PrincipalService-healthCheck", HealthState.Error)
@@ -83,7 +87,6 @@ namespace Synthesis.PrincipalService
 
                     Partition.ReportInstanceHealth(info);
                 }
-
             }
         }
     }

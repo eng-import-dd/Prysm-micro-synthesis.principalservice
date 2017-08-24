@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" InitialTargets=";ValidateMSBuildFiles">
   <Import Project="..\packages\Microsoft.VisualStudio.Azure.Fabric.MSBuild.1.6.0\build\Microsoft.VisualStudio.Azure.Fabric.Application.props" Condition="Exists('..\packages\Microsoft.VisualStudio.Azure.Fabric.MSBuild.1.6.0\build\Microsoft.VisualStudio.Azure.Fabric.Application.props')" />
   <PropertyGroup Label="Globals">
-    <ProjectGuid>10B25A92-864C-11E7-9DD1-83D00BE4FAEE</ProjectGuid>
+    <ProjectGuid>DA8A98B3-888A-11E7-8A40-8D3E45800C69</ProjectGuid>
     <ProjectVersion>1.6</ProjectVersion>
     <MinToolsVersion>1.5</MinToolsVersion>
   </PropertyGroup>
@@ -18,8 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ApplicationPackageRoot\ApplicationManifest.xml" />
-    <None Include="ApplicationPackageRoot\ApplicationManifestDev.xml" />
-    <None Include="ApplicationPackageRoot\ApplicationManifestProd.xml" />
     <None Include="ApplicationParameters\Cloud.xml" />
     <None Include="ApplicationParameters\Local.5Node.xml" />
     <None Include="PublishProfiles\Cloud.xml" />

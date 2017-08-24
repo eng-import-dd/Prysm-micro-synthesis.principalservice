@@ -30,7 +30,7 @@
            listen. Please note that if your service is partitioned, this port is shared with
            replicas of different partitions that are placed in your code. -->
       <Endpoint Protocol="http" Name="ServiceEndpoint" Type="Input" Port="8090" />
-      <Endpoint Name="SecureEndpoint" Protocol="https" Type="Input" Port="443" CertificateRef="[SSLCertName]" />
+      <Endpoint Protocol="https" Name="SecureEndpoint" Type="Input" Port="443" CertificateRef="[SSLCertName]" />
     </Endpoints>
   </Resources>
 </ServiceManifest>
