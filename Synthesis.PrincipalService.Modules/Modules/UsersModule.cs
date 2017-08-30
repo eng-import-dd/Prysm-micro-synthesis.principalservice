@@ -1,4 +1,5 @@
 using Nancy;
+using Nancy.Json;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -18,6 +19,9 @@ namespace Synthesis.PrincipalService.Modules
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
+        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
+
+        private const string DeprecationWarning = "DEPRECATED";
 
         public UsersModule(
             IMetadataRegistry metadataRegistry,
@@ -38,8 +42,7 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
 
-            Get("/v1/users/{id:guid}", GetUserAsync, null, "GetUser");
-            Get("/api/v1/users/{id:guid}", GetUserAsync, null, "GetUserLegacy");
+            SetupRoute_GetUserById();
 
             Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
             Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
@@ -63,13 +66,6 @@ namespace Synthesis.PrincipalService.Modules
                 Description = ""
             });
 
-            _metadataRegistry.SetRouteMetadata("GetUser", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Get User",
-                Description = "Retrieve a specific User resource."
-            });
-
             _metadataRegistry.SetRouteMetadata("UpdateUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
@@ -82,6 +78,32 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Delete User",
                 Description = "Delete a specific User resource."
+            });
+        }
+
+        private void SetupRoute_GetUserById()
+        {
+            const string path = "/v1/users/{id:guid}";
+            Get(path, GetUserById, null, "GetUserById");
+            Get("/api/" + path, GetUserById, null, "GetUserByIdLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Retrieves a project item by User Id";
+
+            _metadataRegistry.SetRouteMetadata("GetUserById", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetUserByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
 
@@ -135,6 +157,28 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Error($"Failed to get user with id {id} due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetUserById(dynamic input)
+        {
+            Guid userId = input.Id;
+            try
+            {
+                return await _userController.GetUserAsync(userId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetUserById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
