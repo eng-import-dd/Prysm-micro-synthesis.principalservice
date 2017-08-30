@@ -10,6 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -87,10 +88,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserAsync(dynamic input)
         {
-            User newUser;
+            UserRequest newUser;
             try
             {
-                newUser = this.Bind<User>();
+                newUser = this.Bind<UserRequest>();
             }
             catch (Exception ex)
             {
