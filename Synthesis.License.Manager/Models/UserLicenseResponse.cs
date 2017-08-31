@@ -9,7 +9,7 @@ namespace Synthesis.License.Manager.Models
         public string Message { get; set; }
         public string AccountId { get; set; }
         public UserLicenseResponseResultCode ResultCode { get; set; }
-        public List<UserLicenseDTO> LicenseAssignments { get; set; }
+        public List<UserLicenseDto> LicenseAssignments { get; set; }
     }
 
     public enum UserLicenseResponseResultCode

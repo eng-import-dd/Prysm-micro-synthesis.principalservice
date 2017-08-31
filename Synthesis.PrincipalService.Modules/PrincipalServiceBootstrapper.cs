@@ -93,7 +93,8 @@ namespace Synthesis.PrincipalService
                     new[]
                     {
                         new Claim(ClaimTypes.Name, "Test User"),
-                        new Claim(ClaimTypes.Email, "test@user.com")
+                        new Claim(ClaimTypes.Email, "test@user.com"),
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);
@@ -194,7 +195,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UsersController>().As<IUsersController>();
 
 
-            builder.RegisterType<LicenseAPI>().As<ILicenseAPI>();
+            builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 
             return builder.Build();

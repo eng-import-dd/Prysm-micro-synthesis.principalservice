@@ -11,7 +11,7 @@ namespace Synthesis.License.Manager.Models
     /// </summary>
     [Serializable]
     [DataContract]
-    public class BulkLicenseDTO
+    public class BulkLicenseDto
     {
         [DataMember]
         [Required]
