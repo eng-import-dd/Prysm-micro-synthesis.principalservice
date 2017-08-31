@@ -1,3 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
+using System.Threading;
+using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Moq;
@@ -5,26 +11,29 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Testing;
 using Nancy.TinyIoc;
+using Synthesis.Cloud.BLL.Utilities;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Mapper;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Claims;
-using System.Threading;
+using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test
+namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
     public class UsersModuleTest
     {
         private readonly Browser _browserAuth;
         private readonly Browser _browserNoAuth;
+
+        private readonly Mock<IUsersController> _controllerMock = new Mock<IUsersController>();
 
         public UsersModuleTest()
         {
@@ -34,7 +43,8 @@ namespace Synthesis.PrincipalService.Modules.Test
                     new ClaimsIdentity(new[]
                     {
                         new Claim(ClaimTypes.Name, "TestUser"),
-                        new Claim(ClaimTypes.Email, "test@user.com")
+                        new Claim(ClaimTypes.Email, "test@user.com"),
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
                     },
                     AuthenticationTypes.Basic));
             });
@@ -73,7 +83,7 @@ namespace Synthesis.PrincipalService.Modules.Test
 
                 var eventServiceMock = new Mock<IEventService>();
                 eventServiceMock.Setup(s => s.PublishAsync(It.IsAny<string>()));
-
+                
                 var validatorMock = new Mock<IValidator>();
                 validatorMock
                     .Setup(v => v.ValidateAsync(It.IsAny<object>(), It.IsAny<CancellationToken>()))
@@ -83,6 +93,13 @@ namespace Synthesis.PrincipalService.Modules.Test
                     .Setup(l => l.GetValidator(It.IsAny<Type>()))
                     .Returns(validatorMock.Object);
 
+                var mapper = new MapperConfiguration(cfg => {
+                                                         cfg.AddProfile<UserProfile>();
+                                                     }).CreateMapper();
+
+                var mockEmailUtility = new Mock<IEmailUtility>();
+                var mockLicenseApi = new Mock<ILicenseApi>();
+
                 with.EnableAutoRegistration();
                 with.RequestStartup(requestStartup);
                 with.Dependency(new Mock<IMetadataRegistry>().Object);
@@ -91,6 +108,10 @@ namespace Synthesis.PrincipalService.Modules.Test
                 with.Dependency(validatorLocatorMock.Object);
                 with.Dependency(repositoryFactoryMock.Object);
                 with.Dependency(eventServiceMock.Object);
+                with.Dependency(_controllerMock.Object);
+                with.Dependency(mockEmailUtility.Object);
+                with.Dependency(mockLicenseApi.Object);
+                with.Dependency(mapper);
                 with.Module<UsersModule>();
             });
         }
@@ -121,6 +142,41 @@ namespace Synthesis.PrincipalService.Modules.Test
                     with.HttpRequest();
                 });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void CreateUserReturnsCreated()
+        {
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new UserRequest());
+                                                 });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void CreateUserReadsTenantIdFromUserClaim()
+        {
+            _controllerMock
+                .Setup(uc => uc.CreateUserAsync(It.IsAny<UserRequest>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new UserResponse());
+
+            var actual = await _browserAuth.Post(
+                                                "/v1/users",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new UserRequest());
+                                                });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+            _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<UserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")));
         }
     }
 }
