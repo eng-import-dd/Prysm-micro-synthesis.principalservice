@@ -11,7 +11,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using Jose;
+using Synthesis.Cloud.BLL.Utilities;
+using Synthesis.License.Manager;
+using Synthesis.License.Manager.Interfaces;
+using Synthesis.License.Manager.Models;
 using Synthesis.Nancy.MicroService;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -26,6 +34,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
+        private readonly ILicenseAPI _licenseApi;
+        private readonly IEmailUtility _emailUtility;
+        private readonly IMapper _mapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -34,22 +45,33 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="logger">The logger.</param>
+        /// <param name="licenseApi"></param>
+        /// <param name="emailUtility"></param>
+        /// <param name="mapper"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
-            ILogger logger)
+            ILogger logger,
+            ILicenseAPI licenseApi,
+            IEmailUtility emailUtility,
+            IMapper mapper)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _userValidator = validatorLocator.GetValidator(typeof(UserValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
             _logger = logger;
+            _licenseApi = licenseApi;
+            _emailUtility = emailUtility;
+            _mapper = mapper;
         }
 
-        public async Task<User> CreateUserAsync(User user)
+        public async Task<UserResponse> CreateUserAsync(UserRequest model)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
+
+            var user = _mapper.Map<UserRequest, User>(model);
 
             var validationResult = await _userValidator.ValidateAsync(user);
             if (!validationResult.IsValid)
@@ -66,15 +88,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
 
+
             var result = await CreateUserInDb(user);
 
-            await AssignUserLicense(user);
+            await AssignUserLicense(result, model.LicenseType);
 
             _eventService.Publish(EventNames.UserCreated, result);
 
-            return result;
+            return _mapper.Map<User, UserResponse>(result);
         }
-        
+
         public async Task<User> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -205,23 +228,61 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
+            //TODO Populate created by field
+            //user.CreatedBy = 
+            user.CreatedDate = DateTime.Now;
             var result = await _userRepository.CreateItemAsync(user);
 
             //TODO Add user to Basic_user group
 
-            // don't send down password hash or salt
-            user.PasswordHash = null;
-            user.PasswordSalt = null;
-
             return result;
         }
 
-        private async Task AssignUserLicense(User user)
+        private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
-            //TODO Assign user license 
-            await Task.FromResult<int>(0);
+            var licenseRequestDto = new UserLicenseDTO()
+            {
+                AccountId = user.TenantId.ToString(),
+                LicenseType = (licenseType ?? LicenseType.Default).ToString(),
+                UserId = user.Id.Value.ToString()
+            };
+
+            /* If the user is successfully created assign the license. */
+            var assignedLicenseServiceResult = await _licenseApi.AssignUserLicense(licenseRequestDto);
+
+            if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
+            {
+                /* If the user is created and a license successfully assigned, mail and return the user. */
+                _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+                return;
+            }
+
+            /* If a license could not be obtained lock the user that was just created. */
+            await LockUser(user.Id.Value, true);
+            user.IsLocked = true;
+
+            //Intimate the Org Admin of the user account about locked user
+            var orgAdmins = await GetTenantAdminsByIdAsync(user.TenantId);
+
+            if (orgAdmins.Count > 0)
+            {
+                _emailUtility.SendUserLockedMail(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
+            }
         }
 
+        private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
+        {
+            return await Task.FromResult(new List<User>());
+        }
+
+        private async Task<User> LockUser(Guid userId, bool locked)
+        {
+            var user = await _userRepository.GetItemAsync(userId);
+            user.IsLocked = locked;
+
+            await _userRepository.UpdateItemAsync(userId, user);
+            return user;
+        }
 
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {

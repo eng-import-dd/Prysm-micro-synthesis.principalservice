@@ -1,11 +1,14 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
 
-namespace Synthesis.PrincipalService.Dao.Models
+namespace Synthesis.PrincipalService.Responses
 {
-    public class User
+    public class UserResponse
     {
         [JsonProperty("id")]
         public Guid? Id { get; set; }
@@ -26,13 +29,11 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         public int? PasswordAttempts { get; set; }
 
-        public string PasswordHash { get; set; }
-
-        public string PasswordSalt { get; set; }
-
         public string LdapId { get; set; }
 
         public bool? IsIdpUser { get; set; }
+
+        public LicenseType? LicenseType { get; set; }
         
         public DateTime? VerificationEmailSentDateTime { get; set; }
 
