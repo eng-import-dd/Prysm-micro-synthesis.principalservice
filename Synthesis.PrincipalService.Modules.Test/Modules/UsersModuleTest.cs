@@ -154,7 +154,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.Header("Accept", "application/json");
                                                      with.Header("Content-Type", "application/json");
                                                      with.HttpRequest();
-                                                     with.JsonBody(new UserRequest());
+                                                     with.JsonBody(new CreateUserRequest());
                                                  });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
         }
@@ -163,7 +163,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void CreateUserReadsTenantIdFromUserClaim()
         {
             _controllerMock
-                .Setup(uc => uc.CreateUserAsync(It.IsAny<UserRequest>(), It.IsAny<Guid>()))
+                .Setup(uc => uc.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new UserResponse());
 
             var actual = await _browserAuth.Post(
@@ -173,10 +173,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.Header("Accept", "application/json");
                                                     with.Header("Content-Type", "application/json");
                                                     with.HttpRequest();
-                                                    with.JsonBody(new UserRequest());
+                                                    with.JsonBody(new CreateUserRequest());
                                                 });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
-            _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<UserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")));
+            _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")));
         }
     }
 }

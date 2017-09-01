@@ -30,7 +30,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class UsersController : IUsersController
     {
         private readonly IRepository<User> _userRepository;
-        private readonly IValidator _userValidator;
+        private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
@@ -58,7 +58,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IMapper mapper)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
-            _userValidator = validatorLocator.GetValidator(typeof(UserValidator));
+            _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
             _logger = logger;
@@ -67,18 +67,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _mapper = mapper;
         }
 
-        public async Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId)
+        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
-
-            var user = _mapper.Map<UserRequest, User>(model);
-
-            var validationResult = await _userValidator.ValidateAsync(user);
+            
+            var validationResult = await _createUserRequestValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
+
+            var user = _mapper.Map<CreateUserRequest, User>(model);
+
 
             if (IsBuiltInOnPremAccount(user.TenantId))
             {
@@ -122,7 +123,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var userValidationResult = await _userValidator.ValidateAsync(userModel);
+            var userValidationResult = await _createUserRequestValidator.ValidateAsync(userModel);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
@@ -204,15 +205,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.Email), "A user with that email address already exists.") );
             }
-
-            if (string.IsNullOrEmpty(user.PasswordHash) || string.IsNullOrEmpty(user.PasswordSalt))
+            
+            if (!string.IsNullOrEmpty(user.LdapId) && !await IsUniqueLdapId(user.Id, user.LdapId))
             {
-                validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Password Hash and Salt can not be null") );
-            }
-
-            if (!string.IsNullOrEmpty(user.LdapId) && await IsUniqueLdapId(user.Id, user.LdapId))
-            {
-                validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Unable to provision user. The LDAP User Account is already in use."));
+                validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
 
             //TODO Check if it is a valid account
@@ -280,6 +276,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
+            //TODO Find org_admins for the account
             return await Task.FromResult(new List<User>());
         }
 

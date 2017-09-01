@@ -89,10 +89,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserAsync(dynamic input)
         {
-            UserRequest newUser;
+            CreateUserRequest newUser;
             try
             {
-                newUser = this.Bind<UserRequest>();
+                newUser = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {

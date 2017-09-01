@@ -11,6 +11,9 @@ namespace Synthesis.PrincipalService.Dao.Models
     {
         [JsonProperty("id")]
         public Guid Id { get; set; }
+
+        public Guid TenantId { get; set; }
+
         public string Name { get; set; }
     }
 }

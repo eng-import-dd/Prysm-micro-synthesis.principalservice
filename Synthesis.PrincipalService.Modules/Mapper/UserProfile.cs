@@ -14,7 +14,7 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserProfile()
         {
-            CreateMap<UserRequest, User>();
+            CreateMap<CreateUserRequest, User>();
             CreateMap<User, UserResponse>();
         }
     }
