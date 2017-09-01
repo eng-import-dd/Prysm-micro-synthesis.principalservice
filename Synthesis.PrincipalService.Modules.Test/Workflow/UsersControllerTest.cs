@@ -17,6 +17,7 @@ using Synthesis.Cloud.BLL.Utilities;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Mapper;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -70,7 +71,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var result = await _controller.GetUserAsync(userId);
 
-            Assert.IsType<User>(result);
+            Assert.IsType<UserResponse>(result);
         }
 
         [Fact]

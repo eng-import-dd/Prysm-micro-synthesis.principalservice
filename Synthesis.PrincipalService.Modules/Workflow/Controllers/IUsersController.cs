@@ -10,7 +10,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId);
 
-        Task<User> GetUserAsync(Guid userId);
+        Task<UserResponse> GetUserAsync(Guid userId);
 
         Task<User> UpdateUserAsync(Guid userId, User model);
 

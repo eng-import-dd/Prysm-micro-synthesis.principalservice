@@ -99,7 +99,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<User> GetUserAsync(Guid id)
+        public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
@@ -108,7 +108,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            //TODO: IsGuest - Need to put code for this here - Check with Nimesh
+
             var result = await _userRepository.GetItemAsync(id);
+            _eventService.Publish(EventNames.UserRetrieved, result);
 
             if (result == null)
             {
@@ -116,7 +119,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
 
-            return result;
+            return _mapper.Map<User, UserResponse>(result);
+            
         }
 
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
