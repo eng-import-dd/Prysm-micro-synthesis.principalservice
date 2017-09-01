@@ -20,11 +20,16 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
+using AutoMapper;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using FluentValidation;
+using Synthesis.Cloud.BLL.Utilities;
+using Synthesis.License.Manager;
+using Synthesis.License.Manager.Interfaces;
+using Synthesis.PrincipalService.Mapper;
 
 namespace Synthesis.PrincipalService
 {
@@ -88,7 +93,8 @@ namespace Synthesis.PrincipalService
                     new[]
                     {
                         new Claim(ClaimTypes.Name, "Test User"),
-                        new Claim(ClaimTypes.Email, "test@user.com")
+                        new Claim(ClaimTypes.Email, "test@user.com"),
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);
@@ -173,6 +179,12 @@ namespace Synthesis.PrincipalService
             // Key Manager
             builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
 
+            //Mapper
+            var mapper = new MapperConfiguration(cfg => {
+                                                     cfg.AddProfile<UserProfile>();
+                                                 }).CreateMapper();
+            builder.RegisterInstance(mapper).As<IMapper>();
+
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             // Individual validators must be registered here (as they are below)
@@ -181,6 +193,10 @@ namespace Synthesis.PrincipalService
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>();
+
+
+            builder.RegisterType<LicenseApi>().As<ILicenseApi>();
+            builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 
             return builder.Build();
         }

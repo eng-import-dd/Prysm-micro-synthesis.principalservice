@@ -11,11 +11,13 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Modules
 {
     public sealed class UsersModule : NancyModule
     {
+        private const string TenantIdClaim = "TenantId";
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
@@ -109,10 +111,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserAsync(dynamic input)
         {
-            User newUser;
+            UserRequest newUser;
             try
             {
-                newUser = this.Bind<User>();
+                newUser = this.Bind<UserRequest>();
             }
             catch (Exception ex)
             {
@@ -122,7 +124,8 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.CreateUserAsync(newUser);
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                var result = await _userController.CreateUserAsync(newUser, tenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
