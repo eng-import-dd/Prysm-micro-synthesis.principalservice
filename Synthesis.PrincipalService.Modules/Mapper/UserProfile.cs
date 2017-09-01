@@ -10,7 +10,7 @@ using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Mapper
 {
-    class UserProfile : Profile
+    public class UserProfile : Profile
     {
         public UserProfile()
         {

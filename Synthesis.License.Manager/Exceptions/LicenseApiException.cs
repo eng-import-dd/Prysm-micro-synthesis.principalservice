@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Synthesis.License.Manager
+namespace Synthesis.License.Manager.Exceptions
 {
     internal class LicenseApiException : Exception
     {

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Newtonsoft.Json;
+using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 
@@ -15,13 +16,13 @@ namespace Synthesis.License.Manager
     /// <summary>
     /// Base class used to call remote restful web services.
     /// </summary>
-    public class ServiceAPIBase
+    public class ServiceApiBase
     {
-        private const string API_ERROR_FORMAT = "API error occurred in {0} on line {1}\nResult code {2} returned from {3}\n{4}";
-        private const string HTTP_ERROR_FORMAT = "HTTP response code is {0} for the request to {1}";
+        private const string ApiErrorFormat = "API error occurred in {0} on line {1}\nResult code {2} returned from {3}\n{4}";
+        private const string HttpErrorFormat = "HTTP response code is {0} for the request to {1}";
 
-        protected ILogger _loggingService;
-        protected string _apiBaseUrl;
+        protected ILogger LoggingService;
+        protected string ApiBaseUrl;
 
         /// <summary>
         /// Security token to add as an authorization header.  By default an authorization header is not set.
@@ -39,8 +40,7 @@ namespace Synthesis.License.Manager
                 _client = new HttpClient();
                 if (SecurityToken != null)
                 {
-                    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",
-                                                                                                SecurityToken);
+                    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", SecurityToken);
                 }
             }
 
@@ -88,7 +88,7 @@ namespace Synthesis.License.Manager
         /// <param name="callerLineNumber"></param>
         /// <param name="useAsync">Flag indicating if the call should be made asynchronously.</param>
         /// <returns>Specified generic type.</returns>
-        protected async Task<T> PostAsync<T>(string route, object postObject, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1, bool useAsync = true)
+        protected async Task<T> PostAsync<T>(string route, object postObject, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1)
         {
             LogDebug("POST: " + route);
 
@@ -99,7 +99,7 @@ namespace Synthesis.License.Manager
                     var jsonString = JsonConvert.SerializeObject(postObject, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
                     using (var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json"))
                     {
-                        using (var response = useAsync ? await client.PostAsync(route, stringContent) : client.PostAsync(route, stringContent).Result)
+                        using (var response = await client.PostAsync(route, stringContent))
                         {
                             return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
                         }
@@ -183,13 +183,13 @@ namespace Synthesis.License.Manager
         {
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                var apiErrorMessage = string.Format(HTTP_ERROR_FORMAT, response.StatusCode, route);
-                throw new LicenseApiException(apiErrorMessage, "LicenseAPI", ResultCode.Unauthorized);
+                var apiErrorMessage = string.Format(HttpErrorFormat, response.StatusCode, route);
+                throw new LicenseApiException(apiErrorMessage, "Unautorized error accessing LicenseAPI", ResultCode.Failed);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                response.ReasonPhrase = string.Format(HTTP_ERROR_FORMAT, response.StatusCode, route);
+                response.ReasonPhrase = string.Format(HttpErrorFormat, response.StatusCode, route);
                 throw new HttpResponseException(response);
             }
 
@@ -197,7 +197,7 @@ namespace Synthesis.License.Manager
 
             if (result.ResultCode != ResultCode.Success)
             {
-                var apiErrorMessage = string.Format(API_ERROR_FORMAT, callerMemberName, callerLineNumber, (int)result.ResultCode, route, result.Message);
+                var apiErrorMessage = string.Format(ApiErrorFormat, callerMemberName, callerLineNumber, (int)result.ResultCode, route, result.Message);
                 var apiException = new LicenseApiException(apiErrorMessage, result.Message, result.ResultCode);
                 throw apiException;
             }
@@ -216,8 +216,7 @@ namespace Synthesis.License.Manager
         /// <param name="message">Message to log.</param>
         protected void LogDebug(String message)
         {
-            if (_loggingService != null)
-                _loggingService.LogMessage(LogLevel.Debug, message);
+            LoggingService?.LogMessage(LogLevel.Debug, message);
         }
 
         /// <summary>
@@ -226,8 +225,7 @@ namespace Synthesis.License.Manager
         /// <param name="ex">Exception to log.</param>
         protected void LogError(Exception ex)
         {
-            if (_loggingService != null)
-                _loggingService.LogMessage(LogLevel.Error, GetType().Name, ex);
+            LoggingService?.LogMessage(LogLevel.Error, GetType().Name, ex);
         }
 
         #endregion

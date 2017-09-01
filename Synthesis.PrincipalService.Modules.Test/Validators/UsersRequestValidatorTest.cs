@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Synthesis.License.Manager
+namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public enum ResultCode
+    class UsersRequestValidatorTest
     {
-        Failed = 0,
-        Success = 1
     }
 }

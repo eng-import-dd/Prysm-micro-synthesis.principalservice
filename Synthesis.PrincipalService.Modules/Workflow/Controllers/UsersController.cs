@@ -34,7 +34,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
-        private readonly ILicenseAPI _licenseApi;
+        private readonly ILicenseApi _licenseApi;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
 
@@ -53,7 +53,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IValidatorLocator validatorLocator,
             IEventService eventService,
             ILogger logger,
-            ILicenseAPI licenseApi,
+            ILicenseApi licenseApi,
             IEmailUtility emailUtility,
             IMapper mapper)
         {
@@ -67,7 +67,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _mapper = mapper;
         }
 
-        public async Task<UserResponse> CreateUserAsync(UserRequest model)
+        public async Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
 
@@ -85,6 +85,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning accounts") });
             }
 
+            user.TenantId = tenantId;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
 
@@ -209,7 +210,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Password Hash and Salt can not be null") );
             }
 
-            if (!String.IsNullOrEmpty(user.LdapId) && await IsUniqueLdapId(user.Id, user.LdapId))
+            if (!string.IsNullOrEmpty(user.LdapId) && await IsUniqueLdapId(user.Id, user.LdapId))
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Unable to provision user. The LDAP User Account is already in use."));
             }
@@ -222,41 +223,48 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //    LogError(ex);
             //    throw ex;
             //}
-
+            
             if (validationErrors.Any())
             {
                 throw new ValidationFailedException(validationErrors);
             }
 
+            //TODO Fetch the basic user group for the account instead of creating one here
+            user.Groups = new List<Group> { new Group { Name = "Basic_User" } };
+
             //TODO Populate created by field
             //user.CreatedBy = 
             user.CreatedDate = DateTime.Now;
             var result = await _userRepository.CreateItemAsync(user);
-
-            //TODO Add user to Basic_user group
-
+            
             return result;
         }
 
         private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
-            var licenseRequestDto = new UserLicenseDTO()
+            var licenseRequestDto = new UserLicenseDto
             {
                 AccountId = user.TenantId.ToString(),
                 LicenseType = (licenseType ?? LicenseType.Default).ToString(),
-                UserId = user.Id.Value.ToString()
+                UserId = user.Id?.ToString()
             };
 
-            /* If the user is successfully created assign the license. */
-            var assignedLicenseServiceResult = await _licenseApi.AssignUserLicense(licenseRequestDto);
-
-            if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
+            try
             {
-                /* If the user is created and a license successfully assigned, mail and return the user. */
-                _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
-                return;
-            }
+                /* If the user is successfully created assign the license. */
+                var assignedLicenseServiceResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
 
+                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
+                {
+                    /* If the user is created and a license successfully assigned, mail and return the user. */
+                    _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
+            }
             /* If a license could not be obtained lock the user that was just created. */
             await LockUser(user.Id.Value, true);
             user.IsLocked = true;

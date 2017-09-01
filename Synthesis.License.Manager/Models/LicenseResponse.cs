@@ -18,7 +18,7 @@ namespace Synthesis.License.Manager.Models
         public LicenseResponseResultCode ResultCode { get; set; }
 
         [DataMember]
-        public List<LicenseDTO> Licenses { get; set; }
+        public List<LicenseDto> Licenses { get; set; }
         
         public DateTime? PurchasesLastUpdated { get; set; }
 

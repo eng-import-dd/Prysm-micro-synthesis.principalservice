@@ -6,7 +6,7 @@ namespace Synthesis.License.Manager.Models
 {
     [Serializable]
     [DataContract]
-    public sealed class LicenseDTO 
+    public sealed class LicenseDto 
     {
         [DataMember]
         [Required]

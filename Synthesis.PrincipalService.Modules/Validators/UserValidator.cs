@@ -8,9 +8,6 @@ namespace Synthesis.PrincipalService.Validators
     {
         public UserValidator()
         {
-            RuleFor(request => request.TenantId)
-                .NotEqual(Guid.Empty).WithMessage("The TenantId must not be empty");
-
             RuleFor(request => request.FirstName)
                 .NotEmpty().WithMessage("The FirstName property must not be empty")
                 .MaximumLength(100).WithMessage("The FirstName must be less than 100 characters long");
