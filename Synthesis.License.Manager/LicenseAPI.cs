@@ -30,7 +30,7 @@ namespace Synthesis.License.Manager
         }
         
         /// <inheritdoc />
-        public async Task<LicenseResponse> AssignLicenseToAccountUsersAsync(BulkLicenseDto dto)
+        public async Task<LicenseResponse> AssignLicenseToTenantUsersAsync(BulkLicenseDto dto)
         {
             return await PostAsync<LicenseResponse>(FormatRoute("bulk-licenses"), dto);
         }
@@ -42,33 +42,33 @@ namespace Synthesis.License.Manager
         }
 
         /// <inheritdoc />
-        public async Task<LicenseResponse> GetAccountLicenseDetailsAsync(Guid accountId)
+        public async Task<LicenseResponse> GetTenantLicenseDetailsAsync(Guid tenantId)
         {
-            return await GetAsync<LicenseResponse>(FormatRoute($"details/{accountId}"));
+            return await GetAsync<LicenseResponse>(FormatRoute($"details/{tenantId}"));
         }
 
         /// <inheritdoc />
-        public async Task<List<LicenseSummaryDto>> GetAccountLicenseSummaryAsync(Guid accountId)
+        public async Task<List<LicenseSummaryDto>> GetTenantLicenseSummaryAsync(Guid tenantId)
         {
-            return await GetAsync<List<LicenseSummaryDto>>(FormatRoute($"summaries/{accountId}"));
+            return await GetAsync<List<LicenseSummaryDto>>(FormatRoute($"summaries/{tenantId}"));
         }
 
         /// <inheritdoc />
-        public async Task<List<LicenseType>> GetAccountUserLicenseTypesAsync(Guid accountId)
+        public async Task<List<LicenseType>> GetTenantUserLicenseTypesAsync(Guid tenantId)
         {
-            return await GetAsync<List<LicenseType>>(FormatRoute($"types/{accountId}"));
+            return await GetAsync<List<LicenseType>>(FormatRoute($"types/{tenantId}"));
         }
 
         /// <inheritdoc />
-        public async Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid accountId, Guid userId)
+        public async Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid tenantId, Guid userId)
         {
-            return await GetAsync<UserLicenseResponse>(FormatRoute($"assignments/{accountId}/{userId}"));
+            return await GetAsync<UserLicenseResponse>(FormatRoute($"assignments/{tenantId}/{userId}"));
         }
 
         /// <inheritdoc />
-        public async Task<bool> RefreshLicensesAsync(string accountId)
+        public async Task<bool> RefreshLicensesAsync(string tenantId)
         {
-            return await PostAsync<bool>(FormatRoute("refresh"), accountId);
+            return await PostAsync<bool>(FormatRoute("refresh"), tenantId);
         }
 
         /// <inheritdoc />

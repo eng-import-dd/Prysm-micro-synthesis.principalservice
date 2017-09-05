@@ -132,7 +132,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
 
             Assert.NotNull(user);
-            Assert.Equal(user.IsLocked , null);
+            Assert.Equal(user.IsLocked , false);
         }
 
         [Fact]
