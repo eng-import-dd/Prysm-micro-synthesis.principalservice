@@ -4,12 +4,11 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
-using System.Web;
 using Nancy.Helpers;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 
-namespace Synthesis.Cloud.BLL.Utilities
+namespace Synthesis.PrincipalService.Utility
 {
     public class EmailUtility : IEmailUtility
     {
@@ -217,8 +216,10 @@ namespace Synthesis.Cloud.BLL.Utilities
 
         public bool SendUserInvite(List<InvitedUser> newInvitedUsers)
         {
-            if(newInvitedUsers == null)
+            if (newInvitedUsers == null)
+            {
                 throw new ArgumentNullException(nameof(newInvitedUsers));
+            }
 
             try
             {

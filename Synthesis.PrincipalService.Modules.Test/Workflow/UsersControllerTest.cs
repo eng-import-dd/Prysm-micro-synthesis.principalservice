@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
 using AutoMapper;
-using Synthesis.Cloud.BLL.Utilities;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Mapper;
@@ -22,7 +21,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.License.Manager.Models;
-using Synthesis.License.Manager.Exceptions;
+using Synthesis.PrincipalService.Utility;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {

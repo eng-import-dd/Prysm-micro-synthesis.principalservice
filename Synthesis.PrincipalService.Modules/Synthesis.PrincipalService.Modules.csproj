@@ -298,6 +298,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configurations\HttpClientConfiguration.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\Group.cs" />
@@ -311,8 +312,9 @@
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Responses\UserResponse.cs" />
-    <Compile Include="Utility\EmailUtility.cs" />
-    <Compile Include="Utility\IEmailUtility.cs" />
+    <Compile Include="Utilities\ConfigurationUtility.cs" />
+    <Compile Include="Utilities\EmailUtility.cs" />
+    <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />

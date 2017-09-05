@@ -1,25 +1,23 @@
+using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.License.Manager.Interfaces;
+using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Utility;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using Jose;
-using Synthesis.Cloud.BLL.Utilities;
-using Synthesis.License.Manager;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.License.Manager.Models;
-using Synthesis.Nancy.MicroService;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -37,6 +35,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILicenseApi _licenseApi;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
+
+        private const string OrgAdminRoleName = "Org_Admin";
+        private const string BasicUserRoleName = "Basic_User";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -81,9 +82,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var user = _mapper.Map<CreateUserRequest, User>(model);
 
 
-            if (IsBuiltInOnPremAccount(user.TenantId))
+            if (IsBuiltInOnPremTenant(tenantId))
             {
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning accounts") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
             user.TenantId = tenantId;
@@ -179,7 +180,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         }
 
 
-        private bool IsBuiltInOnPremAccount(Guid accountId)
+        private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
             //TODO Identify if this is an on prem deployment
             //if (!_cloudSettings.DeploymentTypes.HasFlag(DeploymentTypes.OnPrem))
@@ -187,8 +188,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return false;
             }
 
-            //return accountId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
-            //       accountId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
+            //return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
+            //       tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
 
@@ -211,22 +212,22 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
 
-            //TODO Check if it is a valid account
-            //var account = dc.Accounts.Find(accountId);
-            //if (account == null)
+            //TODO Check if it is a valid tenant
+            //var tenant = dc.Accounts.Find(tenantId);
+            //if (tenant == null)
             //{
-            //    var ex = new Exception("Unable to provision user. The account could not be found with the given id.");
+            //    var ex = new Exception("Unable to provision user. The tanant could not be found with the given id.");
             //    LogError(ex);
             //    throw ex;
             //}
-            
+
             if (validationErrors.Any())
             {
                 throw new ValidationFailedException(validationErrors);
             }
 
             //TODO Fetch the basic user group for the account instead of creating one here
-            user.Groups = new List<Group> { new Group { Name = "Basic_User" } };
+            user.Groups = new List<Group> { new Group { Name = BasicUserRoleName } };
 
             //TODO Populate created by field
             //user.CreatedBy = 
@@ -238,6 +239,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
+            if (user.Id == null || user.Id == Guid.Empty)
+            {
+                throw new ArgumentException("User Id is required for assiging license");
+            }
+
             var licenseRequestDto = new UserLicenseDto
             {
                 AccountId = user.TenantId.ToString(),
@@ -265,7 +271,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await LockUser(user.Id.Value, true);
             user.IsLocked = true;
 
-            //Intimate the Org Admin of the user account about locked user
+            //Intimate the Org Admin of the user's teanant about locked user
             var orgAdmins = await GetTenantAdminsByIdAsync(user.TenantId);
 
             if (orgAdmins.Count > 0)
@@ -276,7 +282,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
-            //TODO Find org_admins for the account
+            //TODO Find org_admins for the tenant
             return await Task.FromResult(new List<User>());
         }
 

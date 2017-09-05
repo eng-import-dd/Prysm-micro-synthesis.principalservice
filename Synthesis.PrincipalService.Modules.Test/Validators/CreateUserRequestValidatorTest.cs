@@ -1,11 +1,5 @@
-﻿using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Requests;
+﻿using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Validators;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators

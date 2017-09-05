@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Synthesis.License.Manager.Models;
 
 namespace Synthesis.PrincipalService.Dao.Models
 {
@@ -22,7 +21,7 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         public string UserName { get; set; }
 
-        public bool? IsLocked { get; set; }
+        public bool IsLocked { get; set; }
 
         public int? PasswordAttempts { get; set; }
 

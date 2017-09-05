@@ -1,6 +1,4 @@
-using System;
 using FluentValidation;
-using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
