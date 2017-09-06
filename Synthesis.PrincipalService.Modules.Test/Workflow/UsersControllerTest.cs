@@ -212,6 +212,33 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
             Assert.Equal(count, result.TotalCount);
         }
+
+        [Fact]
+        public async Task GetUsersForAccountIfExists()
+        {
+            //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
+            const int count = 3;
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .Returns(() =>
+                                    {
+                                        var userList = new List<User>();
+                                        for (var i = 0; i < count; i++)
+                                        {
+                                            userList.Add(new User());
+                                        }
+
+                                        List<User> items = userList;
+                                        //IEnumerable<User> items = userList;
+                                        return (Task.FromResult(items.AsEnumerable()));
+
+                                    });
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var getUsersParams = new GetUsersParams();
+
+            var result = await _controller.GetUsersForAccount(getUsersParams, tenantId);
+            Assert.Equal(count, result.TotalCount);
+        }
     }
 }
 
