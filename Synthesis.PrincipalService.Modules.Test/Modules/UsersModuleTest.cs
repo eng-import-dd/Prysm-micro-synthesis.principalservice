@@ -44,7 +44,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                     {
                         new Claim(ClaimTypes.Name, "TestUser"),
                         new Claim(ClaimTypes.Email, "test@user.com"),
-                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
+                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
                     },
                     AuthenticationTypes.Basic));
             });
@@ -163,7 +164,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void CreateUserReadsTenantIdFromUserClaim()
         {
             _controllerMock
-                .Setup(uc => uc.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()))
+                .Setup(uc => uc.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .ReturnsAsync(new UserResponse());
 
             var actual = await _browserAuth.Post(
@@ -176,7 +177,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.JsonBody(new CreateUserRequest());
                                                 });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
-            _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")));
+            _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
         }
     }
 }
