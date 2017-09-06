@@ -305,10 +305,8 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserProject.cs" />
-    <Compile Include="Entity\BasicUserListMetaData.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
-    <Compile Include="Entity\UserListMetaData.cs" />
     <Compile Include="Enums\DataSortOrder.cs" />
     <Compile Include="Enums\IdpFilterEnum.cs" />
     <Compile Include="Enums\ResultCode.cs" />
@@ -322,7 +320,6 @@
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
-    <Compile Include="Responses\UserBasicResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />

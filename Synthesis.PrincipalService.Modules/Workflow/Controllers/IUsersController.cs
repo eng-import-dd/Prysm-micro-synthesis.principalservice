@@ -24,7 +24,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="userId">The user identifier.</param>
         /// <param name="getUsersParams">The get users parameters.</param>
         /// <returns>Task object of List of User Basic Response.</returns>
-        Task<PagingMetaData<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
+        Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
         Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
     }

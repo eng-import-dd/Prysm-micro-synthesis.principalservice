@@ -144,7 +144,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// Task object of List of User Basic Response.
         /// </returns>
         /// <exception cref="T:Synthesis.Nancy.MicroService.NotFoundException"></exception>
-        public async Task<PagingMetaData<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
             var users = await _userRepository.GetItemsAsync(u => u.Id != null); //Revisit this line: Charan
@@ -156,7 +156,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             try
             {
-                var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserBasicResponse>>(userListResult);
+                var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(userListResult);
                 return basicUserResponse;
             }
             catch (Exception e)

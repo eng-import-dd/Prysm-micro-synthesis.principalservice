@@ -210,7 +210,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var getUsersParams = new GetUsersParams();
 
             var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
-            Assert.IsAssignableFrom<IEnumerable<User>>(result);
             Assert.Equal(count, result.TotalCount);
         }
     }
