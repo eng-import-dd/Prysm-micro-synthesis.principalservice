@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
 
@@ -30,6 +31,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class UsersController : IUsersController
     {
         private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
@@ -61,6 +63,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IMapper mapper)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
+            _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
@@ -70,7 +73,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _mapper = mapper;
         }
 
-        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId)
+        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
             
@@ -90,9 +93,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             user.TenantId = tenantId;
+            user.CreatedBy = createdBy;
+            user.CreatedDate = DateTime.Now;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
-
 
             var result = await CreateUserInDb(user);
 
@@ -166,10 +170,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //return basicUserResponse;
         }
 
-        
-        
-
-        public async Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
+        public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
         {
             try
             {
@@ -182,7 +183,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 //TODO: find the current user id
                 var users = GetAccountUsersFromDb(tenantId, usersInAccount.FirstOrDefault().Id, getUsersParams);
-                var userResponse = users.Users.Select(user => _mapper.Map<User, UserResponse>(user)).ToList();
+                var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -297,12 +298,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            //TODO Fetch the basic user group for the account instead of creating one here
-            user.Groups = new List<Group> { new Group { Name = BasicUserRoleName } };
-
-            //TODO Populate created by field
-            //user.CreatedBy = 
-            user.CreatedDate = DateTime.Now;
+            user.Groups = new List<Guid>();
+            var basicUserGroupId = await GetBuiltInGroupId(user.TenantId, BasicUserRoleName);
+            if (basicUserGroupId != null)
+            {
+                user.Groups.Add( basicUserGroupId.Value);
+            }
+            
             var result = await _userRepository.CreateItemAsync(user);
             
             return result;
@@ -353,8 +355,20 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
-            //TODO Find org_admins for the tenant
-            return await Task.FromResult(new List<User>());
+            var adminGroupId = await GetBuiltInGroupId(userTenantId, OrgAdminRoleName);
+            if(adminGroupId != null)
+            { 
+                var admins = await _userRepository.GetItemsAsync(u => u.TenantId == userTenantId && u.Groups.Contains(adminGroupId.Value));
+                return admins.ToList();
+            }
+
+            return new List<User>();
+        }
+
+        private async Task<Guid?> GetBuiltInGroupId(Guid userTenantId, string groupName)
+        {
+            var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
+            return groups.FirstOrDefault()?.Id;
         }
 
         private async Task<User> LockUser(Guid userId, bool locked)
@@ -392,7 +406,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public UserListMetaData GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public PagingMetaData<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
@@ -599,11 +613,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     PasswordSalt = null
                 }).ToList();
 
-                var returnMetaData = new UserListMetaData
+                var returnMetaData = new PagingMetaData<User>
                 {
                     TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,
-                    Users = userListDto,
+                    List = userListDto,
                     SearchFilter = getUsersParams.SearchValue,
                     CurrentPage = getUsersParams.PageNumber
                 };

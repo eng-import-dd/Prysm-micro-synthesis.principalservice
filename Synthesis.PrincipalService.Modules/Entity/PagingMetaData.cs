@@ -7,7 +7,7 @@ using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Entity
 {
-    public class PagingMetaData
+    public class PagingMetaData<T>
     {
         /// <summary>
         /// The total count of all records the current user can access
@@ -38,6 +38,9 @@ namespace Synthesis.PrincipalService.Entity
         /// The sort order
         /// </summary>
         public DataSortOrder SortOrder { get; set; }
+
+        public List<T> List { get; set; }
+
     }
 
 }

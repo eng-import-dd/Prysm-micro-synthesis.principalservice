@@ -187,7 +187,9 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userController.CreateUserAsync(newUser, tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
+
+                var result = await _userController.CreateUserAsync(newUser, tenantId, createdBy);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);

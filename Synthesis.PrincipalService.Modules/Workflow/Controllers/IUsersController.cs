@@ -1,6 +1,7 @@
 using Synthesis.PrincipalService.Dao.Models;
 using System;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Entity;
@@ -10,7 +11,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     public interface IUsersController
     {
-        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId);
+        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<UserResponse> GetUserAsync(Guid userId);
 
@@ -27,6 +28,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <returns>Task object of List of User Basic Response.</returns>
         Task<List<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
-        Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
+        Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
     }
 }
