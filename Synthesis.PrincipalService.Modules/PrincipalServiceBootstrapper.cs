@@ -97,7 +97,8 @@ namespace Synthesis.PrincipalService
                     {
                         new Claim(ClaimTypes.Name, "Test User"),
                         new Claim(ClaimTypes.Email, "test@user.com"),
-                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
+                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);
