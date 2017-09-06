@@ -18,17 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using Jose;
-using Synthesis.Cloud.BLL.Utilities;
-using Synthesis.DocumentStorage.DocumentDB;
-using Synthesis.License.Manager;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.License.Manager.Models;
-using Synthesis.Nancy.MicroService;
-using Synthesis.Nancy.MicroService.Entity;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Entity;
 
@@ -134,7 +123,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
-        public async Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
+        public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
         {
             try
             {
@@ -147,7 +136,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 //TODO: find the current user id
                 var users = GetAccountUsersFromDb(tenantId, usersInAccount.FirstOrDefault().Id, getUsersParams);
-                var userResponse = users.Users.Select(user => _mapper.Map<User, UserResponse>(user)).ToList();
+                var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -358,7 +347,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public UserListMetaData GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public PagingMetaData<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
@@ -449,10 +438,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     users = users.Where(u => u.Id == currentUserId);
                 }
-                if (!getUsersParams.IncludeInactive)
-                {
-                    users = users.Where(u => !u.IsLocked ?? true);
-                }
+                //if (!getUsersParams.IncludeInactive)
+                //{
+                //    users = users.Where(u => !u.IsLocked ?? true);
+                //}
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilterEnum.IdpUsers:
@@ -563,11 +552,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     PasswordSalt = null
                 }).ToList();
 
-                var returnMetaData = new UserListMetaData
+                var returnMetaData = new PagingMetaData<User>
                 {
                     TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,
-                    Users = userListDto,
+                    List = userListDto,
                     SearchFilter = getUsersParams.SearchValue,
                     CurrentPage = getUsersParams.PageNumber
                 };

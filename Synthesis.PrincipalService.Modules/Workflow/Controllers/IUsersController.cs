@@ -2,6 +2,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 
@@ -17,6 +18,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task DeleteUserAsync(Guid userId);
 
-        Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
+        Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
     }
 }
