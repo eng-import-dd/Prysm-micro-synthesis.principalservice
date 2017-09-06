@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Entity
 {
@@ -39,5 +40,4 @@ namespace Synthesis.PrincipalService.Entity
         public DataSortOrder SortOrder { get; set; }
     }
 
-    public enum DataSortOrder { Ascending, Descending }
 }

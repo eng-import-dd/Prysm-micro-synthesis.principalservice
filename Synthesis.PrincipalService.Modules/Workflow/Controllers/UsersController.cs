@@ -18,16 +18,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using Synthesis.Cloud.BLL.Utilities;
-using Synthesis.DocumentStorage.DocumentDB;
-using Synthesis.License.Manager;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.License.Manager.Models;
-using Synthesis.Nancy.MicroService;
-using Synthesis.Nancy.MicroService.Entity;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -491,10 +483,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     users = users.Where(u => u.Id == currentUserId);
                 }
-                if (!getUsersParams.IncludeInactive)
-                {
-                    users = users.Where(u => !u.IsLocked ?? true);
-                }
+
+                //ToDo: Revisit must
+                //if (!getUsersParams.IncludeInactive)
+                //{
+                //    users = users.Where(u => !u.IsLocked ?? true);
+                //}
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilterEnum.IdpUsers:

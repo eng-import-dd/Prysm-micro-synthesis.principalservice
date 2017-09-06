@@ -14,8 +14,7 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Enums;
-using Synthesis.PrincipalService.Entity;
+
 
 namespace Synthesis.PrincipalService.Modules
 {
