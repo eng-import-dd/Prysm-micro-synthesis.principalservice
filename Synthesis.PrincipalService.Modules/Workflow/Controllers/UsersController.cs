@@ -146,27 +146,22 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <exception cref="T:Synthesis.Nancy.MicroService.NotFoundException"></exception>
         public async Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
             var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
-            var users = await _userRepository.GetItemsAsync(u => u.Id != null); //Revisit this line: Charan
             if(userListResult == null)
             {
                 _logger.Warning($"Users resource could not be found for input data.");
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
-            try
-            {
-                var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(userListResult);
-                return basicUserResponse;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
-
-            //var basicUserResponse = userListResult.Users.Select(user => _mapper.Map<User, UserBasicResponse>(user)).ToList();
-            //return basicUserResponse;
+            var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(userListResult);
+            return basicUserResponse;
         }
 
         public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
