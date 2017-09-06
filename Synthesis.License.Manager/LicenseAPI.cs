@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -8,9 +9,11 @@ using Synthesis.License.Manager.Models;
 using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
+using Synthesis.Http;
 
 namespace Synthesis.License.Manager
 {
+    /// <inheritdoc cref="ILicenseApi" />
     /// <summary>
     /// Implementation of ILicenseAPI used to communicate with the Licensing Service.
     /// </summary>
@@ -20,92 +23,61 @@ namespace Synthesis.License.Manager
 
         protected override string SecurityToken => "C35BB5D0-4A9D-4BFB-A3EC-6E24694D2B3D";
 
-        public LicenseApi(ILogger loggingService)
+        public LicenseApi(ILogger loggingService, IHttpClient httpClient): base(httpClient)
         {
             LoggingService = loggingService;
             ApiBaseUrl = ConfigurationManager.AppSettings["BaseLicenseEndpoint"];
         }
         
-        /// <summary>
-        /// Method assigns a license type to all users for the account
-        /// </summary>
-        /// <returns></returns>
-        public async Task<LicenseResponse> AssignLicenseToAccountUsersAsync(BulkLicenseDto dto)
+        /// <inheritdoc />
+        public async Task<LicenseResponse> AssignLicenseToTenantUsersAsync(BulkLicenseDto dto)
         {
             return await PostAsync<LicenseResponse>(FormatRoute("bulk-licenses"), dto);
         }
 
-        /// <summary>
-        /// Assigns a license to a user.
-        /// </summary>
-        /// <param name="licenseAssignmentDto">DTO containing assignment information.</param>
-        /// <returns>LicenseResponse containing licensing information.</returns>
+        /// <inheritdoc />
         public async Task<LicenseResponse> AssignUserLicenseAsync(UserLicenseDto licenseAssignmentDto)
         {
             return await PostAsync<LicenseResponse>(FormatRoute("assignments"), licenseAssignmentDto);
         }
-        
-        /// <summary>
-        /// Lists all licenses with usage information for an account.
-        /// </summary>
-        /// <param name="accountId">ID of the account.</param>
-        /// <returns>LicenseResponse containing license usage information.</returns>
-        public async Task<LicenseResponse> GetAccountLicenseDetailsAsync(Guid accountId)
+
+        /// <inheritdoc />
+        public async Task<LicenseResponse> GetTenantLicenseDetailsAsync(Guid tenantId)
         {
-            return await GetAsync<LicenseResponse>(FormatRoute($"details/{accountId}"));
+            return await GetAsync<LicenseResponse>(FormatRoute($"details/{tenantId}"));
         }
 
-        /// <summary>
-        /// Lists all licenses with usage information for an account.
-        /// </summary>
-        /// <param name="accountId">ID of the account.</param>
-        /// <returns>LicenseResponse containing license usage information.</returns>
-        public async Task<List<LicenseSummaryDto>> GetAccountLicenseSummaryAsync(Guid accountId)
+        /// <inheritdoc />
+        public async Task<List<LicenseSummaryDto>> GetTenantLicenseSummaryAsync(Guid tenantId)
         {
-            return await GetAsync<List<LicenseSummaryDto>>(FormatRoute($"summaries/{accountId}"));
+            return await GetAsync<List<LicenseSummaryDto>>(FormatRoute($"summaries/{tenantId}"));
         }
 
-        /// <summary>
-        /// Gets a list of all license types assigned to an account.
-        /// </summary>
-        /// <param name="accountId">ID of the account.</param>
-        /// <returns>List of all license types available on the account.</returns>
-        public async Task<List<LicenseType>> GetAccountUserLicenseTypesAsync(Guid accountId)
+        /// <inheritdoc />
+        public async Task<List<LicenseType>> GetTenantUserLicenseTypesAsync(Guid tenantId)
         {
-            return await GetAsync<List<LicenseType>>(FormatRoute($"types/{accountId}"));
+            return await GetAsync<List<LicenseType>>(FormatRoute($"types/{tenantId}"));
         }
 
-        /// <summary>
-        /// Gets detailed license information for the requested user.
-        /// </summary>
-        /// <param name="accountId">ID of the account.</param>
-        /// <param name="userId">ID of the user.</param>
-        /// <returns>LicenseResponse containing license information for the user.</returns>
-        public async Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid accountId, Guid userId)
+        /// <inheritdoc />
+        public async Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid tenantId, Guid userId)
         {
-            return await GetAsync<UserLicenseResponse>(FormatRoute($"assignments/{accountId}/{userId}"));
+            return await GetAsync<UserLicenseResponse>(FormatRoute($"assignments/{tenantId}/{userId}"));
         }
 
-        /// <summary>
-        /// Refreshes the license counts for an account
-        /// </summary>
-        /// <returns>LicenseResponse containing licensing information.</returns>
-        public async Task<bool> RefreshLicensesAsync(string accountId)
+        /// <inheritdoc />
+        public async Task<bool> RefreshLicensesAsync(string tenantId)
         {
-            return await PostAsync<bool>(FormatRoute("refresh"), accountId);
+            return await PostAsync<bool>(FormatRoute("refresh"), tenantId);
         }
 
-        /// <summary>
-        /// Removes a license from a user.
-        /// </summary>
-        /// <param name="licenseAssignmentDto">DTO containing user and license information to remove.</param>
-        /// <returns>LicenseResponse indicating if the license removal was successful.</returns>
+        /// <inheritdoc />
         public async Task<LicenseResponse> ReleaseUserLicenseAsync(UserLicenseDto licenseAssignmentDto)
         {
             return await PostAsync<LicenseResponse>(FormatRoute("releases"), licenseAssignmentDto);
         }
 
-        protected override async Task<T> GetAsync<T>(string route, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1, bool useAsync = true)
+        protected override async Task<T> GetAsync<T>(string route, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1)
         {
             try
             {
@@ -115,8 +87,7 @@ namespace Synthesis.License.Manager
             {
                 LogError(httpEx);
 
-                var innerExcpetion = httpEx.InnerException as System.Net.WebException;
-                if (innerExcpetion != null && innerExcpetion.Status == System.Net.WebExceptionStatus.ConnectFailure)
+                if (httpEx.InnerException is WebException innerExcpetion && innerExcpetion.Status == WebExceptionStatus.ConnectFailure)
                 {
                     throw new LicenseApiException(innerExcpetion.Message, "Failed to connect to License Service", ResultCode.Failed);
                 }

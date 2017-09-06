@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace Synthesis.PrincipalService.Dao.Models
 {
@@ -11,6 +7,9 @@ namespace Synthesis.PrincipalService.Dao.Models
     {
         [JsonProperty("id")]
         public Guid Id { get; set; }
+
+        public Guid TenantId { get; set; }
+
         public string Name { get; set; }
     }
 }

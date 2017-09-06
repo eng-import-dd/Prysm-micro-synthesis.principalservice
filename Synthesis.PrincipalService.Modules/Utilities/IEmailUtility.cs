@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Net.Mail;
 using Synthesis.PrincipalService.Dao.Models;
 
-namespace Synthesis.Cloud.BLL.Utilities
+namespace Synthesis.PrincipalService.Utility
 {
     public interface IEmailUtility
     {

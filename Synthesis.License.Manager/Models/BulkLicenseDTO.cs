@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
-using Synthesis.License.Manager.Models;
 
 namespace Synthesis.License.Manager.Models
 {
@@ -23,6 +22,6 @@ namespace Synthesis.License.Manager.Models
 
         [DataMember]
         [Required]              
-        public LicenseType licenseType;
+        public LicenseType LicenseType;
     }
 }

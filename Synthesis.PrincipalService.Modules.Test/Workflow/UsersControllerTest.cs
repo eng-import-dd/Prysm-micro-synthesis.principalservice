@@ -13,10 +13,15 @@ using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
 using AutoMapper;
-using Synthesis.Cloud.BLL.Utilities;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Mapper;
+using Synthesis.PrincipalService.Requests;
+using System.Linq.Expressions;
+using System.Collections.Generic;
+using System.Linq;
+using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.Utility;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -65,7 +70,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task GetUserByIdAsyncReturnsUserIfExists()
         {
             _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new User()));
+                           .ReturnsAsync(new User());
 
             var userId = Guid.NewGuid();
             var result = await _controller.GetUserAsync(userId);
@@ -77,10 +82,98 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExist()
         {
             _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(default(User)));
+                           .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+        }
+
+
+        [Fact]
+        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicate()
+        {
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .ReturnsAsync(new List<User> { new User() });
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
+            var tenantId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId));
+
+            Assert.Equal(ex.Errors.ToList().Count, 2); //Duplidate Email & Duplicate username errors
+        }
+
+        [Fact]
+        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicate()
+        {
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .ReturnsAsync(new List<User> { new User() });
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var tenantId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId));
+
+            Assert.Equal(ex.Errors.ToList().Count, 3);//Duplidate Email, Duplicate Ldap & Duplicate username errors
+        }
+
+        [Fact]
+        public async Task CreatUserAsyncSuccess()
+        {
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                           .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@b.com", FirstName = "first" });
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var tenantId = Guid.NewGuid();
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+
+            _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
+
+            Assert.NotNull(user);
+            Assert.Equal(user.IsLocked , false);
+        }
+
+        [Fact]
+        public async Task CreatUserAsyncUserIsLockedIfNoLicenseAvailable()
+        {
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                           .ReturnsAsync(new User { Id = Guid.NewGuid() });
+
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new User());
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Failed });
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var tenantId = Guid.NewGuid();
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+
+            _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
+
+            Assert.Equal(user.IsLocked, true);
+        }
+
+        [Fact]
+        public async Task CreatUserAsyncUserIsLockedIfLicenseApiThrowsException()
+        {
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                           .ReturnsAsync(new User { Id = Guid.NewGuid() });
+
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new User());
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var tenantId = Guid.NewGuid();
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+
+            _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
+
+            Assert.Equal(user.IsLocked, true);
         }
     }
 }
