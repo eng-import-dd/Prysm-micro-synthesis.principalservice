@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Entity;
-using System.Collections.Generic;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -26,7 +24,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="userId">The user identifier.</param>
         /// <param name="getUsersParams">The get users parameters.</param>
         /// <returns>Task object of List of User Basic Response.</returns>
-        Task<List<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
+        Task<PagingMetaData<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
         Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
     }

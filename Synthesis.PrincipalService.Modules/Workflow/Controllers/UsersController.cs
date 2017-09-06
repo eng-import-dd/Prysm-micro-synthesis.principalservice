@@ -20,7 +20,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -145,7 +144,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// Task object of List of User Basic Response.
         /// </returns>
         /// <exception cref="T:Synthesis.Nancy.MicroService.NotFoundException"></exception>
-        public async Task<List<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetaData<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
             var users = await _userRepository.GetItemsAsync(u => u.Id != null); //Revisit this line: Charan
@@ -157,7 +156,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             try
             {
-                var basicUserResponse = userListResult.Users.Select(user => _mapper.Map<User, UserBasicResponse>(user)).ToList();
+                var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserBasicResponse>>(userListResult);
                 return basicUserResponse;
             }
             catch (Exception e)

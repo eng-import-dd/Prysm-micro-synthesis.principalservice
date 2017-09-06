@@ -107,7 +107,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId, Guid.Empty));
 
             Assert.Equal(ex.Errors.ToList().Count, 2); //Duplidate Email & Duplicate username errors
         }
@@ -120,7 +120,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty));
 
             Assert.Equal(ex.Errors.ToList().Count, 3);//Duplidate Email, Duplicate Ldap & Duplicate username errors
         }
@@ -136,7 +136,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
             _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
@@ -159,7 +159,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
 
@@ -179,7 +179,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
 
@@ -211,7 +211,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
             Assert.IsAssignableFrom<IEnumerable<User>>(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.TotalCount);
         }
     }
 }
