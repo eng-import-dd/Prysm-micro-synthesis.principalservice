@@ -44,6 +44,7 @@ namespace Synthesis.PrincipalService.Dao.Models
         public DateTime? CreatedDate { get; set; }
 
         public DateTime? LastAccessDate { get; set; }
-        public List<Group> Groups { get; set; }
+
+        public List<Guid> Groups { get; set; }
     }
 }

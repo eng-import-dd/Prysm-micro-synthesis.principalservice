@@ -11,5 +11,7 @@ namespace Synthesis.PrincipalService.Dao.Models
         public Guid TenantId { get; set; }
 
         public string Name { get; set; }
+
+        public bool IsLocked { get; set; }
     }
 }
