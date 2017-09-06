@@ -9,18 +9,20 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.Nancy.MicroService;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
 using AutoMapper;
 using Synthesis.License.Manager.Interfaces;
-using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
-using System.Collections.Generic;
-using System.Linq;
 using Synthesis.License.Manager.Models;
+using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utility;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -66,6 +68,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               mapper);
         }
 
+        /// <summary>
+        /// Gets the user by identifier asynchronous returns user if exists.
+        /// </summary>
+        /// <returns>Task object.</returns>
         [Fact]
         public async Task GetUserByIdAsyncReturnsUserIfExists()
         {
@@ -75,9 +81,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var result = await _controller.GetUserAsync(userId);
 
-            Assert.IsType<User>(result);
+            Assert.IsType<UserResponse>(result);
         }
 
+        /// <summary>
+        /// Gets the user by identifier asynchronous throws not found exception if user does not exist.
+        /// </summary>
+        /// <returns>Task object.</returns>
         [Fact]
         public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExist()
         {
@@ -97,7 +107,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId, Guid.Empty));
 
             Assert.Equal(ex.Errors.ToList().Count, 2); //Duplidate Email & Duplicate username errors
         }
@@ -110,7 +120,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty));
 
             Assert.Equal(ex.Errors.ToList().Count, 3);//Duplidate Email, Duplicate Ldap & Duplicate username errors
         }
@@ -126,7 +136,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
             _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
@@ -149,7 +159,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
 
@@ -169,11 +179,38 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, tenantId);
+            var user = await _controller.CreateUserAsync(createUserRequest, tenantId, Guid.Empty);
 
             _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
 
             Assert.Equal(user.IsLocked, true);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicAsyncReturnsUsersIfExists()
+        {
+            //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
+            const int count = 3;
+             _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .Returns(() =>
+                            {
+                                var userList = new List<User>();
+                                for (var i = 0; i < count; i++)
+                                {
+                                    userList.Add(new User());
+                                }
+
+                                List<User> items = userList;
+                                //IEnumerable<User> items = userList;
+                                return (Task.FromResult(items.AsEnumerable()));
+                                
+                            });
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var getUsersParams = new GetUsersParams();
+
+            var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
+            Assert.Equal(count, result.TotalCount);
         }
     }
 }

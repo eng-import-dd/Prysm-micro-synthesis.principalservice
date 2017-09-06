@@ -4,5 +4,6 @@ namespace Synthesis.PrincipalService.Constants
     {
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
+        public const string UserRetrieved = "UserRetrieved";
     }
 }

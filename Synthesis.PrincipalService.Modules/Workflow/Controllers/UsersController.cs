@@ -106,7 +106,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<User> GetUserAsync(Guid id)
+        /// <summary>
+        /// Gets the user using asynchronous.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns>Task object of User Response.</returns>
+        /// <exception cref="ValidationFailedException"></exception>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
@@ -114,16 +121,52 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-
+            
             var result = await _userRepository.GetItemAsync(id);
+            _eventService.Publish(EventNames.UserRetrieved, result);
 
             if (result == null)
             {
                 _logger.Warning($"A User resource could not be found for id {id}");
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
+            return _mapper.Map<User, UserResponse>(result);
+        }
 
-            return result;
+        /// <inheritdoc />
+        /// <summary>
+        /// Gets the users basic data.
+        /// </summary>
+        /// <param name="tenantId">The tenant identifier.</param>
+        /// <param name="userId">The user identifier.</param>
+        /// <param name="getUsersParams">The get users parameters.</param>
+        /// <returns>
+        /// Task object of List of User Basic Response.
+        /// </returns>
+        /// <exception cref="T:Synthesis.Nancy.MicroService.NotFoundException"></exception>
+        public async Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        {
+            var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
+            var users = await _userRepository.GetItemsAsync(u => u.Id != null); //Revisit this line: Charan
+            if(userListResult == null)
+            {
+                _logger.Warning($"Users resource could not be found for input data.");
+                throw new NotFoundException($"Users resource could not be found for input data.");
+            }
+
+            try
+            {
+                var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(userListResult);
+                return basicUserResponse;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            //var basicUserResponse = userListResult.Users.Select(user => _mapper.Map<User, UserBasicResponse>(user)).ToList();
+            //return basicUserResponse;
         }
 
         public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
@@ -220,7 +263,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
             //       tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
-
 
         private async Task<User> CreateUserInDb(User user)
         {
@@ -454,6 +496,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     users = users.Where(u => u.Id == currentUserId);
                 }
+
+                //ToDo: Revisit must
                 //if (!getUsersParams.IncludeInactive)
                 //{
                 //    users = users.Where(u => !u.IsLocked ?? true);
