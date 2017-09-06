@@ -26,10 +26,13 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using FluentValidation;
-using Synthesis.Cloud.BLL.Utilities;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.PrincipalService.Mapper;
+using Synthesis.Http;
+using Synthesis.Http.Configuration;
+using Synthesis.PrincipalService.Configurations;
+using Synthesis.PrincipalService.Utility;
 
 namespace Synthesis.PrincipalService
 {
@@ -179,6 +182,10 @@ namespace Synthesis.PrincipalService
             // Key Manager
             builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
 
+            //HttpClient
+            builder.RegisterType<HttpClientConfiguration>().As<IHttpClientConfiguration>().SingleInstance();
+            builder.RegisterType<SynthesisHttpClient>().As<IHttpClient>().SingleInstance();
+
             //Mapper
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
@@ -188,7 +195,7 @@ namespace Synthesis.PrincipalService
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             // Individual validators must be registered here (as they are below)
-            builder.RegisterType<UserValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers

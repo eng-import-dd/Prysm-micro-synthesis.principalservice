@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    public class UserRequest
+    public class CreateUserRequest
     {
         [JsonProperty("id")]
         public Guid? Id { get; set; }

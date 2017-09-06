@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
+using System;
 
 namespace Synthesis.PrincipalService.Responses
 {
@@ -25,7 +21,7 @@ namespace Synthesis.PrincipalService.Responses
 
         public string UserName { get; set; }
 
-        public bool? IsLocked { get; set; }
+        public bool IsLocked { get; set; }
 
         public int? PasswordAttempts { get; set; }
 

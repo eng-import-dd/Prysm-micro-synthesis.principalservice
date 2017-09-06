@@ -1,5 +1,4 @@
-﻿using Synthesis.PrincipalService.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -39,4 +38,6 @@ namespace Synthesis.PrincipalService.Entity
         /// </summary>
         public DataSortOrder SortOrder { get; set; }
     }
+
+    public enum DataSortOrder { Ascending, Descending }
 }

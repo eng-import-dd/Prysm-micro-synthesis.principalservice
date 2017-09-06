@@ -2,10 +2,10 @@
 
 namespace Synthesis.License.Manager.Exceptions
 {
-    internal class LicenseApiException : Exception
+    public class LicenseApiException : Exception
     {
-        public ResultCode ResultCode { get; private set; }
-        public string ClientMessage { get; private set; }
+        public ResultCode ResultCode { get; }
+        public string ClientMessage { get; }
         public LicenseApiException(string exceptionMessage, string clientMessage, ResultCode resultCode) : base(exceptionMessage)
         {
             ResultCode = resultCode;

@@ -1,6 +1,6 @@
 using System;
 
-namespace Synthesis.Cloud.BLL.Utilities
+namespace Synthesis.PrincipalService.Dao.Models
 {
     public class InvitedUser
     {

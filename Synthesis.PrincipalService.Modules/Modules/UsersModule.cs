@@ -11,6 +11,8 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Entity;
@@ -24,8 +26,8 @@ namespace Synthesis.PrincipalService.Modules
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
+        private const string LegacyBaseRoute = "/api";
         private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
-
         private const string DeprecationWarning = "DEPRECATED";
 
         public UsersModule(
@@ -42,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
 
             // Initialize documentation
             SetupRouteMetadata();
-
+            SetupRoute_GetUsersForAccount();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -62,7 +64,32 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ex.Message);
             };
         }
-
+        private void SetupRoute_GetUsersForAccount()
+        {
+            const string path = "/v1/users/";
+            Get(path, GetUsersForAccount, with=>
+                                          {
+                                              var requestQuery = with.Request.Query;
+                                              return true;
+                                          } , "GetUsersForAccount");
+            Get(LegacyBaseRoute + path, GetUsersForAccount, null, "GetUsersForAccountLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Get Users";
+            var metadataDescription = "Retrieve all Users resource.";
+            _metadataRegistry.SetRouteMetadata("GetUsers", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("GetUsersLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
         private void SetupRouteMetadata()
         {
             _metadataRegistry.SetRouteMetadata("CreateUser", new SynthesisRouteMetadata
@@ -147,10 +174,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserAsync(dynamic input)
         {
-            UserRequest newUser;
+            CreateUserRequest newUser;
             try
             {
-                newUser = this.Bind<UserRequest>();
+                newUser = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -291,6 +318,53 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> GetUsersForAccount(dynamic input)
+        {
+            //Todo: check how the default values can be assigned
+            GetUsersParams getUsersParams;
+            try
+            {
+                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
+                {
+                    SearchValue = "",
+                    PageNumber = 1,
+                    PageSize = 10,
+                    UserGroupingType = UserGroupingTypeEnum.None,
+                    UserGroupingId = Guid.Empty,
+                    ExcludeUsersInGroup = false,
+                    OnlyCurrentUser = false,
+                    IncludeInactive = false,
+                    SortColumn = "FirstName",
+                    SortOrder = DataSortOrder.Ascending,
+                    IdpFilter = IdpFilterEnum.All
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            //Todo: Validation for all the parameters
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _userController.GetUsersForAccount(getUsersParams, tenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to get users due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;

@@ -21,28 +21,28 @@ namespace Synthesis.License.Manager.Interfaces
         /// Refreshes purhcases from FNO
         /// </summary>
         /// <returns></returns>
-        Task<bool> RefreshLicensesAsync(string accountId);
+        Task<bool> RefreshLicensesAsync(string tenantId);
 
         /// <summary>
-        /// Gets a list of all license types assigned to an account.
+        /// Gets a list of all license types assigned to a tenant.
         /// </summary>
-        /// <param name="accountId">ID of the account.</param>
-        /// <returns>List of all license types available on the account.</returns>
-        Task<List<LicenseType>> GetAccountUserLicenseTypesAsync(Guid accountId);
+        /// <param name="tenantId">ID of the tenant.</param>
+        /// <returns>List of all license types available on the tenant.</returns>
+        Task<List<LicenseType>> GetTenantUserLicenseTypesAsync(Guid tenantId);
 
         /// <summary>
-        /// Lists all licenses with usage information for an account.
+        /// Lists all licenses with usage information for an tenant.
         /// </summary>
-        /// <param name="accountId">ID of the account.</param>
+        /// <param name="tenantId">ID of the tenant.</param>
         /// <returns>LicenseResponse containing license usage information.</returns>
-        Task<LicenseResponse> GetAccountLicenseDetailsAsync(Guid accountId);
+        Task<LicenseResponse> GetTenantLicenseDetailsAsync(Guid tenantId);
 
         /// <summary>
-        /// Lists all licenses with usage information for an account.
+        /// Lists all licenses with usage information for an tenant.
         /// </summary>
-        /// <param name="accountId">ID of the account.</param>
+        /// <param name="tenantId">ID of the tenant.</param>
         /// <returns>LicenseResponse containing license usage information.</returns>
-        Task<List<LicenseSummaryDto>> GetAccountLicenseSummaryAsync(Guid accountId);
+        Task<List<LicenseSummaryDto>> GetTenantLicenseSummaryAsync(Guid tenantId);
 
         /// <summary>
         /// Removes a license from a user.
@@ -54,15 +54,15 @@ namespace Synthesis.License.Manager.Interfaces
         /// <summary>
         /// Gets detailed license information for the requested user.
         /// </summary>
-        /// <param name="accountId">ID of the account.</param>
+        /// <param name="tenantId">ID of the tenant.</param>
         /// <param name="userId">ID of the user.</param>
         /// <returns>LicenseResponse containing license information for the user.</returns>
-        Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid accountId, Guid userId);
+        Task<UserLicenseResponse> GetUserLicenseDetailsAsync(Guid tenantId, Guid userId);
 
         /// <summary>
-        /// Method assigns a license type to all users for the account
+        /// Method assigns a license type to all users for the tenant
         /// </summary>
         /// <returns></returns>
-        Task<LicenseResponse> AssignLicenseToAccountUsersAsync(BulkLicenseDto dto);
+        Task<LicenseResponse> AssignLicenseToTenantUsersAsync(BulkLicenseDto dto);
     }
 }

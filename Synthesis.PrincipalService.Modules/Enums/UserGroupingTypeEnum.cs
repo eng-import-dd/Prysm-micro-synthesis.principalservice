@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Synthesis.PrincipalService.Enums
+﻿namespace Synthesis.PrincipalService.Enums
 {
-       public enum UserGroupingTypeEnum
+    /// <summary>
+    /// UserGroupingTypeEnum is used to filter the get users for account call to include or exclude users from a particular grouping
+    /// </summary>
+    public enum UserGroupingTypeEnum
     {
         /// <summary>
         /// No group

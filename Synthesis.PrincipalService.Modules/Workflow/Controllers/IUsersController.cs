@@ -10,7 +10,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     public interface IUsersController
     {
-        Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId);
+        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId);
 
         Task<UserResponse> GetUserAsync(Guid userId);
 
@@ -26,5 +26,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="getUsersParams">The get users parameters.</param>
         /// <returns>Task object of List of User Basic Response.</returns>
         Task<List<UserBasicResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
+
+        Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
     }
 }

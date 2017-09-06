@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,6 +9,8 @@ using Newtonsoft.Json;
 using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
+using Synthesis.Http;
+using Synthesis.Http.Extensions;
 
 namespace Synthesis.License.Manager
 {
@@ -21,6 +22,8 @@ namespace Synthesis.License.Manager
         private const string ApiErrorFormat = "API error occurred in {0} on line {1}\nResult code {2} returned from {3}\n{4}";
         private const string HttpErrorFormat = "HTTP response code is {0} for the request to {1}";
 
+        private readonly IHttpClient _httpClient;
+
         protected ILogger LoggingService;
         protected string ApiBaseUrl;
 
@@ -30,23 +33,13 @@ namespace Synthesis.License.Manager
         /// </summary>
         protected virtual string SecurityToken => null;
 
-        #region Generic GET, PUT, POST & DELETE Methods
-
-        private HttpClient _client;
-        private HttpClient NewHttpClient()
+        public ServiceApiBase(IHttpClient httpClient)
         {
-            if (_client == null)
-            {
-                _client = new HttpClient();
-                if (SecurityToken != null)
-                {
-                    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", SecurityToken);
-                }
-            }
-
-            return _client;
+            _httpClient = httpClient;
         }
 
+        #region Generic GET, PUT, POST & DELETE Methods
+        
         /// <summary>
         /// Performs an asynchronous get request.
         /// </summary>
@@ -54,20 +47,16 @@ namespace Synthesis.License.Manager
         /// <param name="route">Route to call.</param>
         /// <param name="callerMemberName"></param>
         /// <param name="callerLineNumber"></param>
-        /// <param name="useAsync">Flag indicating if the call should be made asynchronously.</param>
         /// <returns>Specified generic type.</returns>
-        protected virtual async Task<T> GetAsync<T>(string route, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1, bool useAsync = true)
+        protected virtual async Task<T> GetAsync<T>(string route, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1)
         {
             LogDebug("GET: " + route);
 
             try
             {
-                var client = NewHttpClient();
+                using (var response = await _httpClient.GetWithJsonAsync(route, SecurityToken))
                 {
-                    using (var response = useAsync ? await client.GetAsync(route) : client.GetAsync(route).Result)
-                    {
-                        return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
-                    }
+                    return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
                 }
             }
             catch (Exception ex)
@@ -86,7 +75,6 @@ namespace Synthesis.License.Manager
         /// <param name="postObject">Object to post with the request.</param>
         /// <param name="callerMemberName"></param>
         /// <param name="callerLineNumber"></param>
-        /// <param name="useAsync">Flag indicating if the call should be made asynchronously.</param>
         /// <returns>Specified generic type.</returns>
         protected async Task<T> PostAsync<T>(string route, object postObject, [CallerMemberName] string callerMemberName = "[Unknown]", [CallerLineNumber] int callerLineNumber = -1)
         {
@@ -94,15 +82,12 @@ namespace Synthesis.License.Manager
 
             try
             {
-                var client = NewHttpClient();
+                var jsonString = JsonConvert.SerializeObject(postObject, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+                using (var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json"))
                 {
-                    var jsonString = JsonConvert.SerializeObject(postObject, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
-                    using (var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json"))
+                    using (var response = await _httpClient.PostWithJsonAsync(route, stringContent, SecurityToken))
                     {
-                        using (var response = await client.PostAsync(route, stringContent))
-                        {
-                            return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
-                        }
+                        return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
                     }
                 }
             }
@@ -129,15 +114,12 @@ namespace Synthesis.License.Manager
 
             try
             {
-                var client = NewHttpClient();
+                var jsonString = JsonConvert.SerializeObject(putObject, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+                using (var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json"))
                 {
-                    var jsonString = JsonConvert.SerializeObject(putObject, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
-                    using (var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json"))
+                    using (var response = await _httpClient.PutWithJsonAsync(route, stringContent, SecurityToken))
                     {
-                        using (var response = await client.PutAsync(route, stringContent))
-                        {
-                            return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
-                        }
+                        return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
                     }
                 }
             }
@@ -163,12 +145,9 @@ namespace Synthesis.License.Manager
 
             try
             {
-                var client = NewHttpClient();
+                using (var response = await _httpClient.DeleteWithJsonAsync(route,SecurityToken))
                 {
-                    using (var response = await client.DeleteAsync(route))
-                    {
-                        return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
-                    }
+                    return await HandleResponseAndResultCodes<T>(response, route, callerMemberName, callerLineNumber);
                 }
             }
             catch (Exception ex)

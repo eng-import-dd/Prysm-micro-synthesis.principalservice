@@ -1,11 +1,18 @@
+using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.License.Manager.Interfaces;
+using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Utility;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
@@ -13,13 +20,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Synthesis.Cloud.BLL.Utilities;
+using Synthesis.DocumentStorage.DocumentDB;
+using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -30,13 +38,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class UsersController : IUsersController
     {
         private readonly IRepository<User> _userRepository;
-        private readonly IValidator _userValidator;
+        private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
+
+        private const string OrgAdminRoleName = "Org_Admin";
+        private const string BasicUserRoleName = "Basic_User";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -58,7 +69,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IMapper mapper)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
-            _userValidator = validatorLocator.GetValidator(typeof(UserValidator));
+            _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
             _logger = logger;
@@ -67,22 +78,23 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _mapper = mapper;
         }
 
-        public async Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId)
+        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
-
-            var user = _mapper.Map<UserRequest, User>(model);
-
-            var validationResult = await _userValidator.ValidateAsync(user);
+            
+            var validationResult = await _createUserRequestValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (IsBuiltInOnPremAccount(user.TenantId))
+            var user = _mapper.Map<CreateUserRequest, User>(model);
+
+
+            if (IsBuiltInOnPremTenant(tenantId))
             {
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning accounts") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
             user.TenantId = tenantId;
@@ -162,210 +174,37 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //return basicUserResponse;
         }
 
-        private UserListMetaData GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        
+        
+
+        public async Task<IEnumerable<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
         {
             try
             {
-                if (accountId == Guid.Empty)
+                var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
+                if (usersInAccount == null)
                 {
-                    var ex = new ArgumentException("accountId");
-                    _logger.LogMessage(LogLevel.Error, ex);
-                    throw ex;
+                    _logger.Warning($"Users could not be found");
+                    throw new NotFoundException($"Users could not be found");
                 }
-                int userCountTotal;
-                int filteredUserCount;
-                List<User> resultingUsers;
-                var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
-                //ToDo: check how to create DB context
-                // IRepository<User> sdc;
 
-                userCountTotal = getUsersParams.OnlyCurrentUser
-                                     ? 1
-                                     : usersInAccounts.Result.ToList().Count;
-                //from uc in sdc.UserAccounts
-                //    join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                //    where uc.AccountID == accountId
-                //    select u
-                IEnumerable<User> users = new List<User>();
-                //Todo: Convert all the queries to existing Documentdb supported queries
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project))
-                {
-                    //ToDo: implement the logic suitable for Document DB
-                    //if (getUsersParams.ExcludeUsersInGroup)
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             let usersInProject = (from uc2 in sdc.UserAccounts
-                    //                                   join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u2.UserID
-                    //                                   join up2 in sdc.UserProjects on uc2.SynthesisUserID equals up2.UserID
-                    //                                   where uc2.AccountID == accountId && up2.ProjectID == getUsersParams.UserGroupingId
-                    //                                   select u2)
-                    //             where uc.AccountID == accountId && !usersInProject.Any(x => x.UserID == u.UserID)
-                    //             select u);
-                    //}
-                    //else
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             join up in sdc.UserProjects on uc.SynthesisUserID equals up.UserID
-                    //             where uc.AccountID == accountId && up.ProjectID == getUsersParams.UserGroupingId
-                    //             select u);
-                    //}
-                }
-                else if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Permission))
-                {
-                    //if (getUsersParams.ExcludeUsersInGroup)
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             let usersInPermissionGroup = (from uc2 in sdc.UserAccounts
-                    //                                           join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u.UserID
-                    //                                           join ug2 in sdc.UserGroups on uc2.SynthesisUserID equals ug2.UserId
-                    //                                           where uc2.AccountID == accountId && ug2.GroupId == getUsersParams.UserGroupingId
-                    //                                           select u)
-                    //             where
-                    //             uc.AccountID == accountId && !usersInPermissionGroup.Any(x => x.UserID == u.UserID)
-                    //             select u);
-                    //}
-                    //else
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             join ug in sdc.UserGroups on uc.SynthesisUserID equals ug.UserId
-                    //             where uc.AccountID == accountId && ug.GroupId == getUsersParams.UserGroupingId
-                    //             select u);
-                    //}
-                }
-                else
-                {
-                    users = usersInAccounts.Result;
-                }
-                if (getUsersParams.OnlyCurrentUser)
-                {
-                    users = users.Where(u => u.Id == currentUserId);
-                }
-                if (!getUsersParams.IncludeInactive)
-                {
-                    users = users.Where(u => !u.IsLocked ?? true);
-                }
-                switch (getUsersParams.IdpFilter)
-                {
-                    case IdpFilterEnum.IdpUsers:
-                        users = users.Where(u => u.IsIdpUser == true);
-                        break;
-                    case IdpFilterEnum.LocalUsers:
-                        users = users.Where(u => u.IsIdpUser == false);
-                        break;
-                    case IdpFilterEnum.NotSet:
-                        users = users.Where(u => u.IsIdpUser == null);
-                        break;
-                }
-                if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
-                {
-                    users = users.Where
-                        (x =>
-                             x != null &&
-                             (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                                                                                           getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower())
-                        );
-                }
-                if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
-                {
-                    // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                    users = users.OrderBy(x => x.FirstName);
-                }
-                else
-                {
-                    if (getUsersParams.SortOrder == DataSortOrder.Ascending)
-                    {
-                        switch (getUsersParams.SortColumn.ToLower())
-                        {
-                            case "firstname":
-                                users = users.OrderBy(x => x.FirstName);
-                                break;
-                            case "lastname":
-                                users = users.OrderBy(x => x.LastName);
-                                break;
-                            case "email":
-                                users = users.OrderBy(x => x.Email);
-                                break;
-                            case "username":
-                                users = users.OrderBy(x => x.UserName);
-                                break;
-                            default:
-                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderBy(x => x.FirstName);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        switch (getUsersParams.SortColumn.ToLower())
-                        {
-                            case "firstname":
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-                            case "lastname":
-                                users = users.OrderByDescending(x => x.LastName);
-                                break;
-                            case "email":
-                                users = users.OrderByDescending(x => x.Email);
-                                break;
-                            case "username":
-                                users = users.OrderByDescending(x => x.UserName);
-                                break;
-                            default:
-                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-                        }
-                    }
-                }
-                filteredUserCount = users.Count();
-                if (getUsersParams.PageSize > 0)
-                {
-                    var pageNumber = getUsersParams.PageNumber > 0 ? getUsersParams.PageNumber - 1 : 0;
-                    users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
-                }
-                resultingUsers = users.ToList();
-                var userListDto = resultingUsers.Select(synUser => new User()
-                {
-                    Id = synUser.Id,
-                    Email = synUser.Email,
-                    FirstName = synUser.FirstName,
-                    LastName = synUser.LastName,
-                    UserName = synUser.UserName,
-                    IsLocked = synUser.IsLocked,
-                    LastLogin = synUser.LastLogin,
-                    LdapId = synUser.LdapId,
-                    PasswordAttempts = synUser.PasswordAttempts,
-                    IsIdpUser = synUser.IsIdpUser,
-                    PasswordHash = null,
-                    PasswordSalt = null
-                }).ToList();
-                var returnMetaData = new UserListMetaData
-                {
-                    TotalCount = userCountTotal,
-                    CurrentCount = filteredUserCount,
-                    Users = userListDto,
-                    SearchFilter = getUsersParams.SearchValue,
-                    CurrentPage = getUsersParams.PageNumber
-                };
-                return returnMetaData;
+                //TODO: find the current user id
+                var users = GetAccountUsersFromDb(tenantId, usersInAccount.FirstOrDefault().Id, getUsersParams);
+                var userResponse = users.Users.Select(user => _mapper.Map<User, UserResponse>(user)).ToList();
+                return userResponse;
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, ex + " Failed to get users for account");
-                throw;
+                _logger.LogMessage(LogLevel.Error, ex);
+                return null;
             }
-        }
 
+            
+        }
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var userValidationResult = await _userValidator.ValidateAsync(userModel);
+            var userValidationResult = await _createUserRequestValidator.ValidateAsync(userModel);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
@@ -420,7 +259,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
-        private bool IsBuiltInOnPremAccount(Guid accountId)
+
+        private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
             //TODO Identify if this is an on prem deployment
             //if (!_cloudSettings.DeploymentTypes.HasFlag(DeploymentTypes.OnPrem))
@@ -428,8 +268,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return false;
             }
 
-            //return accountId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
-            //       accountId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
+            //return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
+            //       tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
         private async Task<User> CreateUserInDb(User user)
@@ -445,33 +285,28 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.Email), "A user with that email address already exists.") );
             }
-
-            if (string.IsNullOrEmpty(user.PasswordHash) || string.IsNullOrEmpty(user.PasswordSalt))
+            
+            if (!string.IsNullOrEmpty(user.LdapId) && !await IsUniqueLdapId(user.Id, user.LdapId))
             {
-                validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Password Hash and Salt can not be null") );
+                validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
 
-            if (!string.IsNullOrEmpty(user.LdapId) && await IsUniqueLdapId(user.Id, user.LdapId))
-            {
-                validationErrors.Add(new ValidationFailure(nameof(user.PasswordHash), "Unable to provision user. The LDAP User Account is already in use."));
-            }
-
-            //TODO Check if it is a valid account
-            //var account = dc.Accounts.Find(accountId);
-            //if (account == null)
+            //TODO Check if it is a valid tenant
+            //var tenant = dc.Accounts.Find(tenantId);
+            //if (tenant == null)
             //{
-            //    var ex = new Exception("Unable to provision user. The account could not be found with the given id.");
+            //    var ex = new Exception("Unable to provision user. The tanant could not be found with the given id.");
             //    LogError(ex);
             //    throw ex;
             //}
-            
+
             if (validationErrors.Any())
             {
                 throw new ValidationFailedException(validationErrors);
             }
 
             //TODO Fetch the basic user group for the account instead of creating one here
-            user.Groups = new List<Group> { new Group { Name = "Basic_User" } };
+            user.Groups = new List<Group> { new Group { Name = BasicUserRoleName } };
 
             //TODO Populate created by field
             //user.CreatedBy = 
@@ -483,6 +318,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
+            if (user.Id == null || user.Id == Guid.Empty)
+            {
+                throw new ArgumentException("User Id is required for assiging license");
+            }
+
             var licenseRequestDto = new UserLicenseDto
             {
                 AccountId = user.TenantId.ToString(),
@@ -510,7 +350,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await LockUser(user.Id.Value, true);
             user.IsLocked = true;
 
-            //Intimate the Org Admin of the user account about locked user
+            //Intimate the Org Admin of the user's teanant about locked user
             var orgAdmins = await GetTenantAdminsByIdAsync(user.TenantId);
 
             if (orgAdmins.Count > 0)
@@ -521,6 +361,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
+            //TODO Find org_admins for the tenant
             return await Task.FromResult(new List<User>());
         }
 
@@ -558,6 +399,228 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     ? u.LdapId == ldapId
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
+        }
+        public UserListMetaData GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        {
+            try
+            {
+                if (accountId == Guid.Empty)
+                {
+                    var ex = new ArgumentException("accountId");
+                    _logger.LogMessage(LogLevel.Error, ex);
+                    throw ex;
+                }
+
+                int userCountTotal;
+                int filteredUserCount;
+                List<User> resultingUsers;
+
+                var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
+                //ToDo: check how to create DB context
+               // IRepository<User> sdc;
+                    
+                    userCountTotal = getUsersParams.OnlyCurrentUser
+                                     ? 1
+                                     : usersInAccounts.Result.ToList().Count;
+
+                //from uc in sdc.UserAccounts
+                //    join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
+                //    where uc.AccountID == accountId
+                //    select u
+                IEnumerable<User> users=new List<User>();
+
+                //Todo: Convert all the queries to existing Documentdb supported queries
+
+                if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project))
+                {
+                    //ToDo: implement the logic suitable for Document DB
+                    //if (getUsersParams.ExcludeUsersInGroup)
+                    //{
+                    //    users = (from uc in sdc.UserAccounts
+                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
+
+                    //             let usersInProject = (from uc2 in sdc.UserAccounts
+                    //                                   join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u2.UserID
+                    //                                   join up2 in sdc.UserProjects on uc2.SynthesisUserID equals up2.UserID
+                    //                                   where uc2.AccountID == accountId && up2.ProjectID == getUsersParams.UserGroupingId
+                    //                                   select u2)
+
+                    //             where uc.AccountID == accountId && !usersInProject.Any(x => x.UserID == u.UserID)
+                    //             select u);
+                    //}
+                    //else
+                    //{
+                    //    users = (from uc in sdc.UserAccounts
+                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
+                    //             join up in sdc.UserProjects on uc.SynthesisUserID equals up.UserID
+                    //             where uc.AccountID == accountId && up.ProjectID == getUsersParams.UserGroupingId
+                    //             select u);
+                    //}
+                }
+                else if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Permission))
+                {
+                    //if (getUsersParams.ExcludeUsersInGroup)
+                    //{
+                    //    users = (from uc in sdc.UserAccounts
+                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
+
+                    //             let usersInPermissionGroup = (from uc2 in sdc.UserAccounts
+                    //                                           join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u.UserID
+                    //                                           join ug2 in sdc.UserGroups on uc2.SynthesisUserID equals ug2.UserId
+                    //                                           where uc2.AccountID == accountId && ug2.GroupId == getUsersParams.UserGroupingId
+                    //                                           select u)
+
+                    //             where
+                    //             uc.AccountID == accountId && !usersInPermissionGroup.Any(x => x.UserID == u.UserID)
+                    //             select u);
+                    //}
+                    //else
+                    //{
+                    //    users = (from uc in sdc.UserAccounts
+                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
+                    //             join ug in sdc.UserGroups on uc.SynthesisUserID equals ug.UserId
+                    //             where uc.AccountID == accountId && ug.GroupId == getUsersParams.UserGroupingId
+                    //             select u);
+                    //}
+                }
+                else
+                {
+                    users = usersInAccounts.Result;
+                }
+                if (getUsersParams.OnlyCurrentUser)
+                {
+                    users = users.Where(u => u.Id == currentUserId);
+                }
+                if (!getUsersParams.IncludeInactive)
+                {
+                    users = users.Where(u => !u.IsLocked ?? true);
+                }
+                switch (getUsersParams.IdpFilter)
+                {
+                    case IdpFilterEnum.IdpUsers:
+                        users = users.Where(u => u.IsIdpUser == true);
+                        break;
+                    case IdpFilterEnum.LocalUsers:
+                        users = users.Where(u => u.IsIdpUser == false);
+                        break;
+                    case IdpFilterEnum.NotSet:
+                        users = users.Where(u => u.IsIdpUser == null);
+                        break;
+                }
+
+                if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
+                {
+                    users = users.Where
+                        (x =>
+                             x != null &&
+                             (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                           getUsersParams.SearchValue.ToLower()) ||
+                             x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
+                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower())
+                        );
+                }
+                if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
+                {
+                    // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                    users = users.OrderBy(x => x.FirstName);
+                }
+                else
+                {
+                    if (getUsersParams.SortOrder == DataSortOrder.Ascending)
+                    {
+                        switch (getUsersParams.SortColumn.ToLower())
+                        {
+                            case "firstname":
+                                users = users.OrderBy(x => x.FirstName);
+                                break;
+
+                            case "lastname":
+                                users = users.OrderBy(x => x.LastName);
+                                break;
+
+                            case "email":
+                                users = users.OrderBy(x => x.Email);
+                                break;
+
+                            case "username":
+                                users = users.OrderBy(x => x.UserName);
+                                break;
+
+                            default:
+                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                                users = users.OrderBy(x => x.FirstName);
+                                break;
+
+                        }
+                    }
+                    else
+                    {
+                        switch (getUsersParams.SortColumn.ToLower())
+                        {
+                            case "firstname":
+                                users = users.OrderByDescending(x => x.FirstName);
+                                break;
+
+                            case "lastname":
+                                users = users.OrderByDescending(x => x.LastName);
+                                break;
+
+                            case "email":
+                                users = users.OrderByDescending(x => x.Email);
+                                break;
+
+                            case "username":
+                                users = users.OrderByDescending(x => x.UserName);
+                                break;
+
+                            default:
+                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                                users = users.OrderByDescending(x => x.FirstName);
+                                break;
+                        }
+                    }
+                }
+
+                filteredUserCount = users.Count();
+                if (getUsersParams.PageSize > 0)
+                {
+                    var pageNumber = getUsersParams.PageNumber > 0 ? getUsersParams.PageNumber - 1 : 0;
+                    users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
+                }
+                resultingUsers = users.ToList();
+
+                var userListDto = resultingUsers.Select(synUser => new User()
+                {
+                    Id = synUser.Id,
+                    Email = synUser.Email,
+                    FirstName = synUser.FirstName,
+                    LastName = synUser.LastName,
+                    UserName = synUser.UserName,
+                    IsLocked = synUser.IsLocked,
+                    LastLogin = synUser.LastLogin,
+                    LdapId = synUser.LdapId,
+                    PasswordAttempts = synUser.PasswordAttempts,
+                    IsIdpUser = synUser.IsIdpUser,
+                    PasswordHash = null,
+                    PasswordSalt = null
+                }).ToList();
+
+                var returnMetaData = new UserListMetaData
+                {
+                    TotalCount = userCountTotal,
+                    CurrentCount = filteredUserCount,
+                    Users = userListDto,
+                    SearchFilter = getUsersParams.SearchValue,
+                    CurrentPage = getUsersParams.PageNumber
+                };
+
+                return returnMetaData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex+" Failed to get users for account");
+                throw;
+            }
         }
     }
 }
