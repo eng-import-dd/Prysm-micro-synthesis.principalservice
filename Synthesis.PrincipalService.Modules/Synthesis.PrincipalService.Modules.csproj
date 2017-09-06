@@ -258,6 +258,7 @@
       <HintPath>..\packages\Synthesis.Tracking.Web.1.0.0-beta1\lib\net452\Synthesis.Tracking.Web.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -302,6 +303,15 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
+    <Compile Include="Entity\BasicUserListMetaData.cs" />
+    <Compile Include="Entity\GetUsersParams.cs" />
+    <Compile Include="Entity\PagingMetaData.cs" />
+    <Compile Include="Entity\ServerSidePagingParams.cs" />
+    <Compile Include="Entity\UserListMetaData.cs" />
+    <Compile Include="Enums\DataSortOrder.cs" />
+    <Compile Include="Enums\IdpFilterEnum.cs" />
+    <Compile Include="Enums\ResultCode.cs" />
+    <Compile Include="Enums\UserGroupingTypeEnum.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
@@ -310,6 +320,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\UserRequest.cs" />
+    <Compile Include="Responses\UserBasicResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utility\EmailUtility.cs" />
     <Compile Include="Utility\IEmailUtility.cs" />
@@ -330,9 +341,7 @@
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Entity\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />
