@@ -26,6 +26,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <returns>Task object of List of User Basic Response.</returns>
         Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
-        Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId);
+        Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
     }
 }
