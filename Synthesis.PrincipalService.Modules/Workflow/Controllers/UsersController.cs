@@ -169,19 +169,39 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //return basicUserResponse;
         }
 
-        public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId)
+        public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
+            var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
+            var userValidationResult = await _createUserRequestValidator.ValidateAsync(currentUserId);
+            var errors = new List<ValidationFailure>();
+
+            if (!userIdValidationResult.IsValid)
+            {
+                errors.AddRange(userIdValidationResult.Errors);
+            }
+
+            if (!userValidationResult.IsValid)
+            {
+                errors.AddRange(userValidationResult.Errors);
+            }
+
+            if (errors.Any())
+            {
+                _logger.Warning("Failed to validate the resource id and/or resource while attempting to get a User resource.");
+                throw new ValidationFailedException(errors);
+            }
+
             try
             {
                 var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
                 if (usersInAccount == null)
                 {
-                    _logger.Warning($"Users could not be found");
-                    throw new NotFoundException($"Users could not be found");
+                    _logger.Warning($"Users for the account could not be found");
+                    throw new NotFoundException($"Users for the account could not be found");
                 }
 
                 //TODO: find the current user id
-                var users = GetAccountUsersFromDb(tenantId, usersInAccount.FirstOrDefault().Id, getUsersParams);
+                var users = GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
                 var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(users);
                 return userResponse;
             }
@@ -191,7 +211,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return null;
             }
 
-            
         }
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
         {
@@ -416,29 +435,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     throw ex;
                 }
 
-                int userCountTotal;
-                int filteredUserCount;
-                List<User> resultingUsers;
-
+                IEnumerable<User> users = new List<User>();
                 var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
                 //ToDo: check how to create DB context
-               // IRepository<User> sdc;
-                    
-                    userCountTotal = getUsersParams.OnlyCurrentUser
-                                     ? 1
-                                     : usersInAccounts.Result.ToList().Count;
-
-                //from uc in sdc.UserAccounts
-                //    join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                //    where uc.AccountID == accountId
-                //    select u
-                IEnumerable<User> users=new List<User>();
+                    var userCountTotal = getUsersParams.OnlyCurrentUser
+                                             ? 1
+                                             : usersInAccounts.Result.ToList().Count;
 
                 //Todo: Convert all the queries to existing Documentdb supported queries
 
                 if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project))
                 {
-                    //ToDo: implement the logic suitable for Document DB
+                    //ToDo: to be implemented
+                    #region Dependancy on project service
                     //if (getUsersParams.ExcludeUsersInGroup)
                     //{
                     //    users = (from uc in sdc.UserAccounts
@@ -461,9 +470,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     //             where uc.AccountID == accountId && up.ProjectID == getUsersParams.UserGroupingId
                     //             select u);
                     //}
+                    #endregion
                 }
                 else if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Permission))
                 {
+                    //ToDo: to be implemented
+                    #region Dependancy on groups 
                     //if (getUsersParams.ExcludeUsersInGroup)
                     //{
                     //    users = (from uc in sdc.UserAccounts
@@ -487,6 +499,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     //             where uc.AccountID == accountId && ug.GroupId == getUsersParams.UserGroupingId
                     //             select u);
                     //}
+                    #endregion
                 }
                 else
                 {
@@ -497,11 +510,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     users = users.Where(u => u.Id == currentUserId);
                 }
 
-                //ToDo: Revisit must
-                //if (!getUsersParams.IncludeInactive)
-                //{
-                //    users = users.Where(u => !u.IsLocked ?? true);
-                //}
+                if (!getUsersParams.IncludeInactive)
+                {
+                    users = users.Where( u => !u.IsLocked);
+                }
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilterEnum.IdpUsers:
@@ -588,13 +600,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     }
                 }
 
-                filteredUserCount = users.Count();
+                var filteredUserCount = users.Count();
                 if (getUsersParams.PageSize > 0)
                 {
                     var pageNumber = getUsersParams.PageNumber > 0 ? getUsersParams.PageNumber - 1 : 0;
                     users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
                 }
-                resultingUsers = users.ToList();
+                var resultingUsers = users.ToList();
 
                 var userListDto = resultingUsers.Select(synUser => new User()
                 {

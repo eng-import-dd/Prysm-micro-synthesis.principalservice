@@ -236,7 +236,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();
 
-            var result = await _controller.GetUsersForAccount(getUsersParams, tenantId);
+            var result = await _controller.GetUsersForAccount(getUsersParams, tenantId, userId);
             Assert.Equal(count, result.TotalCount);
         }
     }

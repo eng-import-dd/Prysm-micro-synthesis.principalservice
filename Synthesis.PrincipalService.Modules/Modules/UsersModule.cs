@@ -321,7 +321,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUsersForAccount(dynamic input)
         {
-            //Todo: check how the default values can be assigned
             GetUsersParams getUsersParams;
             try
             {
@@ -339,18 +338,31 @@ namespace Synthesis.PrincipalService.Modules
                     SortOrder = DataSortOrder.Ascending,
                     IdpFilter = IdpFilterEnum.All
                 };
+                if (!getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.None) && getUsersParams.UserGroupingId.Equals(Guid.Empty))
+                {
+                    return Response.BadRequest("Unable to get GetUsersForAccount", "Missing Parameter Values", "If the userGroupingType is specified, the userGroupingId must be a valid, non-empty guid!");
+                }
+                if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
+                {
+                    //TODO: Revisit to implement and validate project level access
+                    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
+                    var resultCode = ResultCode.Success;
+                    if (resultCode != ResultCode.Success)
+                    {
+                        return Response.BadRequest(resultCode.ToString(), "GetUsersForAccount", resultCode.ToString());
+                    }
+                }
             }
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
-
-            //Todo: Validation for all the parameters
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                return await _userController.GetUsersForAccount(getUsersParams, tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+                return await _userController.GetUsersForAccount(getUsersParams, tenantId, currentUserId);
             }
             catch (NotFoundException)
             {
