@@ -8,7 +8,7 @@ using Nancy.Helpers;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 
-namespace Synthesis.PrincipalService.Utility
+namespace Synthesis.PrincipalService.Utilities
 {
     public class EmailUtility : IEmailUtility
     {
