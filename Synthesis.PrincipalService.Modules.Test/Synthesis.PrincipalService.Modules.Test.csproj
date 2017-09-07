@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\librdkafka.redist.0.11.0\build\net\librdkafka.redist.props" Condition="Exists('..\packages\librdkafka.redist.0.11.0\build\net\librdkafka.redist.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -33,6 +33,25 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="AngleSharp, Version=0.9.9.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
       <HintPath>..\packages\AngleSharp.0.9.9\lib\net45\AngleSharp.dll</HintPath>
@@ -43,6 +62,9 @@
     <Reference Include="Autofac.Extras.DynamicProxy, Version=4.2.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Extras.DynamicProxy.4.2.1\lib\net45\Autofac.Extras.DynamicProxy.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="AutoMapper, Version=6.1.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <HintPath>..\packages\AutoMapper.6.1.1\lib\net45\AutoMapper.dll</HintPath>
     </Reference>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
@@ -135,6 +157,9 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
+    <Reference Include="Nancy.Serialization.JsonNet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nancy.Serialization.JsonNet.2.0.0-clinteastwood\lib\net452\Nancy.Serialization.JsonNet.dll</HintPath>
+    </Reference>
     <Reference Include="Nancy.Testing, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Testing.2.0.0-clinteastwood\lib\net452\Nancy.Testing.dll</HintPath>
     </Reference>
@@ -154,12 +179,8 @@
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus, Version=1.0.0.12, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.0.12-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
-    </Reference>
-    <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Synthesis.EventBus">
+      <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.0.2-beta\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -171,8 +192,8 @@
     <Reference Include="Synthesis.Logging.Log4Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta003\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+    <Reference Include="Synthesis.Nancy.MicroService">
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta008\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.0-release\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -230,10 +251,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="UsersModuleTest.cs" />
+    <Compile Include="Modules\UsersModuleTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
+    <Compile Include="Workflow\UsersControllerTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
+      <Project>{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}</Project>
+      <Name>Synthesis.License.Manager</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Synthesis.PrincipalService.Modules\Synthesis.PrincipalService.Modules.csproj">
       <Project>{DA8A98B1-888A-11E7-8A40-8D3E45800C69}</Project>
       <Name>Synthesis.PrincipalService.Modules</Name>
@@ -248,6 +275,7 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
