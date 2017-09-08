@@ -256,18 +256,23 @@ namespace Synthesis.PrincipalService.Modules
         {
             try
             {
-                string searchValue = input.searchValue;
-                int pageNumber = input.pageNumber;
-                int pageSize = 10;
-                UserGroupingTypeEnum? userGroupingType = input.userGroupingType;
-                Guid? userGroupingId = input.userGroupingId;
-                bool? excludeUsersInGroup = input.excludeUsersInGroup;
-                bool onlyCurrentUser = input.onlyCurrentUser;
-                string sortColumn = input.sortColumn;
-                DataSortOrder sortOrder = DataSortOrder.Ascending;
-                bool includeInactive = input.includeInactive;
+                GetUsersParams getUsersParams;
+                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
+                {
+                    SearchValue = "",
+                    PageNumber = 1,
+                    PageSize = 10,
+                    UserGroupingType = UserGroupingTypeEnum.None,
+                    UserGroupingId = Guid.Empty,
+                    ExcludeUsersInGroup = false,
+                    OnlyCurrentUser = false,
+                    IncludeInactive = false,
+                    SortColumn = "FirstName",
+                    SortOrder = DataSortOrder.Ascending,
+                    IdpFilter = IdpFilterEnum.All
+                };
 
-                if (userGroupingType.HasValue && !userGroupingType.Equals(UserGroupingTypeEnum.None) && (!userGroupingId.HasValue || userGroupingId.Equals(Guid.Empty)))
+                if (!getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.None) && (getUsersParams.UserGroupingId.Equals(Guid.Empty)))
                 {
                     return Response.BadRequest("Unauthorized", "Missing Parameter Values", "GetUsersBasic: If the userGroupingType is specified, the userGroupingId must be a valid, non - empty guid!");
                 }
@@ -275,12 +280,13 @@ namespace Synthesis.PrincipalService.Modules
                 //TODO: check how to do GuestProperties - Yusuf
                 //GuestProperties.ProjectId need to done for if condition here. Cloud Services line #82
                 //if (IsGuest && (userGroupingType != UserGroupingTypeEnum.Project || userGroupingId != GuestProperties.ProjectId))
-                if (IsGuest && userGroupingType != UserGroupingTypeEnum.Project)
+                Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
+                if (isGuest && getUsersParams.UserGroupingType != UserGroupingTypeEnum.Project)
                 {
                     return Response.BadRequest("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
                 }
 
-                if (userGroupingType.HasValue && userGroupingType.Equals(UserGroupingTypeEnum.Project) && userGroupingId.HasValue && !userGroupingId.Equals(Guid.Empty))
+                if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
                 {
                     //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
                     //Checks to see a user has direct read access to a project or has permissions to view all projects within their account.
@@ -291,21 +297,6 @@ namespace Synthesis.PrincipalService.Modules
                         return Response.BadRequest(resultCode.ToString(), "GetUsersBasic", resultCode.ToString());
                     }
                 }
-
-                pageSize = Math.Min(pageSize, 100);
-                var getUsersParams = new GetUsersParams
-                {
-                    SearchValue = searchValue,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    UserGroupingType = userGroupingType ?? UserGroupingTypeEnum.None,
-                    UserGroupingId = userGroupingId ?? Guid.Empty,
-                    ExcludeUsersInGroup = excludeUsersInGroup ?? false,
-                    OnlyCurrentUser = onlyCurrentUser,
-                    IncludeInactive = includeInactive,
-                    SortColumn = sortColumn,
-                    SortOrder = sortOrder
-                };
 
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
 
@@ -431,9 +422,5 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
             }
         }
-
-        //TODO: Move this property to centralized class once JWT is implemented - Yusuf
-        public bool IsGuest { get; set; } = false;
-        
     }
 }
