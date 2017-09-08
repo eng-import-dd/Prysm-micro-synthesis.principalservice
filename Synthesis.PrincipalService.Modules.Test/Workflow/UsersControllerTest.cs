@@ -230,7 +230,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
             const int count = 3;
-             _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .Returns(() =>
                             {
                                 var userList = new List<User>();
@@ -257,7 +257,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
             const int count = 3;
-            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .Returns(() =>
                                     {
                                         var userList = new List<User>();

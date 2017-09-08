@@ -123,7 +123,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             
             var result = await _userRepository.GetItemAsync(id);
-            _eventService.Publish(EventNames.UserRetrieved, result);
 
             if (result == null)
             {

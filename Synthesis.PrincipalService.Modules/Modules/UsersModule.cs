@@ -22,6 +22,7 @@ namespace Synthesis.PrincipalService.Modules
     {
         private const string TenantIdClaim = "TenantId";
         private const string UserIdClaim = "UserId";
+        private const string IsGuestClaim = "IsGuest";
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
@@ -215,7 +216,8 @@ namespace Synthesis.PrincipalService.Modules
             Guid userId = input.Id;
             try
             {
-                if(IsGuest)
+                Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
+                if (isGuest)
                 {
                     return Response.BadRequest("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Unauthorized method call!");
                 }
