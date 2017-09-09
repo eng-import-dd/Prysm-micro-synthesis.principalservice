@@ -51,6 +51,7 @@ namespace Synthesis.PrincipalService.Modules
 
             SetupRoute_GetUserById();
             SetupRoute_GetUsersBasic();
+            SetupRoute_GetUserByIdBasic();
 
             Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
             Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
@@ -165,6 +166,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("GetUsersBasic", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_GetUserByIdBasic()
+        {
+            const string path = "/v1/users/{userId:guid}/basic";
+            Get(path, GetUserByIdBasic, null, "GetUserByIdBasic");
+            Get("/api/" + path, GetUserByIdBasic, null, "GetUserByIdBasic");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Retrieves a user basic details by id";
+
+            _metadataRegistry.SetRouteMetadata("GetUserByIdBasic", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetUserByIdBasic", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -312,6 +339,28 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> GetUserByIdBasic(dynamic input)
+        {
+            Guid userId = input.Id;
+            try
+            {
+                return await _userController.GetUserAsync(userId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetUserByIdBasic threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
         private async Task<object> GetUsersForAccount(dynamic input)
         {
             GetUsersParams getUsersParams;
@@ -371,6 +420,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
+
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;

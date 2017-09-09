@@ -278,6 +278,28 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.GetUsersForAccount(getUsersParams, tenantId, userId);
             Assert.Equal(count, result.TotalCount);
         }
+
+        [Fact]
+        public async Task GetUserByIdBasicReturnsUserIfExists()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                          .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var result = await _controller.GetUserAsync(userId);
+
+            Assert.IsType<UserResponse>(result);
+        }
+
+        [Fact]
+        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(default(User));
+
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+        }
     }
 }
 
