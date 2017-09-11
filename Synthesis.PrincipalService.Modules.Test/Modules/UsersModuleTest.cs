@@ -13,7 +13,6 @@ using Nancy.Bootstrapper;
 using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
-using Newtonsoft.Json;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
@@ -28,7 +27,8 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
-using ClaimTypes = System.Security.Claims.ClaimTypes;
+using Synthesis.Nancy.MicroService;
+using ClaimTypes = System.IdentityModel.Claims.ClaimTypes;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -241,6 +241,38 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                 });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
             _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
+        }
+
+        [Fact]
+        public async Task GetUserByIdBasicReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new UserResponse()));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/api/v1/users/{validUserId}/basic", with =>
+             {
+                 with.HttpRequest();
+                 with.Header("Accept", "application/json");
+                 with.Header("Content-Type", "application/json");
+             });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserByIdBasicReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Throws(new NotFoundException(string.Empty));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"v1/users/{validUserId}/basic", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
     }
 }
