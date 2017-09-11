@@ -8,7 +8,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     public interface IUsersController
     {
-        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId);
+        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<User> GetUserAsync(Guid userId);
 

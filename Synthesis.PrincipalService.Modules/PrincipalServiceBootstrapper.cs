@@ -1,38 +1,44 @@
 using Autofac;
 using Autofac.Core;
+using AutoMapper;
+using FluentValidation;
+using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
+using Nancy.Responses;
+using Nancy.Serialization.JsonNet;
+using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
+using Synthesis.Http;
+using Synthesis.Http.Configuration;
 using Synthesis.KeyManager;
+using Synthesis.License.Manager;
+using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
 using Synthesis.Nancy.MicroService.Authorization;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Serialization;
+using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Configurations;
+using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Owin;
+using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Workflow.Controllers;
+using Synthesis.Tracking;
+using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
 using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
-using AutoMapper;
-using Synthesis.PrincipalService.Validators;
-using Synthesis.PrincipalService.Workflow.Controllers;
-using Synthesis.Tracking;
-using Synthesis.Tracking.ApplicationInsights;
-using FluentValidation;
-using Synthesis.License.Manager;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.PrincipalService.Mapper;
-using Synthesis.Http;
-using Synthesis.Http.Configuration;
-using Synthesis.PrincipalService.Configurations;
-using Synthesis.PrincipalService.Utility;
+using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService
 {
@@ -69,6 +75,18 @@ namespace Synthesis.PrincipalService
             return ApplicationContainer.Resolve<ILogger>();
         }
 
+        /// <inheritdoc />
+        protected override Func<ITypeCatalog, NancyInternalConfiguration> InternalConfiguration
+        {
+            get
+            {
+                return NancyInternalConfiguration.WithOverrides(config =>
+                                                                {
+                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(JsonNetSerializer) };
+                                                                });
+            }
+        }
+
         protected override void ConfigureApplicationContainer(ILifetimeScope container)
         {
             base.ConfigureApplicationContainer(container);
@@ -81,6 +99,17 @@ namespace Synthesis.PrincipalService
                 builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(), c.Resolve<ILogger>()))
                     .As<IStatelessAuthorization>()
                     .SingleInstance();
+
+                // Change the default json serializer to use a different contract resolver
+                builder.Register(c =>
+                                 {
+                                     var serializer = new JsonSerializer()
+                                     {
+                                         ContractResolver = new SynthesisModelContractResolver(),
+                                         Formatting = Formatting.None
+                                     };
+                                     return serializer;
+                                 });
             });
 
             container.Resolve<ILogger>().Info("PrincipalService Service Running....");
@@ -97,7 +126,8 @@ namespace Synthesis.PrincipalService
                     {
                         new Claim(ClaimTypes.Name, "Test User"),
                         new Claim(ClaimTypes.Email, "test@user.com"),
-                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
+                        new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
+                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);
@@ -157,10 +187,10 @@ namespace Synthesis.PrincipalService
                 c =>
                 {
                     var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
-                    return EventBus.Kafka.EventBus.Create(connectionString).CreateEventPublisher();
+                    return EventBus.Kafka.EventBus.Create(connectionString);
                 })
-                .As<IEventPublisher>();
-            builder.Register(c => new EventServiceContext { ServiceName = "Synthesis.PrincipalService" });
+                .As<IEventBus>();
+            builder.Register(c => new EventServiceContext { ServiceName = "Synthesis.PrincipalService", ConsumerGroup = "Synthesis.PrincipalService" });
             builder.RegisterType<EventService>().As<IEventService>().SingleInstance()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "logger",
@@ -200,12 +230,15 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers
-            builder.RegisterType<UsersController>().As<IUsersController>();
+            builder.RegisterType<UsersController>().As<IUsersController>()
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.Name == "deploymentType",
+                                                        (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
+
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
-            
 
             return builder.Build();
         }

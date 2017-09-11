@@ -12,12 +12,12 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utility;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -28,6 +28,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class UsersController : IUsersController
     {
         private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IEventService _eventService;
@@ -35,7 +36,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILicenseApi _licenseApi;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
-
+        private readonly string _deploymentType;
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
 
@@ -49,6 +50,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="licenseApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="mapper"></param>
+        /// <param name="deploymentType"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -56,9 +58,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             ILogger logger,
             ILicenseApi licenseApi,
             IEmailUtility emailUtility,
-            IMapper mapper)
+            IMapper mapper,
+            string deploymentType)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
+            _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
@@ -66,9 +70,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _licenseApi = licenseApi;
             _emailUtility = emailUtility;
             _mapper = mapper;
+            _deploymentType = deploymentType;
         }
 
-        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId)
+        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
             
@@ -88,15 +93,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             user.TenantId = tenantId;
+            user.CreatedBy = createdBy;
+            user.CreatedDate = DateTime.Now;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
-
 
             var result = await CreateUserInDb(user);
 
             await AssignUserLicense(result, model.LicenseType);
 
-            _eventService.Publish(EventNames.UserCreated, result);
+            await _eventService.PublishAsync(EventNames.UserCreated, result);
 
             return _mapper.Map<User, UserResponse>(result);
         }
@@ -182,14 +188,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
-            //TODO Identify if this is an on prem deployment
-            //if (!_cloudSettings.DeploymentTypes.HasFlag(DeploymentTypes.OnPrem))
+            if (string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
             {
                 return false;
             }
 
-            //return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
-            //       tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
+            return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
+                   tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
 
@@ -226,12 +231,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            //TODO Fetch the basic user group for the account instead of creating one here
-            user.Groups = new List<Group> { new Group { Name = BasicUserRoleName } };
-
-            //TODO Populate created by field
-            //user.CreatedBy = 
-            user.CreatedDate = DateTime.Now;
+            user.Groups = new List<Guid>();
+            var basicUserGroupId = await GetBuiltInGroupId(user.TenantId, BasicUserRoleName);
+            if (basicUserGroupId != null)
+            {
+                user.Groups.Add( basicUserGroupId.Value);
+            }
+            
             var result = await _userRepository.CreateItemAsync(user);
             
             return result;
@@ -282,8 +288,20 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
-            //TODO Find org_admins for the tenant
-            return await Task.FromResult(new List<User>());
+            var adminGroupId = await GetBuiltInGroupId(userTenantId, OrgAdminRoleName);
+            if(adminGroupId != null)
+            { 
+                var admins = await _userRepository.GetItemsAsync(u => u.TenantId == userTenantId && u.Groups.Contains(adminGroupId.Value));
+                return admins.ToList();
+            }
+
+            return new List<User>();
+        }
+
+        private async Task<Guid?> GetBuiltInGroupId(Guid userTenantId, string groupName)
+        {
+            var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
+            return groups.FirstOrDefault()?.Id;
         }
 
         private async Task<User> LockUser(Guid userId, bool locked)

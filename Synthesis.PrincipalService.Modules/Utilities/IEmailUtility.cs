@@ -3,7 +3,7 @@ using System.Net.Mail;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Entity;
 
-namespace Synthesis.PrincipalService.Utility
+namespace Synthesis.PrincipalService.Utilities
 {
     public interface IEmailUtility
     {
