@@ -4,7 +4,6 @@ using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
-using Synthesis.PrincipalService.Validators;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.Nancy.MicroService;
@@ -23,7 +22,7 @@ using System.Linq.Expressions;
 using Synthesis.License.Manager.Models;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utility;
+using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -39,12 +38,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUsersController _controller;
+        private readonly IMapper _mapper;
 
         public UsersControllerTest()
         {
-            var mapper = new MapperConfiguration(cfg => {
+            _mapper = new MapperConfiguration(cfg =>
+                                              {
                                                          cfg.AddProfile<UserProfile>();
                                                      }).CreateMapper();
+
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
                                   .Returns(_userRepositoryMock.Object);
@@ -63,13 +65,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                                  .Returns(_validatorMock.Object);
 
+            string deploymentType = "";
             _controller = new UsersController(_repositoryFactoryMock.Object,
                                               _validatorLocatorMock.Object,
                                               _eventServiceMock.Object,
                                               _loggerMock.Object,
                                               _licenseApiMock.Object,
                                               _emailUtilityMock.Object,
-                                              mapper);
+                                              _mapper,
+                                              deploymentType);
         }
 
         /// <summary>
@@ -77,7 +81,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         /// </summary>
         /// <returns>Task object.</returns>
         [Fact]
-        public async Task GetUserByIdAsyncReturnsUserIfExists()
+        public async Task GetUserByIdAsyncReturnsUserIfExistsAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User());
@@ -93,7 +97,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         /// </summary>
         /// <returns>Task object.</returns>
         [Fact]
-        public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExist()
+        public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExistAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(default(User));
@@ -104,7 +108,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
 
         [Fact]
-        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicate()
+        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicateAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .ReturnsAsync(new List<User> { new User() });
@@ -112,13 +116,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync( createUserRequest, tenantId, createdBy));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
             Assert.Equal(ex.Errors.ToList().Count, 2); //Duplidate Email & Duplicate username errors
         }
 
         [Fact]
-        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicate()
+        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicateAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .ReturnsAsync(new List<User> { new User() });
@@ -128,11 +132,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
-            Assert.Equal(ex.Errors.ToList().Count, 3);//Duplidate Email, Duplicate Ldap & Duplicate username errors
+            Assert.Equal(ex.Errors.ToList().Count, 3); //Duplidate Email, Duplicate Ldap & Duplicate username errors
         }
 
         [Fact]
-        public async Task CreatUserAsyncSuccess()
+        public async Task CreatUserAsyncSuccessAsync()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                                .ReturnsAsync((User u) =>
@@ -151,15 +155,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
             _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
+            _eventServiceMock.Verify(m=>m.PublishAsync("UserCreated", It.IsAny<User>()));
 
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
             Assert.Equal(user.CreatedBy, createdBy);
-            Assert.Equal(user.IsLocked , false);
+            Assert.Equal(user.IsLocked, false);
         }
 
         [Fact]
-        public async Task CreatUserAsyncUserIsLockedIfNoLicenseAvailable()
+        public async Task CreatUserAsyncUserIsLockedIfNoLicenseAvailableAsync()
         {
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
@@ -179,7 +184,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 .ReturnsAsync(new List<Group> { new Group { Id = adminGroupId } }.AsEnumerable());
 
             _userRepositoryMock.SetupSequence(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                               .ReturnsAsync(new List<User>())  
+                               .ReturnsAsync(new List<User>())
                                .ReturnsAsync(new List<User>())
                                .ReturnsAsync(new List<User>())
                                .ReturnsAsync(new List<User> { new User() { FirstName = "admin", Email = "admin@test.com" } }.AsEnumerable());
@@ -188,11 +193,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Failed });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
-           
+
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
-            _emailUtilityMock.Verify(m=>m.SendUserLockedMail(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
+            _emailUtilityMock.Verify(m => m.SendUserLockedMail(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
 
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
@@ -201,7 +206,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task CreatUserAsyncUserIsLockedIfLicenseApiThrowsException()
+        public async Task CreatUserAsyncUserIsLockedIfLicenseApiThrowsExceptionAsync()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                            .ReturnsAsync((User u) =>
@@ -224,6 +229,49 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(user.IsLocked, true);
         }
+
+        [Fact]
+        public async Task InOnPremDeploymentUserCreationOnPrysmAccountShouldFailAsync()
+        {
+            string deploymentType = "OnPrem";
+            var controller = new UsersController(_repositoryFactoryMock.Object,
+                                                 _validatorLocatorMock.Object,
+                                                 _eventServiceMock.Object,
+                                                 _loggerMock.Object,
+                                                 _licenseApiMock.Object,
+                                                 _emailUtilityMock.Object,
+                                                 _mapper,
+                                                 deploymentType);
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var tenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3");
+            var createdBy = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
+
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Fact]
+        public async Task InOnPremDeploymentUserCreationOnLocalAccountShouldFailAsync()
+        {
+            string deploymentType = "OnPrem";
+            var controller = new UsersController(_repositoryFactoryMock.Object,
+                                                 _validatorLocatorMock.Object,
+                                                 _eventServiceMock.Object,
+                                                 _loggerMock.Object,
+                                                 _licenseApiMock.Object,
+                                                 _emailUtilityMock.Object,
+                                                 _mapper,
+                                                 deploymentType);
+
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var tenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385");
+            var createdBy = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
+
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+    
 
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()

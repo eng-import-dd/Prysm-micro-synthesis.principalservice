@@ -3,29 +3,32 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Claims;
 using System.Threading;
+using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
 using Nancy.Bootstrapper;
+using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utility;
-using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
-using System.Threading.Tasks;
 using Synthesis.Nancy.MicroService;
+using ClaimTypes = System.IdentityModel.Claims.ClaimTypes;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -116,11 +119,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Dependency(mockLicenseApi.Object);
                 with.Dependency(mapper);
                 with.Module<UsersModule>();
+                with.Serializer<JsonNetSerializer>();
             });
         }
 
         [Fact]
-        public async void RespondWithUnauthorizedNoBearer()
+        public async Task RespondWithUnauthorizedNoBearerAsync()
         {
             var actual = await _browserNoAuth.Get(
                 "/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55",
@@ -134,7 +138,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void RespondWithOk()
+        public async Task RespondWithOkAsync()
         {
             var actual = await _browserAuth.Get(
                 "/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55",
@@ -148,7 +152,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void CreateUserReturnsCreated()
+        public async Task CreateUserReturnsCreatedAsync()
         {
             var actual = await _browserAuth.Post(
                                                  "/v1/users",
@@ -163,7 +167,64 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void CreateUserReadsTenantIdFromUserClaim()
+        public async Task CreateUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new CreateUserRequest());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var invalidBody = "{]";
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(invalidBody);
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateUserReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new CreateUserRequest());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+
+        [Fact]
+        public async Task CreateUserReadsTenantIdFromUserClaimAsync()
         {
             _controllerMock
                 .Setup(uc => uc.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
