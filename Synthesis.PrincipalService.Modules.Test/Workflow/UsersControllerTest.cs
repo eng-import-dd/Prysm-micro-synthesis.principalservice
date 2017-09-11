@@ -20,13 +20,9 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
-using System.Collections.Generic;
-using System.Linq;
 using Synthesis.License.Manager.Models;
 using Synthesis.PrincipalService.Utilities;
-using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utility;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
