@@ -6,7 +6,6 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
-using Synthesis.PrincipalService.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -14,7 +14,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Utility;
+using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
