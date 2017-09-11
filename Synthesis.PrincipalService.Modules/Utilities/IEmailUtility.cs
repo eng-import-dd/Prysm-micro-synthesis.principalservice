@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net.Mail;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Utility
 {
@@ -16,7 +17,7 @@ namespace Synthesis.PrincipalService.Utility
 
         bool SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName);
 
-        bool SendUserInvite(List<InvitedUser>  newInvitedUsers);
+        bool SendUserInvite(List<UserInviteEntity>  newInvitedUsers);
 
         bool SendWelcomeEmail(string email, string firstname);
         bool SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail);

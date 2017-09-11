@@ -189,6 +189,7 @@ namespace Synthesis.PrincipalService
             //Mapper
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<UserInviteProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -200,10 +201,11 @@ namespace Synthesis.PrincipalService
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>();
-
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
+            
 
             return builder.Build();
         }
