@@ -12,7 +12,6 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utility;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
@@ -20,6 +19,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -38,7 +38,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILicenseApi _licenseApi;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
-
+        private readonly string _deploymentType;
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
 
@@ -52,6 +52,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="licenseApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="mapper"></param>
+        /// <param name="deploymentType"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -59,7 +60,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             ILogger logger,
             ILicenseApi licenseApi,
             IEmailUtility emailUtility,
-            IMapper mapper)
+            IMapper mapper,
+            string deploymentType)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
@@ -70,6 +72,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _licenseApi = licenseApi;
             _emailUtility = emailUtility;
             _mapper = mapper;
+            _deploymentType = deploymentType;
         }
 
         public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
@@ -101,7 +104,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             await AssignUserLicense(result, model.LicenseType);
 
-            _eventService.Publish(EventNames.UserCreated, result);
+            await _eventService.PublishAsync(EventNames.UserCreated, result);
 
             return _mapper.Map<User, UserResponse>(result);
         }
@@ -273,14 +276,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
-            //TODO Identify if this is an on prem deployment
-            //if (!_cloudSettings.DeploymentTypes.HasFlag(DeploymentTypes.OnPrem))
+            if (string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
             {
                 return false;
             }
 
-            //return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
-            //       tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
+            return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
+                   tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
         private async Task<User> CreateUserInDb(User user)

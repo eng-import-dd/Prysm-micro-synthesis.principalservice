@@ -43,10 +43,10 @@ namespace Synthesis.PrincipalService
 
         protected override async Task RunAsync(CancellationToken cancellationToken)
         {
-            await ReportHealth(Context, cancellationToken);
+            await ReportHealthAsync(Context, cancellationToken);
         }
 
-        private async Task ReportHealth(ServiceContext context, CancellationToken cancellationToken)
+        private async Task ReportHealthAsync(ServiceContext context, CancellationToken cancellationToken)
         {
             var serviceEndpoint = Context.CodePackageActivationContext.GetEndpoint("ServiceEndpoint");
             var protocol = serviceEndpoint.Protocol.ToString().ToLower();
