@@ -112,6 +112,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<List<UserInviteEntity>, List<UserInviteResponse>>(userInviteServiceResult);
         }
 
+        public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        {
+            List<UserInviteEntity> userInviteServiceResult;
+
+            if (userInviteList.Count > 0)
+            {
+                var userInviteEntity = _mapper.Map<List<UserInviteRequest>, List<UserInviteEntity>>(userInviteList);
+                var userReinvited = _emailUtility.SendUserInvite(userInviteEntity);
+
+                if (userReinvited)
+                    await UpdateUserInviteAsync(userInviteEntity);
+
+                userInviteServiceResult = userInviteEntity;
+            }
+            else
+            {
+                userInviteServiceResult = new List<UserInviteEntity>();
+            }
+            return _mapper.Map < List<UserInviteEntity>, List < UserInviteResponse >> (userInviteServiceResult);
+        }
+
         private async Task<List<UserInviteEntity>> CreateUserInviteInDb(List<UserInviteEntity> userInviteList)
         {
             var invitedEmails = userInviteList.Select(u => u.Email.ToLower());

@@ -39,6 +39,8 @@ namespace Synthesis.PrincipalService.Modules
 
             Post("/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
             Post("api/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
+            Post("/v1/users/resendinvite", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
+            Post("api/v1/users/resendinvite", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
 
             OnError += (ctx, ex) =>
             {
@@ -55,6 +57,13 @@ namespace Synthesis.PrincipalService.Modules
                 Response = "Email Invite",
                 Description = "Email invites for passed user list"
             });
+
+            _metadataRegistry.SetRouteMetadata("ResendEmailInvitation", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "Resend Email Invite",
+                Description = "Resend Email invites for passed user list"
+            });
         }
 
         private async Task<Object> CreateUserInviteListForAccountAsync(dynamic input)
@@ -66,7 +75,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                _logger.Warning("Binding failed while attempting send user invite", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -84,10 +93,42 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to resend an invite due to an error", ex);
+                _logger.Error("Failed to send an invite due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
 
+        }
+
+        private async Task<Object> ResendEmailInvitationAsync(dynamic input)
+        {
+            List<UserInviteRequest> invitedUsersList;
+            try
+            {
+                invitedUsersList = this.Bind<List<UserInviteRequest>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to resend user invites", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                var result = await _userInviteController.ResendEmailInviteAsync(invitedUsersList, tenantId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to resend an invite due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
         }
 
     }
