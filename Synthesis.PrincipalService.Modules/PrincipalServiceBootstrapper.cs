@@ -221,6 +221,10 @@ namespace Synthesis.PrincipalService
                                                      cfg.AddProfile<UserProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
+            var groupMapper = new MapperConfiguration(cfg => {
+                                                     cfg.AddProfile<GroupProfile>();
+                                                 }).CreateMapper();
+            builder.RegisterInstance(groupMapper).As<IMapper>();
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
@@ -228,12 +232,18 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
 
+            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
+
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
                    .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
-
+            builder.RegisterType<GroupsController>().As<IGroupsController>()
+                .WithParameter(new ResolvedParameter(
+                                                     (p, c) => p.Name == "deploymentType",
+                                                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
