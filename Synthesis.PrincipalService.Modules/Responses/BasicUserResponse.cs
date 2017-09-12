@@ -14,17 +14,9 @@ namespace Synthesis.PrincipalService.Responses
 
         public string Email { get; set; }
 
-        public DateTime? LastLogin { get; set; }
+        public string FullName { get { return string.Format("{0} {1}", FirstName, LastName); } }
 
-        public string UserName { get; set; }
-
-        public bool IsLocked { get; set; }
-
-        public int? PasswordAttempts { get; set; }
-
-        public string LdapId { get; set; }
-
-        public bool? IsIdpUser { get; set; }
+        public string Initials { get { return string.Format("{0}{1}", FirstName.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault()); } }
 
     }
 }
