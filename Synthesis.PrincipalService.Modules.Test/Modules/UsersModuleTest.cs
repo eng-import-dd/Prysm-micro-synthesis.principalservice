@@ -152,7 +152,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
         }
         #region Create User Response Test  Cases
-        #region Create user With "Created" Response
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()
         {
@@ -167,8 +166,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
         }
-        #endregion
-        #region Create user With "InternalServerError" Response
         [Fact]
         public async Task CreateUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
@@ -186,8 +183,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
-        #endregion
-        #region Create User With Body "BadRequest" Response
         [Fact]
         public async Task CreateUserReturnsItemWithInvalidBodyReturnsBadRequest()
         {
@@ -206,8 +201,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
         }
-        #endregion
-        #region Create User With ValidationFails "BadRequest" Response
         [Fact]
         public async Task CreateUserReturnsBadRequestIfValidationFails()
         {
@@ -226,8 +219,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
-        #endregion
-        #region Create User ReadsTenantIdFromUserClaim "Created" Response
         [Fact]
         public async Task CreateUserReadsTenantIdFromUserClaimAsync()
         {
@@ -248,9 +239,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
         }
         #endregion
-        #endregion
+
         #region GetUserByIdBasic Response Test Cases
-        #region Get Basic User By Id OK response
         [Fact]
         public async Task GetUserByIdBasicReturnsOk()
         {
@@ -266,8 +256,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
              });
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
-        #endregion
-        #region Get Basic User By Id BadRequest response
         [Fact]
         public async Task GetUserByIdBasicReturnsBadRequest()
         {
@@ -283,8 +271,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-        #endregion
-        #region Get Basic User By Id Unauthorized response
         [Fact]
         public async Task GetUserByIdBasicReturnsUnauthorized()
         {
@@ -300,8 +286,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
-        #endregion
-        #region Get Basic User By Id InternalServerError response
         [Fact]
         public async Task GetUserByIdBasicReturnsInternalServerError()
         {
@@ -317,8 +301,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
-        #endregion
-        #region Get Basic User By Id Not Found response
         [Fact]
         public async Task GetUserByIdBasicReturnsNotFoundIfItemDoesNotExist()
         {
@@ -335,10 +317,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
         #endregion
-        #endregion
 
-        #region GetUsersForAccount
-        #region Get Users For An Account OK Response
+        #region GetUsersForAccount Response Test Cases
         [Fact]
         public async Task GetUsersForAccountReturnsOk()
         {
@@ -353,8 +333,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
-        #endregion
-        #region Get Users For An Account NotFound Response
         [Fact]
         public async Task GetUsersForAccountReturnsNotFound()
         {
@@ -369,8 +347,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-        #endregion
-        #region Get Users For An Account BadRequest Response
         [Fact]
         public async Task GetUsersForAccountReturnsBadRequest()
         {
@@ -385,8 +361,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
-        #endregion
-        #region Get Users For An Account Unauthorized Response
         [Fact]
         public async Task GetUsersForAccountReturnsUnauthorized()
         {
@@ -401,8 +375,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
-        #endregion
-        #region Get Users For An Account InternalServerError Response
         [Fact]
         public async Task GetUsersForAccountReturnsInternalError()
         {
@@ -417,7 +389,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
-        #endregion
         #endregion
     }
 }
