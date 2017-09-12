@@ -308,6 +308,7 @@
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
     <Compile Include="Entity\UserInviteEntity.cs" />
+    <Compile Include="Enums\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />

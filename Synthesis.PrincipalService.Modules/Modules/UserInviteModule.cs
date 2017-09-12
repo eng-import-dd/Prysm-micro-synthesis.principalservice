@@ -38,7 +38,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata();
 
             Post("/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
-            Post("api/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
+            Post("api/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccountLegacy");
 
             OnError += (ctx, ex) =>
             {
@@ -51,7 +51,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             _metadataRegistry.SetRouteMetadata("CreateUserInviteListForAccount", new SynthesisRouteMetadata
             {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Email Invite",
                 Description = "Email invites for passed user list"
             });

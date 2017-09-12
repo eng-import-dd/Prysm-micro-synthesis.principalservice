@@ -14,6 +14,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -70,7 +71,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteEntity>>()));
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).IsUserEmailDomainAllowed, true);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
         }
 
         [Fact]
@@ -82,7 +83,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).IsUserEmailDomainAllowed, false);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserEmailNotDomainAllowed);
         }
 
         [Fact]
@@ -94,7 +95,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).IsUserEmailDomainFree, true);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserEmailDomainFree);
         }
 
         [Fact]
@@ -116,8 +117,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).IsUserEmailDomainAllowed, true);
-            Assert.Equal(userInvite.ElementAt(0).IsDuplicateUserEmail, true);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.DuplicateUserEmail);
         }
     }
 }

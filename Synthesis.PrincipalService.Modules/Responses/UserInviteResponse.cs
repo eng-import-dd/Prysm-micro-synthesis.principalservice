@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Responses
 {
@@ -18,14 +17,7 @@ namespace Synthesis.PrincipalService.Responses
 
         public DateTime? LastInvitedDate { get; set; }
 
-        public bool? IsUserEmailFormatInvalid { get; set; }
-
-        public bool? IsUserEmailDomainFree { get; set; }
-
-        public bool? IsUserEmailDomainAllowed { get; set; }
-
-        public bool? IsDuplicateUserEmail { get; set; }
-
-        public bool? IsDuplicateUserEntry { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public InviteUserStatus Status { get; set; }
     }
 }

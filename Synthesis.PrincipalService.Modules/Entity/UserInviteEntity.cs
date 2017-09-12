@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Entity
 {
@@ -18,14 +15,6 @@ namespace Synthesis.PrincipalService.Entity
 
         public DateTime? LastInvitedDate { get; set; }
 
-        public bool IsUserEmailFormatInvalid { get; set; }
-
-        public bool IsUserEmailDomainFree { get; set; }
-
-        public bool IsUserEmailDomainAllowed { get; set; }
-
-        public bool IsDuplicateUserEmail { get; set; }
-
-        public bool IsDuplicateUserEntry { get; set; }
+        public InviteUserStatus Status { get; set; }
     }
 }
