@@ -10,12 +10,12 @@ namespace Synthesis.PrincipalService.Requests
 {
     public class GetUsersParams: ServerSidePagingParams
     {
-        public UserGroupingTypeEnum UserGroupingType { get; set; }
+        public UserGroupingType UserGroupingType { get; set; }
         public Guid UserGroupingId { get; set; }
         public bool ExcludeUsersInGroup { get; set; }
         public bool OnlyCurrentUser { get; set; }
         public bool IncludeInactive { get; set; }
 
-        public IdpFilterEnum IdpFilter { get; set; }
+        public IdpFilter IdpFilter { get; set; }
     }
 }

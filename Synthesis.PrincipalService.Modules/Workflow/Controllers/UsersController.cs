@@ -130,7 +130,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<PagingMetaData<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
             if (!validationResult.IsValid)
@@ -146,11 +146,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
-            var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<BasicUserResponse>>(userListResult);
+            var basicUserResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(userListResult);
             return basicUserResponse;
         }
 
-        public async Task<PagingMetaData<BasicUserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetadata<BasicUserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
             var userValidationResult = await _createUserRequestValidator.ValidateAsync(currentUserId);
@@ -176,7 +176,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
 
                 var users = GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-                var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<BasicUserResponse>>(users);
+                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -397,7 +397,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public PagingMetaData<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public PagingMetadata<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
@@ -416,7 +416,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 //Todo: Convert all the queries to existing Documentdb supported queries
 
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project))
+                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project))
                 {
                     //ToDo: Get the users in the project-Dependency on project service
                     #region Dependancy on project service
@@ -444,7 +444,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     //}
                     #endregion
                 }
-                else if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Permission))
+                else if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Permission))
                 {
                     
                     if (getUsersParams.ExcludeUsersInGroup)
@@ -473,13 +473,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
                 switch (getUsersParams.IdpFilter)
                 {
-                    case IdpFilterEnum.IdpUsers:
+                    case IdpFilter.IdpUsers:
                         users = users.Where(u => u.IsIdpUser == true);
                         break;
-                    case IdpFilterEnum.LocalUsers:
+                    case IdpFilter.LocalUsers:
                         users = users.Where(u => u.IsIdpUser == false);
                         break;
-                    case IdpFilterEnum.NotSet:
+                    case IdpFilter.NotSet:
                         users = users.Where(u => u.IsIdpUser == null);
                         break;
                 }
@@ -564,7 +564,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
                 }
                 var resultingUsers = users.ToList();
-                var returnMetaData = new PagingMetaData<User>
+                var returnMetaData = new PagingMetadata<User>
                 {
                     TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,

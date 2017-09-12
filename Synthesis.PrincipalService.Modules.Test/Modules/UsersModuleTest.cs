@@ -322,8 +322,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForAccountReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetUsersForAccount(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetaData<BasicUserResponse>()));
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new PagingMetadata<BasicUserResponse>()));
 
             var response = await _browserAuth.Get($"/api/v1/users/", with =>
             {
@@ -336,7 +336,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForAccountReturnsNotFound()
         {
-            _controllerMock.Setup(m => m.GetUsersForAccount(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
             var response = await _browserAuth.Get($"/api/v1/users/", with =>
@@ -350,7 +350,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForAccountReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.GetUsersForAccount(It.IsAny<GetUsersParams>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await _browserAuth.Get($"/api/v1/users/", with =>
@@ -364,8 +364,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForAccountReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetUsersForAccount(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetaData<BasicUserResponse>()));
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new PagingMetadata<BasicUserResponse>()));
 
             var response = await _browserNoAuth.Get($"/api/v1/users/", with =>
             {
@@ -378,7 +378,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForAccountReturnsInternalError()
         {
-            _controllerMock.Setup(m => m.GetUsersForAccount(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
             var response = await _browserAuth.Get($"/api/v1/users/", with =>

@@ -1,9 +1,9 @@
 ﻿namespace Synthesis.PrincipalService.Enums
 {
     /// <summary>
-    /// UserGroupingTypeEnum is used to filter the get users for account call to include or exclude users from a particular grouping
+    /// UserGroupingType is used to filter the get users for account call to include or exclude users from a particular grouping
     /// </summary>
-    public enum UserGroupingTypeEnum
+    public enum UserGroupingType
     {
         /// <summary>
         /// No group

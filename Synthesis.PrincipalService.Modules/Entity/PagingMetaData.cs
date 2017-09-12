@@ -7,22 +7,22 @@ using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Entity
 {
-    public class PagingMetaData<T>
+    public class PagingMetadata<T>
     {
         /// <summary>
         /// The total count of all records the current user can access
         /// </summary>
-        public Int32 TotalCount { get; set; }
+        public int TotalCount { get; set; }
 
         /// <summary>
         /// The number of records that macth the searched criteria
         /// </summary>
-        public Int32 CurrentCount { get; set; }
+        public int CurrentCount { get; set; }
 
         /// <summary>
         /// The page that is requested. The first page is 1.
         /// </summary>
-        public Int32 CurrentPage { get; set; }
+        public int CurrentPage { get; set; }
 
         /// <summary>
         /// The search criteria entered by the user in the search field

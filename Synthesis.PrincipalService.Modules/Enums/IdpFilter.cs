@@ -1,6 +1,6 @@
 ﻿namespace Synthesis.PrincipalService.Enums
 {
-    public enum IdpFilterEnum
+    public enum IdpFilter
     {
         All,
         IdpUsers,
