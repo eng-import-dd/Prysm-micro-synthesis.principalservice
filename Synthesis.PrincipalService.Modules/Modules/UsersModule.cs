@@ -242,7 +242,7 @@ namespace Synthesis.PrincipalService.Modules
                 Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
                 if (isGuest)
                 {
-                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Unauthorized method call!");
+                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Guest user is not authorized to call this route!");
                 }
 
                 //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
