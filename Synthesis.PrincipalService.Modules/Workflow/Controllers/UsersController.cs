@@ -109,13 +109,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        /// <summary>
-        /// Gets the user using asynchronous.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <returns>Task object of User Response.</returns>
-        /// <exception cref="ValidationFailedException"></exception>
-        /// <exception cref="NotFoundException"></exception>
+        /// <inheritdoc />
         public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -136,17 +130,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         }
 
         /// <inheritdoc />
-        /// <summary>
-        /// Gets the users basic data.
-        /// </summary>
-        /// <param name="tenantId">The tenant identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="getUsersParams">The get users parameters.</param>
-        /// <returns>
-        /// Task object of List of User Basic Response.
-        /// </returns>
-        /// <exception cref="T:Synthesis.Nancy.MicroService.NotFoundException"></exception>
-        public async Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetaData<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
             if (!validationResult.IsValid)
@@ -162,11 +146,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
-            var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(userListResult);
+            var basicUserResponse = _mapper.Map<PagingMetaData<User>, PagingMetaData<BasicUserResponse>>(userListResult);
             return basicUserResponse;
         }
 
-        public async Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetaData<BasicUserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
             var userValidationResult = await _createUserRequestValidator.ValidateAsync(currentUserId);
@@ -176,12 +160,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 errors.AddRange(userIdValidationResult.Errors);
             }
-
-            if (!userValidationResult.IsValid)
-            {
-                errors.AddRange(userValidationResult.Errors);
-            }
-
             if (errors.Any())
             {
                 _logger.Warning("Failed to validate the resource id and/or resource while attempting to get a User resource.");
@@ -197,9 +175,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     throw new NotFoundException($"Users for the account could not be found");
                 }
 
-                //TODO: find the current user id
                 var users = GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-                var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<UserResponse>>(users);
+                var userResponse =_mapper.Map<PagingMetaData<User>, PagingMetaData<BasicUserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -433,7 +410,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 IEnumerable<User> users = new List<User>();
                 var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
-                //ToDo: check how to create DB context
                     var userCountTotal = getUsersParams.OnlyCurrentUser
                                              ? 1
                                              : usersInAccounts.Result.ToList().Count;
@@ -442,7 +418,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project))
                 {
-                    //ToDo: to be implemented
+                    //ToDo: Get the users in the project-Dependency on project service
                     #region Dependancy on project service
                     //if (getUsersParams.ExcludeUsersInGroup)
                     //{
@@ -470,32 +446,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
                 else if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Permission))
                 {
-                    //ToDo: to be implemented
-                    #region Dependancy on groups 
-                    //if (getUsersParams.ExcludeUsersInGroup)
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-
-                    //             let usersInPermissionGroup = (from uc2 in sdc.UserAccounts
-                    //                                           join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u.UserID
-                    //                                           join ug2 in sdc.UserGroups on uc2.SynthesisUserID equals ug2.UserId
-                    //                                           where uc2.AccountID == accountId && ug2.GroupId == getUsersParams.UserGroupingId
-                    //                                           select u)
-
-                    //             where
-                    //             uc.AccountID == accountId && !usersInPermissionGroup.Any(x => x.UserID == u.UserID)
-                    //             select u);
-                    //}
-                    //else
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             join ug in sdc.UserGroups on uc.SynthesisUserID equals ug.UserId
-                    //             where uc.AccountID == accountId && ug.GroupId == getUsersParams.UserGroupingId
-                    //             select u);
-                    //}
-                    #endregion
+                    
+                    if (getUsersParams.ExcludeUsersInGroup)
+                    {
+                        users = usersInAccounts.Result.Where(u => !u.Groups.Contains(getUsersParams.UserGroupingId) );
+                        
+                    }
+                    else
+                    {
+                        users = usersInAccounts.Result.Where(u => u.Groups.Contains(getUsersParams.UserGroupingId));
+                    }
+                    
                 }
                 else
                 {
@@ -603,28 +564,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
                 }
                 var resultingUsers = users.ToList();
-
-                var userListDto = resultingUsers.Select(synUser => new User()
-                {
-                    Id = synUser.Id,
-                    Email = synUser.Email,
-                    FirstName = synUser.FirstName,
-                    LastName = synUser.LastName,
-                    UserName = synUser.UserName,
-                    IsLocked = synUser.IsLocked,
-                    LastLogin = synUser.LastLogin,
-                    LdapId = synUser.LdapId,
-                    PasswordAttempts = synUser.PasswordAttempts,
-                    IsIdpUser = synUser.IsIdpUser,
-                    PasswordHash = null,
-                    PasswordSalt = null
-                }).ToList();
-
                 var returnMetaData = new PagingMetaData<User>
                 {
                     TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,
-                    List = userListDto,
+                    List = resultingUsers,
                     SearchFilter = getUsersParams.SearchValue,
                     CurrentPage = getUsersParams.PageNumber
                 };

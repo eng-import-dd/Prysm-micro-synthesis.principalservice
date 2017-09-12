@@ -275,7 +275,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
         {
-            //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
             const int count = 3;
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .Returns(() =>
@@ -287,7 +286,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 }
 
                                 List<User> items = userList;
-                                //IEnumerable<User> items = userList;
                                 return (Task.FromResult(items.AsEnumerable()));
                                 
                             });
@@ -302,7 +300,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task GetUsersForAccountIfExists()
         {
-            //Mock<IRepository<UserBasicResponse>> _repositoryMock1 = new Mock<IRepository<UserBasicResponse>>();
             const int count = 3;
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                            .Returns(() =>
@@ -314,7 +311,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                         }
 
                                         List<User> items = userList;
-                                        //IEnumerable<User> items = userList;
                                         return (Task.FromResult(items.AsEnumerable()));
 
                                     });

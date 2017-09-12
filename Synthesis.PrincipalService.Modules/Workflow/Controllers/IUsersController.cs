@@ -17,15 +17,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task DeleteUserAsync(Guid userId);
 
-        /// <summary>
-        /// Gets the users basic data.
-        /// </summary>
-        /// <param name="tenantId">The tenant identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="getUsersParams">The get users parameters.</param>
-        /// <returns>Task object of List of User Basic Response.</returns>
-        Task<PagingMetaData<UserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
+        Task<PagingMetaData<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
-        Task<PagingMetaData<UserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
+        Task<PagingMetaData<BasicUserResponse>> GetUsersForAccount(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
     }
 }

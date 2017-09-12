@@ -128,7 +128,8 @@ namespace Synthesis.PrincipalService
                         new Claim(ClaimTypes.Email, "test@user.com"),
                         new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
                         new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2"),
-                        new Claim("IsGuest","false") 
+                        new Claim("IsGuest","false"),
+                        new Claim("GuestProjectId","45411E97-03D4-4449-9EFE-552EA42C35C7")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);

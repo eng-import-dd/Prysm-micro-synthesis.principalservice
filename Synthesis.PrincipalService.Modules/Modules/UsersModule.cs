@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Requests;
-
+using Synthesis.Nancy.MicroService.Security;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -23,6 +23,7 @@ namespace Synthesis.PrincipalService.Modules
         private const string TenantIdClaim = "TenantId";
         private const string UserIdClaim = "UserId";
         private const string IsGuestClaim = "IsGuest";
+        private const string GuestProjectIdClaim = "GuestProjectId";
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
@@ -151,7 +152,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             const string path = "/v1/users/basic";
             Get(path, GetUsersBasic, null, "GetUsersBasic");
-            Get("/api/" + path, GetUsersBasic, null, "GetUsersBasic");
+            Get("/api/" + path, GetUsersBasic, null, "GetUsersBasicLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
@@ -165,7 +166,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
 
-            _metadataRegistry.SetRouteMetadata("GetUsersBasic", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetUsersBasicLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -177,7 +178,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             const string path = "/v1/users/{userId:guid}/basic";
             Get(path, GetUserByIdBasic, null, "GetUserByIdBasic");
-            Get("/api/" + path, GetUserByIdBasic, null, "GetUserByIdBasic");
+            Get("/api/" + path, GetUserByIdBasic, null, "GetUserByIdBasicLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
@@ -191,7 +192,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
 
-            _metadataRegistry.SetRouteMetadata("GetUserByIdBasic", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetUserByIdBasicLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -233,11 +234,6 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        /// <summary>
-        /// Gets the user by identifier.
-        /// </summary>
-        /// <param name="input">The input.</param>
-        /// <returns>Task object.</returns>
         private async Task<object> GetUserById(dynamic input)
         {
             Guid userId = input.Id;
@@ -246,15 +242,14 @@ namespace Synthesis.PrincipalService.Modules
                 Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
                 if (isGuest)
                 {
-                    return Response.BadRequest("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Unauthorized method call!");
+                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Unauthorized method call!");
                 }
 
                 //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                //var resultCode = ValidUserLevelAccess(id);
-                var resultCode = ResultCode.Success;
+                var resultCode = ValidUserLevelAccess(userId);
                 if (resultCode != ResultCode.Success)
                 {
-                    return Response.BadRequest("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
+                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
                 }
 
                 return await _userController.GetUserAsync(userId);
@@ -274,11 +269,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        /// <summary>
-        /// Gets the users basic.
-        /// </summary>
-        /// <param name="input">The input.</param>
-        /// <returns>Task object.</returns>
+       
         private async Task<object> GetUsersBasic(dynamic input)
         {
             try
@@ -301,16 +292,19 @@ namespace Synthesis.PrincipalService.Modules
 
                 if (!getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.None) && (getUsersParams.UserGroupingId.Equals(Guid.Empty)))
                 {
-                    return Response.BadRequest("Unauthorized", "Missing Parameter Values", "GetUsersBasic: If the userGroupingType is specified, the userGroupingId must be a valid, non - empty guid!");
+                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: If the userGroupingType is specified, the userGroupingId must be a valid, non - empty guid!");
                 }
-
-                //TODO: check how to do GuestProperties - Yusuf
-                //GuestProperties.ProjectId need to done for if condition here. Cloud Services line #82
-                //if (IsGuest && (userGroupingType != UserGroupingTypeEnum.Project || userGroupingId != GuestProperties.ProjectId))
+                Guid.TryParse(Context.CurrentUser.FindFirst(GuestProjectIdClaim).Value, out var guestProjectId);
                 Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
+                if (isGuest && (getUsersParams.UserGroupingType != UserGroupingTypeEnum.Project || getUsersParams.UserGroupingId != guestProjectId))
+                {
+                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
+                }
+                //if (IsGuest && (userGroupingType != UserGroupingTypeEnum.Project || userGroupingId != GuestProperties.ProjectId))
+                
                 if (isGuest && getUsersParams.UserGroupingType != UserGroupingTypeEnum.Project)
                 {
-                    return Response.BadRequest("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
+                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
                 }
 
                 if (getUsersParams.UserGroupingType.Equals(UserGroupingTypeEnum.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
@@ -326,8 +320,6 @@ namespace Synthesis.PrincipalService.Modules
                 }
 
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-
-                //TODO: UserID parameter need to passed. Check how to get this property. Currently using hardcoded value - Yusuf
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
                 return await _userController.GetUsersBasicAsync(tenantId, userId, getUsersParams);
 
@@ -471,6 +463,22 @@ namespace Synthesis.PrincipalService.Modules
                 _logger.Error("Unhandled exception encountered while attempting to delete a User resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
             }
+        }
+        private ResultCode ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
+        {
+            Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+            if (currentUserId == accessedUserId)
+                return ResultCode.Success;
+
+            if (accessedUserId == Guid.Empty || _userController.GetUserAsync(accessedUserId) == null)
+                return ResultCode.RecordNotFound;
+            //TODO: address the code once permission service dependency is implemented
+            //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
+
+            //if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
+            //    return ResultCode.Success;
+
+            return ResultCode.Unauthorized;
         }
     }
 }
