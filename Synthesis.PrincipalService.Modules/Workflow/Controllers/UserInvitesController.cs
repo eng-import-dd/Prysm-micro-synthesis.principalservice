@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
 
+
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     public class UserInvitesController : IUserInvitesController
@@ -179,6 +180,45 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
             }
 
+        }
+
+        public async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForAccountAsync(Guid tenantId, bool allUsers = false)
+        {
+            return await GetInvitedUsersForAccountFromDb(tenantId, allUsers);
+        }
+
+        private async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForAccountFromDb(Guid tenantId, bool allUsers)
+        {
+            if (tenantId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(tenantId));
+            }
+
+            IEnumerable<UserInvite> existingUserInvites;
+            if (allUsers)
+            {
+                existingUserInvites = await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId);
+            }
+            else
+            {
+                var subQuery = await _userRepository.GetItemsAsync(u=> true);
+                var userEmails = subQuery.Select(s => s.Email);
+                existingUserInvites = await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId && !userEmails.Contains(u.Email));
+            }
+            var invitedUserList = existingUserInvites.Select(userInviteEntity => new UserInviteEntity()
+            {
+                FirstName = userInviteEntity.FirstName,
+                LastName = userInviteEntity.LastName,
+                Email = userInviteEntity.Email,
+                TenantId = userInviteEntity.TenantId,
+                LastInvitedDate = userInviteEntity.LastInvitedDate
+            }).ToList();
+
+            var returnMetaData = new PagingMetadata<UserInviteEntity>
+            {
+                List = invitedUserList
+            };
+            return returnMetaData;
         }
     }
 }

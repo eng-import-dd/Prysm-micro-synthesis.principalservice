@@ -119,5 +119,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.DuplicateUserEmail);
         }
+
+        [Fact]
+        public async Task GetInvitedUsersForAccountIfUsersExists()
+        {
+            const int count = 5;
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+                                      .Returns(() =>
+                                               {
+                                                   var itemsList = new List<UserInvite>();
+                                                   for (var i = 0; i < count; i++)
+                                                   {
+                                                       itemsList.Add(new UserInvite());
+                                                   }
+
+                                                   IEnumerable<UserInvite> items = itemsList;
+                                                   return (Task.FromResult(items));
+                                               });
+
+            var tenantId = Guid.NewGuid();
+            var result = await _controller.GetInvitedUsersForAccountAsync(tenantId, true);
+
+            Assert.Equal(count, result.List.Count);
+
+
+        }
     }
 }

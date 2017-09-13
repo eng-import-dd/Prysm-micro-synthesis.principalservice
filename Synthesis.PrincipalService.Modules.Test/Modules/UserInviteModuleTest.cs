@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using AutoMapper;
 using Moq;
 using Nancy;
@@ -12,14 +13,15 @@ using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -146,6 +148,22 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new List<UserInviteRequest>());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void GetInvitedUsersForAccountReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetInvitedUsersForAccountAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .Returns(Task.FromResult(new PagingMetadata<UserInviteEntity>()));
+
+            var response = await _browserAuth.Get("/v1/usersinvited",
+                                                  with =>
+                                                  {
+                                                      with.HttpsRequest();
+                                                      with.Header("Accept","application/json");
+                                                      with.Header("Content-Type","application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
     }
 }
