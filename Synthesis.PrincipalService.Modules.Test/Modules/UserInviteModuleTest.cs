@@ -19,7 +19,6 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {

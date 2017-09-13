@@ -304,8 +304,7 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
-    <Compile Include="Entity\UserInviteEntity.cs" />
-    <Compile Include="Entity\InviteUserStatus.cs" />
+    <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
@@ -340,7 +339,9 @@
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Entity\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />

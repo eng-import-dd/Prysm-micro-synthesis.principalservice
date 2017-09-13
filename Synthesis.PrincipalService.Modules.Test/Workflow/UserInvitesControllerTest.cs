@@ -13,7 +13,7 @@ using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
-using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -43,7 +43,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
 
             _controller = new UserInvitesController(_repositoryFactoryMock.Object,
-                                              _eventServiceMock.Object,
                                               _loggerMock.Object,
                                               _emailUtilityMock.Object,
                                               mapper);
@@ -62,12 +61,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInviteRequest>();
-            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });;
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>()));
-            _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteEntity>>()));
+            _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteResponse>>()));
 
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
@@ -98,6 +97,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
+        public async Task CreateUserInviteListInvalidEmailFormate()
+        {
+            var createUserInviteRequest = new List<UserInviteRequest>();
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc.com" });
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
+
+            Assert.NotNull(userInvite);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserEmailFormatInvalid);
+        }
+
+        [Fact]
         public async Task CreateUserInviteListDuplicateInvite()
         {
             _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
@@ -110,13 +121,36 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInviteRequest>();
-            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" }); ;
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
 
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.DuplicateUserEmail);
+        }
+
+        [Fact]
+        public async Task CreateUserInviteListDuplicateUserEntry()
+        {
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<UserInvite>()))
+                           .ReturnsAsync(new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
+
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(default(UserInvite));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+
+            var createUserInviteRequest = new List<UserInviteRequest>();
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
+
+
+            Assert.NotNull(userInvite);
+            Assert.Equal(userInvite.ElementAt(1).Status, InviteUserStatus.DuplicateUserEntry);
         }
     }
 }
