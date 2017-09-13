@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Mapper

@@ -3,7 +3,6 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using System;
