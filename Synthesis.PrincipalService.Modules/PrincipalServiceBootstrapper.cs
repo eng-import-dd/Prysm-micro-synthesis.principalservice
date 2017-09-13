@@ -6,7 +6,6 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Nancy.Responses;
-using Nancy.Serialization.JsonNet;
 using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
@@ -82,7 +81,7 @@ namespace Synthesis.PrincipalService
             {
                 return NancyInternalConfiguration.WithOverrides(config =>
                                                                 {
-                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(JsonNetSerializer) };
+                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) };
                                                                 });
             }
         }

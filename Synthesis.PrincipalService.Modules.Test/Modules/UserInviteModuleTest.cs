@@ -6,20 +6,19 @@ using AutoMapper;
 using Moq;
 using Nancy;
 using Nancy.Bootstrapper;
-using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
-using Xunit.Sdk;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -97,7 +96,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Dependency(mockEmailUtility.Object);
                 with.Dependency(mapper);
                 with.Module<UserInviteModule>();
-                with.Serializer<JsonNetSerializer>();
+                with.Serializer<SynthesisJsonSerializer>();
             });
         }
 
