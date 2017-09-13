@@ -45,12 +45,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validUsers = new List<UserInviteEntity>();
             var inValidDomainUsers = new List<UserInviteEntity>();
             var inValidEmailFormatUsers = new List<UserInviteEntity>();
-            //Get Valid and invalid account domain
+            //TODO Get Valid and invalid account domain
             //var validAccountDomains = _collaborationService.GetAccountById(accountId).Payload.AccountDomains;
             //var inValidFreeDomains = await _collaborationService.GetFreeEmailDomainsAsync();
 
-            string[] validAccountDomains = { "dispostable.com", "yopmail.com" };
-            string[] inValidFreeDomains = { "aol.com", "gmail.com", "hotmail.com" } ;
+            List<String> validAccountDomains = new List<string> { "dispostable.com", "yopmail.com" };
+            List<String> inValidFreeDomains = new List<string> { "aol.com", "gmail.com", "hotmail.com" } ;
             
             var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteEntity>>(userInviteList);
 
@@ -58,7 +58,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 if (!EmailValidator.IsValidForBulkUpload(newUserInvite.Email))
                 {
-                    newUserInvite.IsUserEmailFormatInvalid = true;
+                    newUserInvite.Status = InviteUserStatus.UserEmailFormatInvalid;
                     inValidEmailFormatUsers.Add(newUserInvite);
                     continue;
                 }
@@ -71,18 +71,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 if (isFreeEmailDomain)
                 {
-                    newUserInvite.IsUserEmailDomainFree = true;
+                    newUserInvite.Status = InviteUserStatus.UserEmailDomainFree;
                     inValidDomainUsers.Add(newUserInvite);
                 }
                 else if (!isUserEmailDomainAllowed)
                 {
-                    newUserInvite.IsUserEmailDomainAllowed = false;
+                    newUserInvite.Status = InviteUserStatus.UserEmailNotDomainAllowed;
                     inValidDomainUsers.Add(newUserInvite);
                 }
                 else
                 {
-                    newUserInvite.IsUserEmailDomainFree = false;
-                    newUserInvite.IsUserEmailDomainAllowed = true;
                     validUsers.Add(newUserInvite);
                 }
             }
@@ -93,7 +91,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 userInviteServiceResult = await CreateUserInviteInDb(validUsers);
 
                 //Filter any duplicate users
-                validUsers = userInviteServiceResult.FindAll(user => user.IsDuplicateUserEmail == false && user.IsDuplicateUserEntry == false);
+                validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
 
                 //Mail newly created users
                 var usersMailed = _emailUtility.SendUserInvite(validUsers);
@@ -115,16 +113,40 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
             List<UserInviteEntity> userInviteServiceResult;
+            var validUsers = new List<UserInviteEntity>();
+            var InvalidUsers = new List<UserInviteEntity>();
+
 
             if (userInviteList.Count > 0)
             {
                 var userInviteEntity = _mapper.Map<List<UserInviteRequest>, List<UserInviteEntity>>(userInviteList);
-                var userReinvited = _emailUtility.SendUserInvite(userInviteEntity);
+
+                //User is exist in system or not
+                foreach (var userInvite in userInviteEntity)
+                {
+                    var userInviteDb = await _userInviteRepository.GetItemsAsync(u => u.Email == userInvite.Email);
+
+                    if (userInviteDb.Count() == 0)
+                    {
+                        userInvite.Status = InviteUserStatus.UserNotExist;
+                        InvalidUsers.Add(userInvite);
+                    }
+                    else
+                    {
+                        validUsers.Add(userInvite);
+                    }
+                }
+
+                var userReinvited = _emailUtility.SendUserInvite(validUsers);
 
                 if (userReinvited)
-                    await UpdateUserInviteAsync(userInviteEntity);
+                    await UpdateUserInviteAsync(validUsers);
 
-                userInviteServiceResult = userInviteEntity;
+                if (InvalidUsers.Count > 0)
+                {
+                    validUsers.AddRange(InvalidUsers);
+                }
+                userInviteServiceResult = validUsers;
             }
             else
             {
@@ -153,7 +175,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 .Where(u => existingEmails.Contains(u.Email.ToLower()))
                 .ToList();
 
-            duplicateUsers.ForEach(x => x.IsDuplicateUserEmail = true);
+            duplicateUsers.ForEach(x => x.Status = InviteUserStatus.DuplicateUserEmail);
 
             var currentUserInvites = new List<UserInviteEntity>();
 
@@ -165,7 +187,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                         .Exists(u => string.Equals(u.Email, validUser.Email, StringComparison.CurrentCultureIgnoreCase));
                     if (isDuplicateUserEntry)
                     {
-                        validUser.IsDuplicateUserEntry = true;
+                        validUser.Status = InviteUserStatus.DuplicateUserEntry;
                         duplicateUsers.Add(validUser);
                     }
                     else
@@ -186,7 +208,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task UpdateUserInviteAsync(List<UserInviteEntity> userInvite)
         {
-            var invitedEmails = userInvite.Select(u => u.Email).ToList();
             var lastInvitedDates = userInvite.ToDictionary(u => u.Email, u => u.LastInvitedDate);
 
             foreach (var userInviteupdate in userInvite)

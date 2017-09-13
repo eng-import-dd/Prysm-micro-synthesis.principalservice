@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Security.Claims;
 using AutoMapper;
 using Moq;
@@ -11,12 +12,14 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -94,6 +97,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Dependency(mockEmailUtility.Object);
                 with.Dependency(mapper);
                 with.Module<UserInviteModule>();
+                with.Serializer<SynthesisJsonSerializer>();
             });
         }
 
@@ -122,9 +126,74 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                       with.Header("Accept", "application/json");
                                                       with.Header("Content-Type", "application/json");
                                                       with.HttpRequest();
-                                                      with.JsonBody(new UserInviteRequest());
+                                                      with.JsonBody(new List<UserInviteRequest>());
                                                   });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
         }
+
+        [Fact]
+        public async void CreateUserInviteReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new ServerException());
+            var actual = await _browserAuth.Post(
+                                                 "/v1/userinvites",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new List<UserInviteRequest>());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void ResendUserInviteReturnsSuccess()
+        {
+            var actual = await _browserAuth.Post(
+                                                 "/v1/resendinvite",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new List<UserInviteRequest>());
+                                                 });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void ResendUserInviteReturnsRespondWithUnauthorizedNoBearer()
+        {
+            var actual = await _browserNoAuth.Post(
+                                                   "/v1/resendinvite",
+                                                   with =>
+                                                   {
+                                                       with.Header("Accept", "application/json");
+                                                       with.Header("Content-Type", "application/json");
+                                                       with.HttpRequest();
+                                                       with.JsonBody(new List<UserInviteRequest>());
+                                                   });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void ResendUserInviteReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new ServerException());
+            var actual = await _browserAuth.Post(
+                                                 "/v1/resendinvite",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new List<UserInviteRequest>());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+        
     }
 }
