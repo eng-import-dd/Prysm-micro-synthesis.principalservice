@@ -12,9 +12,9 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
 {

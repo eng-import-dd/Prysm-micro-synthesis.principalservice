@@ -309,10 +309,7 @@
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
-    <Compile Include="Enums\DataSortOrder.cs" />
-    <Compile Include="Enums\IdpFilter.cs" />
-    <Compile Include="Enums\ResultCode.cs" />
-    <Compile Include="Enums\UserGroupingType.cs" />
+    <Compile Include="Responses\ResultCode.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />

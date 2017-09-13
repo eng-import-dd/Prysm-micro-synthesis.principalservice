@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.PrincipalService.Requests
 {
@@ -17,5 +16,32 @@ namespace Synthesis.PrincipalService.Requests
         public bool IncludeInactive { get; set; }
 
         public IdpFilter IdpFilter { get; set; }
+    }
+
+    public enum IdpFilter
+    {
+        All,
+        IdpUsers,
+        LocalUsers,
+        NotSet
+    }
+
+    /// <summary>
+    /// UserGroupingType is used to filter the get users for account call to include or exclude users from a particular grouping
+    /// </summary>
+    public enum UserGroupingType
+    {
+        /// <summary>
+        /// No group
+        /// </summary>
+        None,
+        /// <summary>
+        /// Project group
+        /// </summary>
+        Project,
+        /// <summary>
+        /// Permission group
+        /// </summary>
+        Permission
     }
 }
