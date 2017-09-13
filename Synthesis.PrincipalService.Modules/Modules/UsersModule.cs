@@ -50,6 +50,9 @@ namespace Synthesis.PrincipalService.Modules
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
 
+            Post("/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuest");
+            Post("/api/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuestLegacy");
+
             OnError += (ctx, ex) =>
             {
                 _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
@@ -85,6 +88,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Delete User",
                 Description = "Delete a specific User resource."
+            });
+
+            _metadataRegistry.SetRouteMetadata("PromoteUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "Promote User",
+                Description = "Promote a guest to licensed User."
             });
         }
 
@@ -194,6 +204,40 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Unhandled exception encountered while attempting to delete a User resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+        }
+
+        private async Task<object> PromoteGuestAsync(dynamic input)
+        {
+            PromoteGuestRequest promoteRequest;
+            try
+            {
+                promoteRequest = this.Bind<PromoteGuestRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to promote guest", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+
+                var result = await _userController.PromoteGuestUser(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to promote a user due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
     }

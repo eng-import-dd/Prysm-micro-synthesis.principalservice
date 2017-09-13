@@ -185,6 +185,148 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
+        public async Task<PromoteGuestResponse> PromoteGuestUser(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
+        {
+            var userAccountExistsResult = new PromoteGuestResponse
+            {
+                Message = $"User {userId} is not valid for promotion because they are already assigned to an account",
+                UserId = userId,
+                ResultCode = PromoteGuestResultCode.UserAlreadyPromoted
+            };
+
+            if (autoPromote)
+            {
+                var licenseAvailable = await IsLicenseAvailable(tenantId, licenseType);
+
+                if (!licenseAvailable)
+                {
+                    return new PromoteGuestResponse
+                    {
+                        Message = $"Not promoting the user as there are no user licenses available",
+                        ResultCode = PromoteGuestResultCode.Failed
+                    };
+                }
+            }
+
+            var isValidResult = await IsValidPromotionForAccount(userId, tenantId);
+            if (isValidResult != PromoteGuestResultCode.Success)
+            {
+                if (isValidResult == PromoteGuestResultCode.UserAlreadyPromoted)
+                {
+                    return userAccountExistsResult;
+                }
+
+                return new PromoteGuestResponse
+                {
+                    Message = "User is not valid for promotion",
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
+            }
+
+            var assignGuestResult = await AssignGuestUserToTenant(userId, tenantId);
+            if (assignGuestResult != PromoteGuestResultCode.Success)
+            {
+                if (assignGuestResult == PromoteGuestResultCode.UserAlreadyPromoted)
+                {
+                    return userAccountExistsResult;
+                }
+
+                return new PromoteGuestResponse
+                {
+                    Message = $"Failed to assign Guest User {userId} to tenant {tenantId}",
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
+            }
+
+            if (!autoPromote && licenseType != LicenseType.Default)
+            {
+                //Todo Check if the user has CanManageUserLicenses permission
+                //var permissions = CollaborationService.GetGroupPermissionsForUser(UserId).Payload;
+                //if (permissions == null || !permissions.Contains(PermissionEnum.CanManageUserLicenses))
+                //{
+                //    // Don't allow user to pick the license type without the CanManageUserLicenses permission
+                //    licenseType = LicenseType.Default;
+                //}
+            }
+
+            var assignLicenseResult = await _licenseApi.AssignUserLicenseAsync(new UserLicenseDto{
+                AccountId = tenantId.ToString(),
+                UserId = userId.ToString(),
+                LicenseType = licenseType.ToString()
+            });
+
+            if (assignLicenseResult == null || assignLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+            {
+                // If assignign a license fails, then we must disable the user
+                await LockUser(userId, true);
+
+                return new PromoteGuestResponse
+                {
+                    Message = $"Assigned user {userId} to tenant {tenantId}, but failed to assign license",
+                    UserId = userId,
+                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
+                };
+            }
+
+            var userResult = await _userRepository.GetItemAsync(userId);
+            _emailUtility.SendWelcomeEmail(userResult.Email, userResult.FirstName);
+
+            return new PromoteGuestResponse
+            {
+                Message = "",
+                UserId = userId,
+                ResultCode = PromoteGuestResultCode.Success
+            };
+        }
+
+        private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
+        {
+            var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
+            var item = summary.FirstOrDefault(x => string.Equals(x.LicenseName, licenseType.ToString(), StringComparison.CurrentCultureIgnoreCase));
+
+            return item != null && item.TotalAvailable > 0;
+        }
+
+        private async Task<PromoteGuestResultCode> IsValidPromotionForAccount(Guid userId, Guid tenantId)
+        {
+
+            var user = await _userRepository.GetItemAsync(userId);
+            if (user?.Email == null)
+            {
+                return PromoteGuestResultCode.Failed;
+            }
+
+            if (user.TenantId != Guid.Empty)
+            {
+                return PromoteGuestResultCode.UserAlreadyPromoted;
+            }
+
+            var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
+            var hasMatchingAccountDomains = GeTenantEmailDomains(tenantId).Contains(domain);
+
+            return hasMatchingAccountDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
+        }
+
+        public async Task<PromoteGuestResultCode> AssignGuestUserToTenant(Guid userId, Guid tenantId)
+        {
+            var user = await _userRepository.GetItemAsync(userId);
+            if (user.TenantId != Guid.Empty)
+            {
+                return PromoteGuestResultCode.UserAlreadyPromoted;
+            }
+
+            user.TenantId = tenantId;
+            await _userRepository.UpdateItemAsync(user.Id.Value, user);
+
+            return PromoteGuestResultCode.Success;
+        }
+
+
+        private List<string> GeTenantEmailDomains(Guid tenantId)
+        {
+            //Todo Get Account domains from tenant Micro service
+            return new List<string> { "test.com", "prysm.com" };
+        }
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
