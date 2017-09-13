@@ -1,4 +1,4 @@
-﻿namespace Synthesis.PrincipalService.Enums
+﻿namespace Synthesis.PrincipalService.Responses
 {
     public enum InviteUserStatus
     {

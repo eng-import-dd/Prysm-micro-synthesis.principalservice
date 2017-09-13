@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Synthesis.PrincipalService.Enums;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Responses
 {

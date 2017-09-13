@@ -14,7 +14,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -44,7 +44,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
 
             _controller = new UserInvitesController(_repositoryFactoryMock.Object,
-                                              _eventServiceMock.Object,
                                               _loggerMock.Object,
                                               _emailUtilityMock.Object,
                                               mapper);
@@ -68,7 +67,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>()));
-            _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteEntity>>()));
+            _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteResponse>>()));
 
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);

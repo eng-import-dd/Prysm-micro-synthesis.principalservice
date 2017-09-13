@@ -10,9 +10,8 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserInviteProfile()
         {
-            CreateMap<UserInviteRequest, UserInviteEntity>();
-            CreateMap<UserInviteEntity, UserInviteResponse>();
-            CreateMap<UserInviteEntity, UserInvite>();
+            CreateMap<UserInviteRequest, UserInviteResponse>();
+            CreateMap<UserInviteResponse, UserInvite>();
         }
     }
 }

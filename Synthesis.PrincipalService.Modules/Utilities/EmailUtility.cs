@@ -7,7 +7,7 @@ using System.Net.Mail;
 using Nancy.Helpers;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Utilities
 {
@@ -215,7 +215,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendUserInvite(List<UserInviteEntity> newInvitedUsers)
+        public bool SendUserInvite(List<UserInviteResponse> newInvitedUsers)
         {
             if (newInvitedUsers == null)
             {
