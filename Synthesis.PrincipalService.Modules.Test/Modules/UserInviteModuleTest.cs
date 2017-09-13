@@ -193,6 +193,5 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
-        
     }
 }

@@ -108,14 +108,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
-            List<UserInviteEntity> userInviteServiceResult;
-            var validUsers = new List<UserInviteEntity>();
-            var InvalidUsers = new List<UserInviteEntity>();
+            List<UserInviteResponse> userInviteServiceResult;
+            var validUsers = new List<UserInviteResponse>();
+            var invalidUsers = new List<UserInviteResponse>();
 
 
             if (userInviteList.Count > 0)
             {
-                var userInviteEntity = _mapper.Map<List<UserInviteRequest>, List<UserInviteEntity>>(userInviteList);
+                var userInviteEntity = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
 
                 //User is exist in system or not
                 foreach (var userInvite in userInviteEntity)
@@ -125,7 +125,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     if (userInviteDb.Count() == 0)
                     {
                         userInvite.Status = InviteUserStatus.UserNotExist;
-                        InvalidUsers.Add(userInvite);
+                        invalidUsers.Add(userInvite);
                     }
                     else
                     {
@@ -138,17 +138,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (userReinvited)
                     await UpdateUserInviteAsync(validUsers);
 
-                if (InvalidUsers.Count > 0)
+                if (invalidUsers.Count > 0)
                 {
-                    validUsers.AddRange(InvalidUsers);
+                    validUsers.AddRange(invalidUsers);
                 }
                 userInviteServiceResult = validUsers;
             }
             else
             {
-                userInviteServiceResult = new List<UserInviteEntity>();
+                userInviteServiceResult = new List<UserInviteResponse>();
             }
-            return _mapper.Map < List<UserInviteEntity>, List < UserInviteResponse >> (userInviteServiceResult);
+            return userInviteServiceResult;
         }
 
         private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
