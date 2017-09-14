@@ -109,40 +109,32 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
             List<UserInviteResponse> userInviteServiceResult;
-            var validUsers = new List<UserInviteResponse>();
-            var invalidUsers = new List<UserInviteResponse>();
-
 
             if (userInviteList.Count > 0)
             {
-                var userInviteEntity = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
+                var userInvites = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
 
                 //User is exist in system or not
-                foreach (var userInvite in userInviteEntity)
+                foreach (var userInvite in userInvites)
                 {
                     var userInviteDb = await _userInviteRepository.GetItemsAsync(u => u.Email == userInvite.Email);
 
                     if (userInviteDb.Count() == 0)
                     {
                         userInvite.Status = InviteUserStatus.UserNotExist;
-                        invalidUsers.Add(userInvite);
                     }
                     else
                     {
-                        validUsers.Add(userInvite);
+                        userInvite.TenantId = tenantId;
                     }
                 }
 
-                var userReinvited = _emailUtility.SendUserInvite(validUsers);
+                var userReinvited = _emailUtility.SendUserInvite(userInvites.Where(i =>i.Status!= InviteUserStatus.UserNotExist).ToList());
 
                 if (userReinvited)
-                    await UpdateUserInviteAsync(validUsers);
-
-                if (invalidUsers.Count > 0)
-                {
-                    validUsers.AddRange(invalidUsers);
-                }
-                userInviteServiceResult = validUsers;
+                    await UpdateUserInviteAsync(userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList());
+                
+                userInviteServiceResult = userInvites;
             }
             else
             {
