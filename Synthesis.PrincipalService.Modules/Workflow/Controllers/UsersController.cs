@@ -16,6 +16,7 @@ using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
@@ -138,7 +139,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
+            var userListResult = await GetAccountUsersFromDb(tenantId, userId, getUsersParams);
             if(userListResult == null)
             {
                 _logger.Warning($"Users resource could not be found for input data.");
@@ -174,7 +175,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     throw new NotFoundException($"Users for the account could not be found");
                 }
 
-                var users = GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
+                var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
                 var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(users);
                 return userResponse;
             }
@@ -396,7 +397,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public PagingMetadata<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
@@ -407,11 +408,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     throw ex;
                 }
 
-                IEnumerable<User> users = new List<User>();
-                var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
-                    var userCountTotal = getUsersParams.OnlyCurrentUser
-                                             ? 1
-                                             : usersInAccounts.Result.ToList().Count;
+
+                Func<User, bool> criteria = u => u.TenantId == accountId;
+                Func<User, string> orderBy;
+                string token = null;
 
                 //Todo: Convert all the queries to existing Documentdb supported queries
 
@@ -448,121 +448,93 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     
                     if (getUsersParams.ExcludeUsersInGroup)
                     {
-                        users = usersInAccounts.Result.Where(u => !u.Groups.Contains(getUsersParams.UserGroupingId) );
+                        criteria += u => !u.Groups.Contains(getUsersParams.UserGroupingId);
                         
                     }
                     else
                     {
-                        users = usersInAccounts.Result.Where(u => u.Groups.Contains(getUsersParams.UserGroupingId));
+                        criteria += u => u.Groups.Contains(getUsersParams.UserGroupingId);
                     }
-                    
                 }
-                else
-                {
-                    users = usersInAccounts.Result;
-                }
+                
                 if (getUsersParams.OnlyCurrentUser)
                 {
-                    users = users.Where(u => u.Id == currentUserId);
+                    criteria += u => u.Id == currentUserId;
                 }
 
                 if (!getUsersParams.IncludeInactive)
                 {
-                    users = users.Where( u => !u.IsLocked);
+                    criteria += u => !u.IsLocked;
                 }
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilter.IdpUsers:
-                        users = users.Where(u => u.IsIdpUser == true);
+                        criteria += u => u.IsIdpUser == true;
                         break;
                     case IdpFilter.LocalUsers:
-                        users = users.Where(u => u.IsIdpUser == false);
+                        criteria += u => u.IsIdpUser == false;
                         break;
                     case IdpFilter.NotSet:
-                        users = users.Where(u => u.IsIdpUser == null);
+                        criteria += u => u.IsIdpUser == null;
                         break;
                 }
 
                 if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
                 {
-                    users = users.Where
-                        (x =>
+                    criteria += x =>
                              x != null &&
                              (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
                                                                                            getUsersParams.SearchValue.ToLower()) ||
                              x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower())
-                        );
+                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower());
                 }
                 if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
                 {
                     // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                    users = users.OrderBy(x => x.FirstName);
+                    orderBy = u => u.FirstName;
                 }
                 else
                 {
-                    if (getUsersParams.SortOrder == DataSortOrder.Ascending)
-                    {
                         switch (getUsersParams.SortColumn.ToLower())
                         {
                             case "firstname":
-                                users = users.OrderBy(x => x.FirstName);
+                                orderBy = u => u.FirstName;
                                 break;
 
                             case "lastname":
-                                users = users.OrderBy(x => x.LastName);
+                                orderBy = u => u.LastName;
                                 break;
 
                             case "email":
-                                users = users.OrderBy(x => x.Email);
+                                orderBy = u => u.Email;
                                 break;
 
                             case "username":
-                                users = users.OrderBy(x => x.UserName);
+                                orderBy = u => u.UserName;
                                 break;
 
                             default:
                                 // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderBy(x => x.FirstName);
+                                orderBy = u => u.FirstName;
                                 break;
-
-                        }
                     }
-                    else
-                    {
-                        switch (getUsersParams.SortColumn.ToLower())
-                        {
-                            case "firstname":
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-
-                            case "lastname":
-                                users = users.OrderByDescending(x => x.LastName);
-                                break;
-
-                            case "email":
-                                users = users.OrderByDescending(x => x.Email);
-                                break;
-
-                            case "username":
-                                users = users.OrderByDescending(x => x.UserName);
-                                break;
-
-                            default:
-                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-                        }
-                    }
+                    
                 }
-
-                var filteredUserCount = users.Count();
-                if (getUsersParams.PageSize > 0)
+                var queryparams = new OrderedQueryParameters<User, string>()
                 {
-                    var pageNumber = getUsersParams.PageNumber > 0 ? getUsersParams.PageNumber - 1 : 0;
-                    users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
-                }
-                var resultingUsers = users.ToList();
+                    ChunkSize = getUsersParams.PageSize,
+                    Criteria = u => criteria(u),
+                    OrderBy = u => orderBy(u),
+                    SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
+                    ContinuationToken = token
+                };
+                var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+                var usersInAccounts = usersInAccountsResult.Items.ToList();
+                var userCountTotal = getUsersParams.OnlyCurrentUser
+                                         ? 1
+                                         : usersInAccounts.Count;
+                var filteredUserCount = usersInAccounts.Count;
+                var resultingUsers = usersInAccounts.ToList();
                 var returnMetaData = new PagingMetadata<User>
                 {
                     TotalCount = userCountTotal,
