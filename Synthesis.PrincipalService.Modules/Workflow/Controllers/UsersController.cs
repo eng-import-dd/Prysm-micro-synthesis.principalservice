@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nancy;
+using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
 
@@ -185,12 +187,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
         }
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel)
+        public async Task<UserResponse> UpdateUserAsync(Guid userId, CreateUserRequest userModel)
         {
+            var errors = new List<ValidationFailure>();
+            TrimNameOfUser(userModel);
+            if (!await IsUniqueUsername(userModel.Id, userModel.UserName))
+            {
+                errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
+            }
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
             var userValidationResult = await _createUserRequestValidator.ValidateAsync(userModel);
-            var errors = new List<ValidationFailure>();
-
             if (!userIdValidationResult.IsValid)
             {
                 errors.AddRange(userIdValidationResult.Errors);
@@ -206,17 +212,66 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
+            /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
+            //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
+            #region Check Group Permissions for a user and allow him to modify License type
+            //if (!CollaborationService.GetGroupPermissionsForUser(UserId).Payload.Contains(PermissionEnum.CanManageUserLicenses))
+            //{
+            //    ServiceResult<LicenseType?> existingLicenseResult;
 
+            //    try
+            //    {
+            //        existingLicenseResult = await _licenseService.GetUserLicenseType(id, AccountId);
+            //    }
+            //    catch (FailedToConnectToLicenseServiceException failedToConnectException)
+            //    {
+            //        _loggingService.LogError(LogTopic.LICENSING, failedToConnectException, "Failed to update user because a connection could not be made to the license service.");
+            //        return new ServiceResult<SynthesisUserDTO>
+            //        {
+            //            Payload = null,
+            //            Message = "Failed to update user because a connection could not be made to the license service.",
+            //            ResultCode = ResultCode.Failed
+            //        };
+            //    }
+
+            //    if (existingLicenseResult.ResultCode == ResultCode.Success)
+            //    {
+            //        if (userDto.LicenseType != existingLicenseResult.Payload)
+            //        {
+            //            return new ServiceResult<SynthesisUserDTO>
+            //            {
+            //                Payload = null,
+            //                Message = "You are not authorized to manage license types",
+            //                ResultCode = ResultCode.Success
+            //            };
+            //        }
+            //    }
+            //    else
+            //    {
+            //        return new ServiceResult<SynthesisUserDTO>
+            //        {
+            //            Payload = null,
+            //            Message = existingLicenseResult.Message,
+            //            ResultCode = existingLicenseResult.ResultCode
+            //        };
+            //    }
+            //}
+            #endregion
+            
             try
             {
-                return await _userRepository.UpdateItemAsync(userId, userModel);
+                var user = _mapper.Map<CreateUserRequest, User>(userModel);
+                return await UpdateUserInDb(user, userId);
             }
-            catch (DocumentNotFoundException)
+            catch (Exception ex)
             {
+                _logger.LogMessage(LogLevel.Error, "Could not update the user", ex);
                 return null;
             }
+            
         }
 
+        
         public async Task DeleteUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -300,6 +355,38 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
+        private async Task<UserResponse> UpdateUserInDb(User user, Guid id)
+        {
+            var existingUser = await _userRepository.GetItemAsync(id);
+            if (existingUser == null)
+            {
+                throw new NotFoundException($"A User resource could not be found for id {id}");
+            }
+
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.PasswordAttempts = user.PasswordAttempts ?? user.PasswordAttempts;
+            existingUser.IsLocked = user.IsLocked;
+            existingUser.IsIdpUser = user.IsIdpUser;
+
+            if (!string.IsNullOrEmpty(user.PasswordHash) && (user.PasswordHash != existingUser.PasswordHash))
+            {
+                existingUser.PasswordHash = user.PasswordHash;
+                existingUser.PasswordLastChanged = DateTime.Now;
+            }
+            try
+            {
+                await _userRepository.UpdateItemAsync(id, existingUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "User Updation failed", ex);
+                throw;
+            }
+
+            return _mapper.Map<User, UserResponse>(existingUser);
+        }
         private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
             if (user.Id == null || user.Id == Guid.Empty)
@@ -580,5 +667,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw;
             }
         }
+
+        private void TrimNameOfUser(CreateUserRequest user)
+        {
+            if (!string.IsNullOrEmpty(user.FirstName))
+            {
+                user.FirstName = user.FirstName.Trim();
+            }
+            if (!string.IsNullOrEmpty(user.LastName))
+            {
+                user.LastName = user.LastName.Trim();
+            }
+        }
+
     }
 }

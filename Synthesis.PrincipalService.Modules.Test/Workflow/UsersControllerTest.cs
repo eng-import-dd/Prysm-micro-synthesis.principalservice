@@ -343,6 +343,27 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
+
+        [Fact]
+        public async Task UpdateUserSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var user = new CreateUserRequest()
+            {
+               FirstName = "FirstName",
+               LastName = "LastName",
+               Email = "cmalyala@prysm.com",
+               PasswordAttempts = 3,
+               IsLocked = false,
+               IsIdpUser = false
+            };
+
+            var result = await _controller.UpdateUserAsync(userId,user);
+            Assert.IsType<UserResponse>(result);
+        }
     }
 }
 

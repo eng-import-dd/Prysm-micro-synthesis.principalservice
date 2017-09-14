@@ -27,6 +27,10 @@ namespace Synthesis.PrincipalService.Requests
 
         public bool? IsIdpUser { get; set; }
 
+        public bool IsLocked { get; set; }
+
         public LicenseType? LicenseType { get; set; }
+
+        public int? PasswordAttempts { get; set; }
     }
 }
