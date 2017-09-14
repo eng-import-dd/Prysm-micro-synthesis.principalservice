@@ -236,11 +236,7 @@ namespace Synthesis.PrincipalService
                    .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
-            builder.RegisterType<GroupsController>().As<IGroupsController>()
-                .WithParameter(new ResolvedParameter(
-                                                     (p, c) => p.Name == "deploymentType",
-                                                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
-
+            builder.RegisterType<GroupsController>().As<IGroupsController>();
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 
