@@ -105,10 +105,10 @@ namespace Synthesis.PrincipalService.Modules
         /// <returns>Group object.</returns>
         private async Task<object> CreateGroupAsync(dynamic input)
         {
-            CreateGroupRequest newGroup;
+            Group newGroup;
             try
             {
-                newGroup = this.Bind<CreateGroupRequest>();
+                newGroup = this.Bind<Group>();
             }
             catch (Exception ex)
             {

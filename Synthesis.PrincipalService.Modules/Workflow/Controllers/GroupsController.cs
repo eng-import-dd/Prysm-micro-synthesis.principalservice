@@ -28,7 +28,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
-        private readonly IMapper _mapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GroupsController" /> class.
@@ -37,19 +36,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="logger">The logger.</param>
-        /// <param name="mapper">The mapper.</param>
         public GroupsController(IRepositoryFactory repositoryFactory,
                                 IValidatorLocator validatorLocator,
                                 IEventService eventService,
-                                ILogger logger,
-                                IMapper mapper)
+                                ILogger logger)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createGroupValidator = validatorLocator.GetValidator(typeof(CreateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
             _logger = logger;
-            _mapper = mapper;
         }
 
         /// <summary>
@@ -62,8 +58,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// Group object.
         /// </returns>
         /// <exception cref="ValidationFailedException"></exception>
-        /// <inheritdoc />
-        public async Task<Group> CreateGroupAsync(CreateGroupRequest model, Guid tenantId, Guid userId)
+        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid userId)
         {
             var validationResult = await _createGroupValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
@@ -80,12 +75,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             // Replace any fields in the DTO that shouldn't be changed here
             model.TenantId = tenantId;
-            model.UserCount = 0;
-            model.HasProtectedPermissions = false;
 
-            var group = _mapper.Map<CreateGroupRequest, Group>(model);
-
-            var result = await CreateGroupInDb(group);
+            var result = await CreateGroupInDb(model);
 
             _eventService.Publish(EventNames.GroupCreated, result);
             return result;
@@ -101,10 +92,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <exception cref="NotImplementedException"></exception>
         private async Task<Group> CreateGroupInDb(Group group)
         {
-            //if (!await IsUniqueGroup(group.Id, group.Name))
-            //{
-            //    new List<ValidationFailure>().Add(new ValidationFailure(nameof(group.Name), "A group with that Group name already exists."));
-            //}
+            var validationErrors = new List<ValidationFailure>();
+
+            if (!await IsUniqueGroup(group.Id, group.Name))
+            {
+                validationErrors.Add(new ValidationFailure(nameof(group.Name), "A group with that Group name already exists."));
+            }
+
+            if (validationErrors.Any())
+            {
+                throw new ValidationFailedException(validationErrors);
+            }
 
             var result = await _groupRepository.CreateItemAsync(group);
             return result;

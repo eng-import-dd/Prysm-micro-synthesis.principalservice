@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
@@ -8,7 +9,7 @@ namespace Synthesis.PrincipalService.Validators
     /// Create Group Request Validator class
     /// </summary>
     /// <seealso cref="T:FluentValidation.AbstractValidator`1" />
-    public class CreateGroupRequestValidator : AbstractValidator<CreateGroupRequest>
+    public class CreateGroupRequestValidator : AbstractValidator<Group>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CreateGroupRequestValidator"/> class.

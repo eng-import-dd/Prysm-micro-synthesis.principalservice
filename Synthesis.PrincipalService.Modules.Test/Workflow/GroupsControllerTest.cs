@@ -36,11 +36,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         public GroupsControllerTest()
         {
-            var mapper = new MapperConfiguration(cfg =>
-                                                {
-                                                    cfg.AddProfile<GroupProfile>();
-                                                }).CreateMapper();
-
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())
                                   .Returns(_groupRepositoryMock.Object);
@@ -59,8 +54,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _controller = new GroupsController(_repositoryFactoryMock.Object,
                                               _validatorLocatorMock.Object,
                                               _eventServiceMock.Object,
-                                              _loggerMock.Object,
-                                              mapper);
+                                              _loggerMock.Object);
         }
 
         [Fact]
@@ -69,7 +63,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
                                       .Returns(Task.FromResult(new Group()));
 
-            var newGroupRequest = new CreateGroupRequest(); 
+            var newGroupRequest = new Group(); 
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId,userId);

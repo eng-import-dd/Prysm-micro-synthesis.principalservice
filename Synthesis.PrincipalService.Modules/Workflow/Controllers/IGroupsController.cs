@@ -19,6 +19,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <returns>
         /// Group object.
         /// </returns>
-        Task<Group> CreateGroupAsync(CreateGroupRequest group, Guid tenantId, Guid userId);
+        Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId);
     }
 }

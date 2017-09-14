@@ -221,10 +221,6 @@ namespace Synthesis.PrincipalService
                                                      cfg.AddProfile<UserProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
-            var groupMapper = new MapperConfiguration(cfg => {
-                                                     cfg.AddProfile<GroupProfile>();
-                                                 }).CreateMapper();
-            builder.RegisterInstance(groupMapper).As<IMapper>();
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
