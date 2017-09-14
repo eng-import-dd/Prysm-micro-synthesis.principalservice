@@ -41,11 +41,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validUsers = new List<UserInviteResponse>();
             var inValidDomainUsers = new List<UserInviteResponse>();
             var inValidEmailFormatUsers = new List<UserInviteResponse>();
-            //TODO Get Valid and invalid account domain
-            //var validAccountDomains = _collaborationService.GetAccountById(accountId).Payload.AccountDomains;
+            //TODO Get Valid and invalid Tenant domain
+            //var validTenantDomains = _collaborationService.GetTenantById(tenantId).Payload.TenantDomains;
             //var inValidFreeDomains = await _collaborationService.GetFreeEmailDomainsAsync();
 
-            List<String> validAccountDomains = new List<string> { "dispostable.com", "yopmail.com" };
+            List<String> validTenantDomains = new List<string> { "dispostable.com", "yopmail.com" };
             List<String> inValidFreeDomains = new List<string> { "aol.com", "gmail.com", "hotmail.com" } ;
             
             var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
@@ -63,7 +63,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 var isFreeEmailDomain = inValidFreeDomains.Contains(host);
 
-                var isUserEmailDomainAllowed = validAccountDomains.Contains(host);
+                var isUserEmailDomainAllowed = validTenantDomains.Contains(host);
 
                 if (isFreeEmailDomain)
                 {

@@ -37,8 +37,8 @@ namespace Synthesis.PrincipalService.Modules
 
             SetupRouteMetadata();
 
-            Post("/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
-            Post("api/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccountLegacy");
+            Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenant");
+            Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenantLegacy");
 
             OnError += (ctx, ex) =>
             {
@@ -49,7 +49,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRouteMetadata()
         {
-            _metadataRegistry.SetRouteMetadata("CreateUserInviteListForAccount", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("CreateUserInviteListForTenant", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Email Invite",
@@ -57,7 +57,7 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private async Task<Object> CreateUserInviteListForAccountAsync(dynamic input)
+        private async Task<Object> CreateUserInviteListForTenantAsync(dynamic input)
         {
             List<UserInviteRequest> invitedUsersList;
             try
