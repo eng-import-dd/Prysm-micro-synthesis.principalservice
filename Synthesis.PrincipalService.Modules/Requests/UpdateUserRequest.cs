@@ -1,10 +1,10 @@
-﻿using Synthesis.License.Manager.Models;
+﻿using Newtonsoft.Json;
+using Synthesis.License.Manager.Models;
 using System;
-using Newtonsoft.Json;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    public class CreateUserRequest
+    public class UpdateUserRequest
     {
         [JsonProperty("id")]
         public Guid? Id { get; set; }
@@ -16,7 +16,7 @@ namespace Synthesis.PrincipalService.Requests
         public string LastName { get; set; }
 
         public string Email { get; set; }
-        
+
         public string UserName { get; set; }
 
         public string PasswordHash { get; set; }
@@ -27,7 +27,10 @@ namespace Synthesis.PrincipalService.Requests
 
         public bool? IsIdpUser { get; set; }
 
+        public bool IsLocked { get; set; }
+
         public LicenseType? LicenseType { get; set; }
 
+        public int? PasswordAttempts { get; set; }
     }
 }

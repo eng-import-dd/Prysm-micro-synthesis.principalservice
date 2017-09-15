@@ -351,7 +351,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(new User());
 
             var userId = Guid.NewGuid();
-            var user = new CreateUserRequest()
+            var user = new UpdateUserRequest()
             {
                FirstName = "FirstName",
                LastName = "LastName",

@@ -90,8 +90,8 @@ namespace Synthesis.PrincipalService.Modules
         private void SetupRoute_UpdateUser()
         {
             const string path = "/v1/users/{id:guid}";
-            Get(path, UpdateUserAsync, null, "UpdateUser");
-            Get(LegacyBaseRoute + path, UpdateUserAsync, null, "UpdateUserLegacy");
+            Put(path, UpdateUserAsync, null, "UpdateUser");
+            Put(LegacyBaseRoute + path, UpdateUserAsync, null, "UpdateUserLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
             var metadataResponse = "Update User";
@@ -433,15 +433,15 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;
-            CreateUserRequest userModel;
+            UpdateUserRequest userModel;
             try
             {
-                userId = input.id;
-                userModel = this.Bind<CreateUserRequest>();
+                userId = Guid.Parse(input.id);
+                userModel = this.Bind<UpdateUserRequest>();
                 var resultCode = ValidUserLevelAccess(userId, requiredPermission: PermissionEnum.CanEditUser);
                 if (resultCode != ResultCode.Success)
                 {
-                    return Response.BadRequest("BadRequest", resultCode.ToString(), "UpdateUser: Error occured!");
+                    return Response.Unauthorized("Unauthorized", resultCode.ToString(), "UpdateUser: Error occured!");
                 }
             }
             
@@ -453,7 +453,8 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.UpdateUserAsync(userId, userModel);
+               return await _userController.UpdateUserAsync(userId, userModel);
+
             }
             catch (Exception ex)
             {
@@ -495,13 +496,13 @@ namespace Synthesis.PrincipalService.Modules
 
             if (accessedUserId == Guid.Empty || _userController.GetUserAsync(accessedUserId) == null)
                 return ResultCode.RecordNotFound;
-            //TODO: address the code once permission service dependency is implemented
+            //TODO: address the code once group permissions is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
 
             //if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
             //    return ResultCode.Success;
-
-            return ResultCode.Unauthorized;
+            //TODO: For now returning success
+            return ResultCode.Success;
         }
     }
 }

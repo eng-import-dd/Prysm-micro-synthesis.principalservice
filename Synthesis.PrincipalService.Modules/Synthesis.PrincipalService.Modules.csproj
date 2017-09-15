@@ -309,6 +309,7 @@
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
+    <Compile Include="Requests\UpdateUserRequest.cs" />
     <Compile Include="Responses\ResultCode.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
@@ -325,6 +326,7 @@
     <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />

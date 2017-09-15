@@ -34,6 +34,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
+        private readonly IValidator _updateUserRequestValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -187,16 +188,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
         }
-        public async Task<UserResponse> UpdateUserAsync(Guid userId, CreateUserRequest userModel)
+        public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
-            var errors = new List<ValidationFailure>();
+            
             TrimNameOfUser(userModel);
+            var errors=new List<ValidationFailure>();
             if (!await IsUniqueUsername(userModel.Id, userModel.UserName))
             {
                 errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
             }
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var userValidationResult = await _createUserRequestValidator.ValidateAsync(userModel);
+            var userValidationResult = await _updateUserRequestValidator.ValidateAsync(userModel);
             if (!userIdValidationResult.IsValid)
             {
                 errors.AddRange(userIdValidationResult.Errors);
@@ -257,10 +259,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //    }
             //}
             #endregion
-            
+
             try
             {
-                var user = _mapper.Map<CreateUserRequest, User>(userModel);
+                var user = _mapper.Map<UpdateUserRequest, User>(userModel);
                 return await UpdateUserInDb(user, userId);
             }
             catch (Exception ex)
@@ -357,10 +359,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<UserResponse> UpdateUserInDb(User user, Guid id)
         {
+           var errors = new List<ValidationFailure>();
+            
             var existingUser = await _userRepository.GetItemAsync(id);
+           
             if (existingUser == null)
             {
                 throw new NotFoundException($"A User resource could not be found for id {id}");
+            }
+
+            if (string.IsNullOrEmpty(user.UserName))
+            {
+                user.UserName = existingUser.UserName;
+            }
+            if (!await IsUniqueUsername(id, user.UserName))
+            {
+                errors.Add(new ValidationFailure(nameof(user.UserName), "A user with that UserName already exists."));
+            }
+            if (errors.Any())
+            {
+                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
+                throw new ValidationFailedException(errors);
             }
 
             existingUser.FirstName = user.FirstName;
@@ -369,7 +388,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             existingUser.PasswordAttempts = user.PasswordAttempts ?? user.PasswordAttempts;
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
-
             if (!string.IsNullOrEmpty(user.PasswordHash) && (user.PasswordHash != existingUser.PasswordHash))
             {
                 existingUser.PasswordHash = user.PasswordHash;
@@ -668,7 +686,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
-        private void TrimNameOfUser(CreateUserRequest user)
+        private void TrimNameOfUser(UpdateUserRequest user)
         {
             if (!string.IsNullOrEmpty(user.FirstName))
             {
