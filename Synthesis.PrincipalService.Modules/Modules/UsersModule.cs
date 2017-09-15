@@ -90,10 +90,10 @@ namespace Synthesis.PrincipalService.Modules
                 Description = "Delete a specific User resource."
             });
 
-            _metadataRegistry.SetRouteMetadata("PromoteUser", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("PromoteGuest", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Promote User",
+                Response = "Promote Guest",
                 Description = "Promote a guest to licensed User."
             });
         }
@@ -224,11 +224,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
 
-                var result = await _userController.PromoteGuestUser(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
+                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
 
                 return Negotiate
                     .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.Created);
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
             {

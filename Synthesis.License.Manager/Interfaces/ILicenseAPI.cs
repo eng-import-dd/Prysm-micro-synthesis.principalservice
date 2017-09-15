@@ -31,14 +31,14 @@ namespace Synthesis.License.Manager.Interfaces
         Task<List<LicenseType>> GetTenantUserLicenseTypesAsync(Guid tenantId);
 
         /// <summary>
-        /// Lists all licenses with usage information for an tenant.
+        /// Lists all licenses with usage information for a tenant.
         /// </summary>
         /// <param name="tenantId">ID of the tenant.</param>
         /// <returns>LicenseResponse containing license usage information.</returns>
         Task<LicenseResponse> GetTenantLicenseDetailsAsync(Guid tenantId);
 
         /// <summary>
-        /// Lists all licenses with usage information for an tenant.
+        /// Lists all licenses with usage information for a tenant.
         /// </summary>
         /// <param name="tenantId">ID of the tenant.</param>
         /// <returns>LicenseResponse containing license usage information.</returns>

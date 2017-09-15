@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -261,6 +262,139 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
+
+        #region PromoteGuest Tests
+
+        [Fact]
+        public async Task PromoteGuestSuccssTestAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User{ Id = Guid.NewGuid(), Email = "a@test.com"});
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId,LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(),It.IsAny<User>()), Times.Once);
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>()));
+
+
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Success);
+        }
+
+        [Fact]
+        public async Task PromoteGuestAutoShouldFaileIfNoLicenceAvailableAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, true);
+
+            _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Failed);
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFaileIfNoLicenceAvailableAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Exactly(2));
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.FailedToAssignLicense);
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfUserIsAlreadyInTenantAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", TenantId = Guid.NewGuid()});
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfUserEmailIsEmptyAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Failed);
+        }
+
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com", TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+        }
+
+
+        [Fact]
+        public async Task PromoteGuestShoulldThrowValidationErrorIfUserIdEmptyAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.Empty;
+
+            _validatorMock.Setup(m => m.ValidateAsync(userid, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult( new List<ValidationFailure>(){new ValidationFailure("","" )} ));
+
+
+            await Assert.ThrowsAsync<ValidationFailedException>( () => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+        }
+
+        #endregion
     }
 }
-

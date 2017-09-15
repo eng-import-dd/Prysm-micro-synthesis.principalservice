@@ -86,7 +86,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             var user = _mapper.Map<CreateUserRequest, User>(model);
 
-
             if (IsBuiltInOnPremTenant(tenantId))
             {
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
@@ -185,11 +184,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
-        public async Task<PromoteGuestResponse> PromoteGuestUser(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
+        public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
         {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to promote guest.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
             var userAccountExistsResult = new PromoteGuestResponse
             {
-                Message = $"User {userId} is not valid for promotion because they are already assigned to an account",
+                Message = $"User {userId} is not valid for promotion because they are already assigned to a tenant",
                 UserId = userId,
                 ResultCode = PromoteGuestResultCode.UserAlreadyPromoted
             };
@@ -208,7 +214,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
             }
 
-            var isValidResult = await IsValidPromotionForAccount(userId, tenantId);
+            var user = await _userRepository.GetItemAsync(userId);
+
+            var isValidResult = IsValidPromotionForAccount(user, tenantId);
             if (isValidResult != PromoteGuestResultCode.Success)
             {
                 if (isValidResult == PromoteGuestResultCode.UserAlreadyPromoted)
@@ -223,14 +231,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 };
             }
 
-            var assignGuestResult = await AssignGuestUserToTenant(userId, tenantId);
+            var assignGuestResult = await AssignGuestUserToTenant(user, tenantId);
             if (assignGuestResult != PromoteGuestResultCode.Success)
             {
-                if (assignGuestResult == PromoteGuestResultCode.UserAlreadyPromoted)
-                {
-                    return userAccountExistsResult;
-                }
-
                 return new PromoteGuestResponse
                 {
                     Message = $"Failed to assign Guest User {userId} to tenant {tenantId}",
@@ -268,8 +271,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 };
             }
 
-            var userResult = await _userRepository.GetItemAsync(userId);
-            _emailUtility.SendWelcomeEmail(userResult.Email, userResult.FirstName);
+            _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
 
             return new PromoteGuestResponse
             {
@@ -287,10 +289,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return item != null && item.TotalAvailable > 0;
         }
 
-        private async Task<PromoteGuestResultCode> IsValidPromotionForAccount(Guid userId, Guid tenantId)
+        private PromoteGuestResultCode IsValidPromotionForAccount(User user, Guid tenantId)
         {
-
-            var user = await _userRepository.GetItemAsync(userId);
             if (user?.Email == null)
             {
                 return PromoteGuestResultCode.Failed;
@@ -307,14 +307,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return hasMatchingAccountDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
 
-        public async Task<PromoteGuestResultCode> AssignGuestUserToTenant(Guid userId, Guid tenantId)
+        private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
         {
-            var user = await _userRepository.GetItemAsync(userId);
-            if (user.TenantId != Guid.Empty)
-            {
-                return PromoteGuestResultCode.UserAlreadyPromoted;
-            }
-
             user.TenantId = tenantId;
             await _userRepository.UpdateItemAsync(user.Id.Value, user);
 

@@ -9,7 +9,7 @@ using Synthesis.License.Manager.Models;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    class PromoteGuestRequest
+    public class PromoteGuestRequest
     {
         public Guid UserId { get; set; }
 
