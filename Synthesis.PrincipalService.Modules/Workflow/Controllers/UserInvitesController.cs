@@ -129,10 +129,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     }
                 }
 
-                var userReinvited = _emailUtility.SendUserInvite(userInvites.Where(i =>i.Status!= InviteUserStatus.UserNotExist).ToList());
+                var validUsers = userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList();
+
+                var userReinvited = _emailUtility.SendUserInvite(validUsers);
 
                 if (userReinvited)
-                    await UpdateUserInviteAsync(userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList());
+                    await UpdateUserInviteAsync(validUsers);
                 
                 userInviteServiceResult = userInvites;
             }
