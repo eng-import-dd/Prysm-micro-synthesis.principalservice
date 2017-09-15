@@ -21,7 +21,8 @@ namespace Synthesis.PrincipalService.Modules
         private readonly IUsersController _userController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
-
+        private const string DeprecationWarning = "DEPRECATED";
+        private const string LegacyBaseRoute = "/api";
         public UsersModule(
             IMetadataRegistry metadataRegistry,
             IUsersController userController,
@@ -36,7 +37,7 @@ namespace Synthesis.PrincipalService.Modules
 
             // Initialize documentation
             SetupRouteMetadata();
-
+            SetupRouteMetadata_LockUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -88,6 +89,54 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRouteMetadata_LockUser()
+        {
+            const string path = "/v1/users/{userId:guid}/lock";
+            Post(path, LockUserAsync, null, "LockuserAsync");
+            Post(LegacyBaseRoute + path, LockUserAsync, null, "LockuserAsyncLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Lock User";
+            var metadataDescription = "Locks the respective user";
+            _metadataRegistry.SetRouteMetadata("LockUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("LockUserLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private async Task<bool> LockUserAsync(dynamic input)
+        {
+            Guid id = input.userId;
+            User newUser;
+            try
+            {
+                newUser = this.Bind<User>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                return false;
+            }
+            try
+            {
+                var result =await _userController.LockUserAsync(id, newUser.IsLocked);
+                return result;
+            }
+            catch (ValidationFailedException ex)
+            {
+                _logger.Error("Error occured", ex);
+            }
+
+            return false;
+        }
         private async Task<object> CreateUserAsync(dynamic input)
         {
             CreateUserRequest newUser;

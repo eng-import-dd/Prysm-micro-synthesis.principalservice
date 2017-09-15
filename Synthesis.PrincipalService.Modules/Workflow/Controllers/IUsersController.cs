@@ -15,5 +15,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<User> UpdateUserAsync(Guid userId, User model);
 
         Task DeleteUserAsync(Guid userId);
+
+        Task<bool> LockUserAsync(Guid userId, bool isLocked);
     }
 }
