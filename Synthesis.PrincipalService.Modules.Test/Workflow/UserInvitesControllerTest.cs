@@ -185,5 +185,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserNotExist);
         }
+
+        [Fact]
+        public async Task ResendUserInviteWithEmptyList()
+        {
+            var resendUserInviteRequest = new List<UserInviteRequest>();
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
+
+            Assert.Empty(userInvite);
+        }
     }
 }

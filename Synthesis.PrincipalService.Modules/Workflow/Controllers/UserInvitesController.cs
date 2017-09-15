@@ -108,8 +108,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
-            List<UserInviteResponse> userInviteServiceResult;
-
             if (userInviteList.Count > 0)
             {
                 var userInvites = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
@@ -136,13 +134,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (userReinvited)
                     await UpdateUserInviteAsync(validUsers);
                 
-                userInviteServiceResult = userInvites;
+                return userInvites;
             }
-            else
-            {
-                userInviteServiceResult = new List<UserInviteResponse>();
-            }
-            return userInviteServiceResult;
+            return new List<UserInviteResponse>();
         }
 
         private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
