@@ -364,6 +364,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.UpdateUserAsync(userId,user);
             Assert.IsType<UserResponse>(result);
         }
+
+        [Fact]
+        public async Task UpdateUserValidationException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            var result = await _controller.UpdateUserAsync(userId, user);
+            Assert.ThrowsAny<ValidationException>(() => result);
+        }
     }
 }
 

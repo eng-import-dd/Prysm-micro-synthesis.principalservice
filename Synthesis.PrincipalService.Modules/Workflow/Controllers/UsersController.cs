@@ -68,6 +68,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
+            _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
             _logger = logger;
@@ -387,8 +388,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             existingUser.Email = user.Email;
             existingUser.PasswordAttempts = user.PasswordAttempts ?? user.PasswordAttempts;
             existingUser.IsLocked = user.IsLocked;
-            existingUser.IsIdpUser = user.IsIdpUser;
-            if (!string.IsNullOrEmpty(user.PasswordHash) && (user.PasswordHash != existingUser.PasswordHash))
+            existingUser.IsIdpUser = user.IsIdpUser ?? user.IsIdpUser;
+            if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != existingUser.PasswordHash)
             {
                 existingUser.PasswordHash = user.PasswordHash;
                 existingUser.PasswordLastChanged = DateTime.Now;

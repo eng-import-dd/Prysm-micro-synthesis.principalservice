@@ -228,6 +228,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
             // Individual validators must be registered here (as they are below)
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<UpdateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers

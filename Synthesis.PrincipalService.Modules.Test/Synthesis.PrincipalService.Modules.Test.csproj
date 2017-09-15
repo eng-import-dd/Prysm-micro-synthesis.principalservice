@@ -254,6 +254,7 @@
     <Compile Include="Modules\UsersModuleTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidatorTest.cs" />
     <Compile Include="Workflow\UsersControllerTest.cs" />
   </ItemGroup>
   <ItemGroup>
