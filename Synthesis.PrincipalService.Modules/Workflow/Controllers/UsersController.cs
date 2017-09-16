@@ -312,15 +312,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            
             try
             {
                 var user = await _userRepository.GetItemAsync(userId);
                 user.IsLocked = locked;
-                var result = await UpdateLockUserDetailsInDb(userId,locked);
                 //TODO: dependency on group implementation to get all the groupIds
 
                 #region  Get superadmin group ids
+
                 // if trying to lock a user we need to check if it is a superAdmin user
                 //if (isLocked && _collaborationService.IsSuperAdmin(userId))
                 //{
@@ -342,23 +341,21 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
 
                 #endregion
-
+                return await UpdateLockUserDetailsInDb(userId, locked);
             }
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "Couldn't Lock the user: ", ex);
                 throw;
             }
-            return true;
         }
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {
             var validationErrors = new List<ValidationFailure>();
-            User existingUser;
             try
             {
-                existingUser = await _userRepository.GetItemAsync(id);
+                var existingUser = await _userRepository.GetItemAsync(id);
                 if (existingUser == null)
                 {
                     validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));

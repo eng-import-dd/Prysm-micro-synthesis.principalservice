@@ -112,7 +112,7 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private async Task<bool> LockUserAsync(dynamic input)
+        private async Task<object> LockUserAsync(dynamic input)
         {
             Guid id = input.userId;
             User newUser;
@@ -123,19 +123,25 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to create a User resource", ex);
-                return false;
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
             }
             try
             {
                 var result =await _userController.LockUserAsync(id, newUser.IsLocked);
-                return result;
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
             {
                 _logger.Error("Error occured", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
             }
 
-            return false;
         }
         private async Task<object> CreateUserAsync(dynamic input)
         {
