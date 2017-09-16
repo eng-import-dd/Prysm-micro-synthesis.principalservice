@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -260,6 +261,28 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest();
+            idpUserRequest.FirstName = "TestUser";
+            idpUserRequest.LastName = "TestUser";
+            var userResponse = await _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+            Assert.NotNull(userResponse);
+
         }
     }
 }

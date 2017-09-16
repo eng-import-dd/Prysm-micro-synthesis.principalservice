@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
 using System;
+using Newtonsoft.Json.Converters;
 
 namespace Synthesis.PrincipalService.Responses
 {
@@ -42,5 +43,16 @@ namespace Synthesis.PrincipalService.Responses
         public DateTime? CreatedDate { get; set; }
 
         public DateTime? LastAccessDate { get; set; }
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public UserResponseResultCode ResultCode { get; set; }
+
+        public string Message { get; set; }
+    }
+
+    public enum UserResponseResultCode
+    {
+        Failed = 0,
+        Success = 1
     }
 }

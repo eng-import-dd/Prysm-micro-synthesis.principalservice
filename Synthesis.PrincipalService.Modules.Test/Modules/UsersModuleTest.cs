@@ -13,7 +13,6 @@ using Nancy.Bootstrapper;
 using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
-using Newtonsoft.Json;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
@@ -241,6 +240,58 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                 });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
             _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnUser()
+        {
+            var actual = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups",
+                with =>
+                {
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.HttpRequest();
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new UserResponse()));
+
+            const string invalidIdpRequest = "{]";
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(invalidIdpRequest);
+                });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
         }
     }
 }
