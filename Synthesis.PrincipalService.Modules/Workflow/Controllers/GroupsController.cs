@@ -68,7 +68,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             // Do not allow creation of a group with IsLocked set to true unless you are a superadmin
-            if (model.IsLocked && IsSuperAdmin(userId))
+            if (model.IsLocked && !IsSuperAdmin(userId))
             {
                 model.IsLocked = false;
             }
