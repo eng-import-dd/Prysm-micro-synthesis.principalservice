@@ -11,6 +11,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId);
 
-        Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForAccountAsync(Guid tenantId, bool allUsers);
+        Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForTenantAsync(Guid tenantId, bool allUsers);
     }
 }

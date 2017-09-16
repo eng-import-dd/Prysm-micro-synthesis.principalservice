@@ -13,7 +13,6 @@ using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
-using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Entity;
@@ -151,9 +150,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async void GetInvitedUsersForAccountReturnsOk()
+        public async void GetInvitedUsersForTenantReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetInvitedUsersForAccountAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Returns(Task.FromResult(new PagingMetadata<UserInviteEntity>()));
 
             var response = await _browserAuth.Get("/v1/usersinvited",
@@ -165,5 +164,38 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                   });
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
+
+        [Fact]
+        public async void GetInvitedUsersForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .ThrowsAsync(new ServerException());
+            var actual = await _browserAuth.Get("/v1/usersinvited",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetInvitedUsersForTenantReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Get("/v1/usersinvited", 
+                                                    with =>
+                                                    {
+                                                        with.HttpRequest();
+                                                        with.Header("Accept", "application/json");
+                                                        with.Header("Content-Type", "application/json");
+                                                    });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
     }
 }

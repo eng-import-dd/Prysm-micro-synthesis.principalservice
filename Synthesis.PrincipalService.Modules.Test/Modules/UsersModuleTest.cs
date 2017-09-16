@@ -13,7 +13,6 @@ using Nancy.Bootstrapper;
 using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
-using Newtonsoft.Json;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;

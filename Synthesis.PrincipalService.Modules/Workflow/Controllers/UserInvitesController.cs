@@ -11,9 +11,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using FluentValidation;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
-
+using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -25,13 +27,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILogger _logger;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
+        private readonly IValidator _tenantIdValidator;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
             IEventService eventService,
             ILogger logger,
             IEmailUtility emailUtility,
-            IMapper mapper)
+            IMapper mapper,
+            IValidatorLocator validatorLocator)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -39,6 +43,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _logger = logger;
             _emailUtility = emailUtility;
             _mapper = mapper;
+            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
         }
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
@@ -182,16 +187,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         }
 
-        public async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForAccountAsync(Guid tenantId, bool allUsers = false)
+        public async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForTenantAsync(Guid tenantId, bool allUsers = false)
         {
-            return await GetInvitedUsersForAccountFromDb(tenantId, allUsers);
+            return await GetInvitedUsersForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForAccountFromDb(Guid tenantId, bool allUsers)
+        private async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForTenantFromDb(Guid tenantId, bool allUsers)
         {
-            if (tenantId == Guid.Empty)
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
             {
-                throw new ArgumentNullException(nameof(tenantId));
+                _logger.Warning("Failed to validate the resource id.");
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             IEnumerable<UserInvite> existingUserInvites;

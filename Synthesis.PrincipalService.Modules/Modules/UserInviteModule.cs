@@ -37,8 +37,8 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccount");
             Post("api/v1/userinvites", CreateUserInviteListForAccountAsync, null, "CreateUserInviteListForAccountLegacy");
 
-            Get("/v1/usersinvited", GetInvitedUsersForAccountAsync, null, "GetInvitedUsersForAccountAsync");
-            Get("/api/v1/usersinvited", GetInvitedUsersForAccountAsync, null, "GetInvitedUsersForAccountAsync");
+            Get("/v1/usersinvited", GetInvitedUsersForTenantAsync, null, "GetInvitedUsersForTenantAsync");
+            Get("/api/v1/usersinvited", GetInvitedUsersForTenantAsync, null, "GetInvitedUsersForTenantLegacy");
 
 
             OnError += (ctx, ex) =>
@@ -57,11 +57,11 @@ namespace Synthesis.PrincipalService.Modules
                 Description = "Email invites for passed user list"
             });
 
-            _metadataRegistry.SetRouteMetadata("GetInvitedUsersForAccount", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetInvitedUsersForTenant", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Get Invited User",
-                Description = "Gets all invited users for account"
+                Description = "Gets all invited users for Tenant"
             });
         }
 
@@ -97,13 +97,13 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetInvitedUsersForAccountAsync(dynamic input)
+        private async Task<object> GetInvitedUsersForTenantAsync(dynamic input)
         {
             bool allUsers = input.AllUsers;
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userInviteController.GetInvitedUsersForAccountAsync(tenantId, allUsers);
+                var result = await _userInviteController.GetInvitedUsersForTenantAsync(tenantId, allUsers);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -114,7 +114,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to get invited users for account due to an error", ex);
+                _logger.Error("Failed to get invited users for Tenant due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }

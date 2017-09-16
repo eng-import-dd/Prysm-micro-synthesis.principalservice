@@ -13,6 +13,10 @@ using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using FluentValidation;
+using FluentValidation.Results;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Utilities;
@@ -28,6 +32,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUserInvitesController _controller;
+        private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
 
         public UserInvitesControllerTest()
         {
@@ -40,6 +46,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
                                   .Returns(_userRepositoryMock.Object);
 
+            _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult());
+
+            _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
+                                 .Returns(_validatorMock.Object);
+
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
 
@@ -47,7 +59,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               _eventServiceMock.Object,
                                               _loggerMock.Object,
                                               _emailUtilityMock.Object,
-                                              mapper);
+                                              mapper,
+                                              _validatorLocatorMock.Object);
         }
 
         [Fact]
@@ -63,7 +76,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInviteRequest>();
-            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });;
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
@@ -111,7 +124,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInviteRequest>();
-            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" }); ;
+            createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
@@ -121,7 +134,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task GetInvitedUsersForAccountIfUsersExists()
+        public async Task GetInvitedUsersForTenantIfUsersExists()
         {
             const int count = 5;
             _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
@@ -138,7 +151,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                                });
 
             var tenantId = Guid.NewGuid();
-            var result = await _controller.GetInvitedUsersForAccountAsync(tenantId, true);
+            var result = await _controller.GetInvitedUsersForTenantAsync(tenantId, true);
 
             Assert.Equal(count, result.List.Count);
 

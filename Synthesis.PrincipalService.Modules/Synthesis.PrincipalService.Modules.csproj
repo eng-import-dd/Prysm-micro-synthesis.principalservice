@@ -329,6 +329,7 @@
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
