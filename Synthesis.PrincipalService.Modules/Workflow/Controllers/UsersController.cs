@@ -194,7 +194,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             
             TrimNameOfUser(userModel);
             var errors=new List<ValidationFailure>();
-            if (!await IsUniqueUsername(userModel.Id, userModel.UserName))
+            if (!await IsUniqueUsername(userId, userModel.UserName))
             {
                 errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
             }
@@ -363,7 +363,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
            var errors = new List<ValidationFailure>();
             
             var existingUser = await _userRepository.GetItemAsync(id);
-           
             if (existingUser == null)
             {
                 throw new NotFoundException($"A User resource could not be found for id {id}");
