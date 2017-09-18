@@ -151,7 +151,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void ResendUserInviteReturnsSuccess()
         {
             var actual = await _browserAuth.Post(
-                                                 "/v1/resendinvite",
+                                                 "/v1/userinvites/resend",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
@@ -166,7 +166,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void ResendUserInviteReturnsRespondWithUnauthorizedNoBearer()
         {
             var actual = await _browserNoAuth.Post(
-                                                   "/v1/resendinvite",
+                                                   "/v1/userinvites/resend",
                                                    with =>
                                                    {
                                                        with.Header("Accept", "application/json");
@@ -183,7 +183,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new ServerException());
             var actual = await _browserAuth.Post(
-                                                 "/v1/resendinvite",
+                                                 "/v1/userinvites/resend",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");

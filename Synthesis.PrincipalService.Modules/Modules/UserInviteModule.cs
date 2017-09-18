@@ -39,8 +39,8 @@ namespace Synthesis.PrincipalService.Modules
 
             Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForAccount");
             Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForAccountLegacy");
-            Post("/v1/resendinvite", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
-            Post("api/v1/resendinvite", ResendEmailInvitationAsync, null, "ResendEmailInvitationLegacy");
+            Post("/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
+            Post("api/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitationLegacy");
 
             OnError += (ctx, ex) =>
             {
