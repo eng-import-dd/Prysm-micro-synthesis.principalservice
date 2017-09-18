@@ -3,7 +3,6 @@ using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using System;
@@ -23,7 +22,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<UserInvite> _userInviteRepository;
         private readonly IRepository<User> _userRepository;
-        private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
@@ -31,7 +29,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
-            IEventService eventService,
             ILogger logger,
             IEmailUtility emailUtility,
             IMapper mapper,
@@ -39,7 +36,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _userRepository = repositoryFactory.CreateRepository<User>();
-            _eventService = eventService;
             _logger = logger;
             _emailUtility = emailUtility;
             _mapper = mapper;
@@ -48,18 +44,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
-            var userInviteServiceResult =new List<UserInviteEntity>();
-            var validUsers = new List<UserInviteEntity>();
-            var inValidDomainUsers = new List<UserInviteEntity>();
-            var inValidEmailFormatUsers = new List<UserInviteEntity>();
-            //TODO Get Valid and invalid account domain
-            //var validAccountDomains = _collaborationService.GetAccountById(accountId).Payload.AccountDomains;
+            var userInviteServiceResult =new List<UserInviteResponse>();
+            var validUsers = new List<UserInviteResponse>();
+            var inValidDomainUsers = new List<UserInviteResponse>();
+            var inValidEmailFormatUsers = new List<UserInviteResponse>();
+            //TODO Get Valid and invalid Tenant domain
+            //var validTenantDomains = _collaborationService.GetTenantById(tenantId).Payload.TenantDomains;
             //var inValidFreeDomains = await _collaborationService.GetFreeEmailDomainsAsync();
 
-            List<String> validAccountDomains = new List<string> { "dispostable.com", "yopmail.com" };
+            List<String> validTenantDomains = new List<string> { "dispostable.com", "yopmail.com" };
             List<String> inValidFreeDomains = new List<string> { "aol.com", "gmail.com", "hotmail.com" } ;
             
-            var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteEntity>>(userInviteList);
+            var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
 
             foreach (var newUserInvite in userInviteEntityList)
             {
@@ -74,7 +70,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 var isFreeEmailDomain = inValidFreeDomains.Contains(host);
 
-                var isUserEmailDomainAllowed = validAccountDomains.Contains(host);
+                var isUserEmailDomainAllowed = validTenantDomains.Contains(host);
 
                 if (isFreeEmailDomain)
                 {
@@ -114,10 +110,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             if (inValidDomainUsers.Count > 0)
                 userInviteServiceResult.AddRange(inValidDomainUsers);
 
-            return _mapper.Map<List<UserInviteEntity>, List<UserInviteResponse>>(userInviteServiceResult);
+            return userInviteServiceResult;
         }
 
-        private async Task<List<UserInviteEntity>> CreateUserInviteInDb(List<UserInviteEntity> userInviteList)
+        private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
         {
             var invitedEmails = userInviteList.Select(u => u.Email.ToLower());
 
@@ -139,7 +135,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             duplicateUsers.ForEach(x => x.Status = InviteUserStatus.DuplicateUserEmail);
 
-            var currentUserInvites = new List<UserInviteEntity>();
+            var currentUserInvites = new List<UserInviteResponse>();
 
             if (validUsers.Count > 0)
             {
@@ -154,7 +150,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     }
                     else
                     {
-                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInviteEntity, UserInvite>(validUser));
+                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInviteResponse, UserInvite>(validUser));
                         currentUserInvites.Add(validUser);
                     }
                 }
@@ -168,7 +164,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return currentUserInvites;
         }
 
-        private async Task UpdateUserInviteAsync(List<UserInviteEntity> userInvite)
+        private async Task UpdateUserInviteAsync(List<UserInviteResponse> userInvite)
         {
             var lastInvitedDates = userInvite.ToDictionary(u => u.Email, u => u.LastInvitedDate);
 

@@ -346,7 +346,9 @@
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Entity\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />
