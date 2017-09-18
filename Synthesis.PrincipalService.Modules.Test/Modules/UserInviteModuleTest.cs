@@ -153,10 +153,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void GetInvitedUsersForTenantReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Returns(Task.FromResult(new PagingMetadata<UserInviteResponse>()));
 
-            var response = await _browserAuth.Get("/v1/usersinvited",
+            var response = await _browserAuth.Get("/v1/userinvites",
                                                   with =>
                                                   {
                                                       with.HttpsRequest();
@@ -169,9 +169,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void GetInvitedUsersForTenantReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                            .ThrowsAsync(new ServerException());
-            var actual = await _browserAuth.Get("/v1/usersinvited",
+            var actual = await _browserAuth.Get("/v1/userinvites",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
@@ -184,10 +184,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetInvitedUsersForTenantReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Throws(new Exception());
 
-            var response = await _browserAuth.Get("/v1/usersinvited", 
+            var response = await _browserAuth.Get("/v1/userinvites", 
                                                     with =>
                                                     {
                                                         with.HttpRequest();

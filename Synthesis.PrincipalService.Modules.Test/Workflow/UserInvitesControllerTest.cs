@@ -186,7 +186,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                                });
 
             var tenantId = Guid.NewGuid();
-            var result = await _controller.GetInvitedUsersForTenantAsync(tenantId, true);
+            var result = await _controller.GetUsersInvitedForTenantAsync(tenantId, true);
 
             Assert.Equal(count, result.List.Count);
 

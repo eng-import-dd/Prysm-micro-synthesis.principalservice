@@ -182,12 +182,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         }
 
-        public async Task<PagingMetadata<UserInviteResponse>> GetInvitedUsersForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
         {
-            return await GetInvitedUsersForTenantFromDb(tenantId, allUsers);
+            return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<PagingMetadata<UserInviteResponse>> GetInvitedUsersForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)

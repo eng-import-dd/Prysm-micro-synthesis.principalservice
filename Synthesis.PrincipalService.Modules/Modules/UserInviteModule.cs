@@ -37,8 +37,8 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenant");
             Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenantLegacy");
 
-            Get("/v1/usersinvited", GetInvitedUsersForTenantAsync, null, "GetInvitedUsersForTenantAsync");
-            Get("/api/v1/usersinvited", GetInvitedUsersForTenantAsync, null, "GetInvitedUsersForTenantLegacy");
+            Get("/v1/userinvites", GetdUsersInviteForTenantAsync, null, "GetdUsersInviteForTenantAsync");
+            Get("/api/v1/userinvites", GetdUsersInviteForTenantAsync, null, "GetUsersInvitedForTenantLegacy");
 
 
             OnError += (ctx, ex) =>
@@ -97,13 +97,13 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetInvitedUsersForTenantAsync(dynamic input)
+        private async Task<object> GetdUsersInviteForTenantAsync(dynamic input)
         {
             bool allUsers = input.AllUsers;
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userInviteController.GetInvitedUsersForTenantAsync(tenantId, allUsers);
+                var result = await _userInviteController.GetUsersInvitedForTenantAsync(tenantId, allUsers);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
