@@ -122,7 +122,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                  _logger.Warning("Binding failed while attempting to create a User resource", ex);
                 return Negotiate
                     .WithModel(false)
                     .WithStatusCode(HttpStatusCode.BadRequest);
@@ -140,6 +140,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Negotiate
                     .WithModel(false)
                     .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to Lock/Unlock user resource due to an error", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.InternalServerError);
             }
 
         }
