@@ -15,6 +15,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -183,12 +184,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         }
 
-        public async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<PagingMetadata<UserInviteResponse>> GetInvitedUsersForTenantAsync(Guid tenantId, bool allUsers = false)
         {
             return await GetInvitedUsersForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<PagingMetadata<UserInviteEntity>> GetInvitedUsersForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<PagingMetadata<UserInviteResponse>> GetInvitedUsersForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
@@ -208,7 +209,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var userEmails = subQuery.Select(s => s.Email);
                 existingUserInvites = await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId && !userEmails.Contains(u.Email));
             }
-            var invitedUserList = existingUserInvites.Select(userInviteEntity => new UserInviteEntity()
+            var invitedUserList = existingUserInvites.Select(userInviteEntity => new UserInviteResponse()
             {
                 FirstName = userInviteEntity.FirstName,
                 LastName = userInviteEntity.LastName,
@@ -217,7 +218,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 LastInvitedDate = userInviteEntity.LastInvitedDate
             }).ToList();
 
-            var returnMetaData = new PagingMetadata<UserInviteEntity>
+            var returnMetaData = new PagingMetadata<UserInviteResponse>
             {
                 List = invitedUserList
             };

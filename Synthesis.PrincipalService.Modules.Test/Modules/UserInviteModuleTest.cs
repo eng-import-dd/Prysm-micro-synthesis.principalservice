@@ -18,6 +18,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
@@ -153,7 +154,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void GetInvitedUsersForTenantReturnsOk()
         {
             _controllerMock.Setup(m => m.GetInvitedUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
-                           .Returns(Task.FromResult(new PagingMetadata<UserInviteEntity>()));
+                           .Returns(Task.FromResult(new PagingMetadata<UserInviteResponse>()));
 
             var response = await _browserAuth.Get("/v1/usersinvited",
                                                   with =>
