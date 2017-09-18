@@ -314,10 +314,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             try
             {
-                var user = await _userRepository.GetItemAsync(userId);
-                user.IsLocked = locked;
                 //TODO: dependency on group implementation to get all the groupIds
-
                 #region  Get superadmin group ids
 
                 // if trying to lock a user we need to check if it is a superAdmin user

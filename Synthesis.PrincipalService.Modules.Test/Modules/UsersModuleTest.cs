@@ -243,11 +243,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
         }
 
+        #region Lock User Response Test Cases
         [Fact]
         public async Task LockUserReturnsSuccess()
         {
             _controllerMock
-                .Setup(uc => uc.LockUserAsync( It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Setup(uc => uc.LockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
             var actual = await _browserAuth.Post(
@@ -257,7 +258,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.Header("Accept", "application/json");
                                                      with.Header("Content-Type", "application/json");
                                                      with.HttpRequest();
-                                                     with.JsonBody(new User(){IsLocked = true});
+                                                     with.JsonBody(new User() { IsLocked = true });
                                                  });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
             //_controllerMock.Verify(m => m.LockUserAsync(Guid.Parse("f629f87c-366d-4790-ac34-964e3558bdcd"),true));
@@ -317,6 +318,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new User());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
-        }
+        } 
+        #endregion
     }
 }
