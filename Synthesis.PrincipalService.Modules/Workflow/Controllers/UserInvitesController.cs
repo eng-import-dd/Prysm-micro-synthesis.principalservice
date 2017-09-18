@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Synthesis.DocumentStorage;
-using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
@@ -12,7 +11,6 @@ using System.Net.Mail;
 using System.Threading.Tasks;
 using FluentValidation;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.PrincipalService.Entity;
@@ -198,29 +196,20 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            IEnumerable<UserInvite> existingUserInvites;
-            if (allUsers)
+            var existingUserInvites = (await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId)).ToList();
+
+            if (!allUsers)
             {
-                existingUserInvites = await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId);
+                //TODO: What if invitedEmails are more than 200? - Look into working on bunch for 200 each - Yusuf
+                var invitedEmails = existingUserInvites.Select(i => i.Email);
+                var tenantUsers = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId && invitedEmails.Contains(u.Email));
+                var tenantUserEmails = tenantUsers.Select(s => s.Email);
+                existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
             }
-            else
-            {
-                var subQuery = await _userRepository.GetItemsAsync(u=> true);
-                var userEmails = subQuery.Select(s => s.Email);
-                existingUserInvites = await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId && !userEmails.Contains(u.Email));
-            }
-            var invitedUserList = existingUserInvites.Select(userInviteEntity => new UserInviteResponse()
-            {
-                FirstName = userInviteEntity.FirstName,
-                LastName = userInviteEntity.LastName,
-                Email = userInviteEntity.Email,
-                TenantId = userInviteEntity.TenantId,
-                LastInvitedDate = userInviteEntity.LastInvitedDate
-            }).ToList();
 
             var returnMetaData = new PagingMetadata<UserInviteResponse>
             {
-                List = invitedUserList
+                List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
             };
             return returnMetaData;
         }
