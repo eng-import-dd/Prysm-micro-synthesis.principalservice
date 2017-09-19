@@ -157,9 +157,6 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Nancy.Serialization.JsonNet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.JsonNet.2.0.0-clinteastwood\lib\net452\Nancy.Serialization.JsonNet.dll</HintPath>
-    </Reference>
     <Reference Include="Nancy.Testing, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Testing.2.0.0-clinteastwood\lib\net452\Nancy.Testing.dll</HintPath>
     </Reference>
@@ -251,9 +248,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Modules\UserInviteModuleTest.cs" />
     <Compile Include="Modules\UsersModuleTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
+    <Compile Include="Workflow\UserInvitesControllerTest.cs" />
     <Compile Include="Workflow\UsersControllerTest.cs" />
   </ItemGroup>
   <ItemGroup>
