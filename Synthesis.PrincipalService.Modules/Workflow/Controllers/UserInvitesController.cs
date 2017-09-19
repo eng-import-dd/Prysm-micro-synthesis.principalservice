@@ -106,6 +106,39 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return userInviteServiceResult;
         }
 
+        public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        {
+            if (userInviteList.Count > 0)
+            {
+                var userInvites = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
+
+                //User is exist in system or not
+                foreach (var userInvite in userInvites)
+                {
+                    var userInviteDb = await _userInviteRepository.GetItemsAsync(u => u.Email == userInvite.Email);
+
+                    if (userInviteDb.Count() == 0)
+                    {
+                        userInvite.Status = InviteUserStatus.UserNotExist;
+                    }
+                    else
+                    {
+                        userInvite.TenantId = tenantId;
+                    }
+                }
+
+                var validUsers = userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList();
+
+                var userReinvited = _emailUtility.SendUserInvite(validUsers);
+
+                if (userReinvited)
+                    await UpdateUserInviteAsync(validUsers);
+                
+                return userInvites;
+            }
+            return new List<UserInviteResponse>();
+        }
+
         private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
         {
             var invitedEmails = userInviteList.Select(u => u.Email.ToLower());

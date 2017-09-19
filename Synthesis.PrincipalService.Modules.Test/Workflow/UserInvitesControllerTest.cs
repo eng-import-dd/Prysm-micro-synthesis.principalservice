@@ -152,5 +152,48 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.NotNull(userInvite);
             Assert.Equal(userInvite.ElementAt(1).Status, InviteUserStatus.DuplicateUserEntry);
         }
+
+        [Fact]
+        public async Task ResendUserInviteListSuccess()
+        {
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+                           .ReturnsAsync(new List<UserInvite> { new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } });
+
+            _emailUtilityMock.Setup(m => m.SendUserInvite(It.IsAny<List<UserInviteResponse>>()))
+                             .Returns(true);
+
+            var resendUserInviteRequest = new List<UserInviteRequest>();
+            resendUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
+
+            _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<UserInvite>()));
+            _emailUtilityMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserInviteResponse>>()));
+
+            Assert.NotNull(userInvite);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
+        }
+
+        [Fact]
+        public async Task ResendUserInviteListReturnsUserNotExists()
+        {
+            var resendUserInviteRequest = new List<UserInviteRequest>();
+            resendUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
+
+            Assert.NotNull(userInvite);
+            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserNotExist);
+        }
+
+        [Fact]
+        public async Task ResendUserInviteWithEmptyList()
+        {
+            var resendUserInviteRequest = new List<UserInviteRequest>();
+            var tenantId = Guid.NewGuid();
+            var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
+
+            Assert.Empty(userInvite);
+        }
     }
 }

@@ -7,6 +7,7 @@
         UserEmailDomainFree,
         UserEmailNotDomainAllowed,
         DuplicateUserEmail,
-        DuplicateUserEntry
+        DuplicateUserEntry,
+        UserNotExist
     }
 }
