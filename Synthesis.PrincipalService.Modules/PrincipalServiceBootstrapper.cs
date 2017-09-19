@@ -6,7 +6,6 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Nancy.Responses;
-using Nancy.Serialization.JsonNet;
 using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
@@ -82,7 +81,7 @@ namespace Synthesis.PrincipalService
             {
                 return NancyInternalConfiguration.WithOverrides(config =>
                                                                 {
-                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(JsonNetSerializer) };
+                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) };
                                                                 });
             }
         }
@@ -219,6 +218,7 @@ namespace Synthesis.PrincipalService
             //Mapper
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<UserInviteProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -233,6 +233,7 @@ namespace Synthesis.PrincipalService
                    .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
 
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
