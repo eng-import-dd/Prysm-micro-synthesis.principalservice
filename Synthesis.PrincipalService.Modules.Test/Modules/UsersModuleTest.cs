@@ -443,12 +443,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task UpdateUserReturnsBadrequest()
+        public async Task UpdateUserReturnsBadRequestDueToBindingException()
         {
-            _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(),It.IsAny<UpdateUserRequest>()))
-                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            
             var actual = await _browserAuth.Put(
-                                                "/v1/users/yoyo",
+                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -457,6 +456,24 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.JsonBody("[}");
                                                 });
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task UpdateUserReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
+                           .Throws(new Exception());
+            var actual = await _browserAuth.Put(
+                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new UpdateUserRequest());
+                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
 
         }
         #endregion

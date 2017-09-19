@@ -370,11 +370,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                                .ReturnsAsync(new User());
-
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest();
-            var result = await _controller.UpdateUserAsync(userId, user);
-            Assert.ThrowsAny<ValidationException>(() => result);
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
+            Assert.Equal(ex.Errors.ToList().Count,3);
+        }
+
+        [Fact]
+        public async Task UpdateUserNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
     }
 }

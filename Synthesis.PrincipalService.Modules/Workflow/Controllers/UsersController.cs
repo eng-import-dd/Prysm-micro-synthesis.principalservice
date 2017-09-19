@@ -269,7 +269,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "Could not update the user", ex);
-                return null;
+                throw;
             }
             
         }
