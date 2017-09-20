@@ -8,10 +8,7 @@ namespace Synthesis.PrincipalService.Entity
 {
     public class PagingMetadata<T>
     {
-        /// <summary>
-        /// The total count of all records the current user can access
-        /// </summary>
-        public int TotalCount { get; set; }
+        public string ContinuationToken { get; set; }
 
         /// <summary>
         /// The number of records that macth the searched criteria

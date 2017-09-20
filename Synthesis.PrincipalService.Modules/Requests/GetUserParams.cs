@@ -9,9 +9,6 @@ namespace Synthesis.PrincipalService.Requests
 {
     public class GetUsersParams: ServerSidePagingParams
     {
-        public UserGroupingType UserGroupingType { get; set; }
-        public Guid UserGroupingId { get; set; }
-        public bool ExcludeUsersInGroup { get; set; }
         public bool OnlyCurrentUser { get; set; }
         public bool IncludeInactive { get; set; }
 
@@ -24,24 +21,5 @@ namespace Synthesis.PrincipalService.Requests
         IdpUsers,
         LocalUsers,
         NotSet
-    }
-
-    /// <summary>
-    /// UserGroupingType is used to filter the get users for account call to include or exclude users from a particular grouping
-    /// </summary>
-    public enum UserGroupingType
-    {
-        /// <summary>
-        /// No group
-        /// </summary>
-        None,
-        /// <summary>
-        /// Project group
-        /// </summary>
-        Project,
-        /// <summary>
-        /// Permission group
-        /// </summary>
-        Permission
     }
 }

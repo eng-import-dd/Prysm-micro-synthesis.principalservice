@@ -278,46 +278,40 @@ namespace Synthesis.PrincipalService.Modules
                 getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
                 {
                     SearchValue = "",
-                    PageNumber = 1,
-                    PageSize = 10,
-                    UserGroupingType = UserGroupingType.None,
-                    UserGroupingId = Guid.Empty,
-                    ExcludeUsersInGroup = false,
                     OnlyCurrentUser = false,
                     IncludeInactive = false,
                     SortColumn = "FirstName",
                     SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All
+                    IdpFilter = IdpFilter.All,
+                    ContinuationToken = ""
                 };
 
-                if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && (getUsersParams.UserGroupingId.Equals(Guid.Empty)))
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: If the userGroupingType is specified, the userGroupingId must be a valid, non - empty guid!");
-                }
                 Guid.TryParse(Context.CurrentUser.FindFirst(GuestProjectIdClaim).Value, out var guestProjectId);
                 Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
-                if (isGuest && (getUsersParams.UserGroupingType != UserGroupingType.Project || getUsersParams.UserGroupingId != guestProjectId))
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                }
+                #region Implement once grouping is done 
+                //if (isGuest && (getUsersParams.UserGroupingType != UserGroupingType.Project || getUsersParams.UserGroupingId != guestProjectId))
+                //{
+                //    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
+                //}
                 //if (IsGuest && (userGroupingType != UserGroupingType.Project || userGroupingId != GuestProperties.ProjectId))
-                
-                if (isGuest && getUsersParams.UserGroupingType != UserGroupingType.Project)
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                }
 
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                    //Checks to see a user has direct read access to a project or has permissions to view all projects within their account.
-                    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                    var resultCode = ResultCode.Success;
-                    if(resultCode != ResultCode.Success)
-                    {
-                        return Response.BadRequest(resultCode.ToString(), "GetUsersBasic", resultCode.ToString());
-                    }
-                }
+                //if (isGuest && getUsersParams.UserGroupingType != UserGroupingType.Project)
+                //{
+                //    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
+                //}
+
+                //if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
+                //{
+                //    //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
+                //    //Checks to see a user has direct read access to a project or has permissions to view all projects within their account.
+                //    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
+                //    var resultCode = ResultCode.Success;
+                //    if (resultCode != ResultCode.Success)
+                //    {
+                //        return Response.BadRequest(resultCode.ToString(), "GetUsersBasic", resultCode.ToString());
+                //    }
+                //} 
+                #endregion
 
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
@@ -361,31 +355,29 @@ namespace Synthesis.PrincipalService.Modules
                 getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
                 {
                     SearchValue = "",
-                    PageNumber = 1,
-                    PageSize = 10,
-                    UserGroupingType = UserGroupingType.None,
-                    UserGroupingId = Guid.Empty,
-                    ExcludeUsersInGroup = false,
                     OnlyCurrentUser = false,
                     IncludeInactive = false,
                     SortColumn = "FirstName",
                     SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All
+                    IdpFilter = IdpFilter.All,
+                    ContinuationToken = ""
                 };
-                if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    return Response.BadRequest("Unable to get GetUsersForAccount", "Missing Parameter Values", "If the userGroupingType is specified, the userGroupingId must be a valid, non-empty guid!");
-                }
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    //TODO: Revisit to implement and validate project level access
-                    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                    var resultCode = ResultCode.Success;
-                    if (resultCode != ResultCode.Success)
-                    {
-                        return Response.BadRequest(resultCode.ToString(), "GetUsersForAccount", resultCode.ToString());
-                    }
-                }
+                #region Implement once grouping is done
+                //if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && getUsersParams.UserGroupingId.Equals(Guid.Empty))
+                //{
+                //    return Response.BadRequest("Unable to get GetUsersForAccount", "Missing Parameter Values", "If the userGroupingType is specified, the userGroupingId must be a valid, non-empty guid!");
+                //}
+                //if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
+                //{
+                //    //TODO: Revisit to implement and validate project level access
+                //    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
+                //    var resultCode = ResultCode.Success;
+                //    if (resultCode != ResultCode.Success)
+                //    {
+                //        return Response.BadRequest(resultCode.ToString(), "GetUsersForAccount", resultCode.ToString());
+                //    }
+                //} 
+                #endregion
             }
             catch (Exception ex)
             {

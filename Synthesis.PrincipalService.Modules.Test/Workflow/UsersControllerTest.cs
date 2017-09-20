@@ -294,7 +294,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var getUsersParams = new GetUsersParams();
 
             var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
-            Assert.Equal(count, result.TotalCount);
+            Assert.Equal(count, result.List.Count);
         }
 
         [Fact]
@@ -319,7 +319,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var getUsersParams = new GetUsersParams();
 
             var result = await _controller.GetUsersForAccountAsync(getUsersParams, tenantId, userId);
-            Assert.Equal(count, result.TotalCount);
+            Assert.Equal(count, result.List.Count);
         }
 
         [Fact]

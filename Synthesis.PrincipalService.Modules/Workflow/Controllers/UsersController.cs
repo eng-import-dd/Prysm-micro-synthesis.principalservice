@@ -153,7 +153,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<PagingMetadata<BasicUserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
-            var userValidationResult = await _createUserRequestValidator.ValidateAsync(currentUserId);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
@@ -397,96 +396,51 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
-                if (accountId == Guid.Empty)
+                if (tenantId == Guid.Empty)
                 {
-                    var ex = new ArgumentException("accountId");
+                    var ex = new ArgumentException("tenantId");
                     _logger.LogMessage(LogLevel.Error, ex);
                     throw ex;
                 }
 
+                var  criteria = new List<Expression<Func<User, bool>>>();
+                Expression<Func<User, string>> orderBy;
+                criteria.Add(u => u.TenantId == tenantId);
 
-                Func<User, bool> criteria = u => u.TenantId == accountId;
-                Func<User, string> orderBy;
-                string token = null;
-
-                //Todo: Convert all the queries to existing Documentdb supported queries
-
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project))
-                {
-                    //ToDo: Get the users in the project-Dependency on project service
-                    #region Dependancy on project service
-                    //if (getUsersParams.ExcludeUsersInGroup)
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-
-                    //             let usersInProject = (from uc2 in sdc.UserAccounts
-                    //                                   join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u2.UserID
-                    //                                   join up2 in sdc.UserProjects on uc2.SynthesisUserID equals up2.UserID
-                    //                                   where uc2.AccountID == accountId && up2.ProjectID == getUsersParams.UserGroupingId
-                    //                                   select u2)
-
-                    //             where uc.AccountID == accountId && !usersInProject.Any(x => x.UserID == u.UserID)
-                    //             select u);
-                    //}
-                    //else
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             join up in sdc.UserProjects on uc.SynthesisUserID equals up.UserID
-                    //             where uc.AccountID == accountId && up.ProjectID == getUsersParams.UserGroupingId
-                    //             select u);
-                    //}
-                    #endregion
-                }
-                else if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Permission))
-                {
-                    
-                    if (getUsersParams.ExcludeUsersInGroup)
-                    {
-                        criteria += u => !u.Groups.Contains(getUsersParams.UserGroupingId);
-                        
-                    }
-                    else
-                    {
-                        criteria += u => u.Groups.Contains(getUsersParams.UserGroupingId);
-                    }
-                }
-                
                 if (getUsersParams.OnlyCurrentUser)
                 {
-                    criteria += u => u.Id == currentUserId;
+                    criteria.Add(u => u.Id == currentUserId);
                 }
 
                 if (!getUsersParams.IncludeInactive)
                 {
-                    criteria += u => !u.IsLocked;
+                    criteria.Add(u => !u.IsLocked);
                 }
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilter.IdpUsers:
-                        criteria += u => u.IsIdpUser == true;
+                        criteria.Add(u => u.IsIdpUser == true);
                         break;
                     case IdpFilter.LocalUsers:
-                        criteria += u => u.IsIdpUser == false;
+                        criteria.Add(u => u.IsIdpUser == false);
                         break;
                     case IdpFilter.NotSet:
-                        criteria += u => u.IsIdpUser == null;
+                        criteria.Add(u => u.IsIdpUser == null);
                         break;
                 }
 
                 if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
                 {
-                    criteria += x =>
+                    criteria.Add(x =>
                              x != null &&
                              (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
                                                                                            getUsersParams.SearchValue.ToLower()) ||
                              x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower());
+                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
                 }
                 if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
                 {
@@ -518,30 +472,24 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                 orderBy = u => u.FirstName;
                                 break;
                     }
-                    
                 }
                 var queryparams = new OrderedQueryParameters<User, string>()
                 {
-                    ChunkSize = getUsersParams.PageSize,
-                    Criteria = u => criteria(u),
-                    OrderBy = u => orderBy(u),
+                    Criteria =criteria,
+                    OrderBy = orderBy,
                     SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
-                    ContinuationToken = token
+                    ContinuationToken = getUsersParams.ContinuationToken
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
                 var usersInAccounts = usersInAccountsResult.Items.ToList();
-                var userCountTotal = getUsersParams.OnlyCurrentUser
-                                         ? 1
-                                         : usersInAccounts.Count;
                 var filteredUserCount = usersInAccounts.Count;
                 var resultingUsers = usersInAccounts.ToList();
                 var returnMetaData = new PagingMetadata<User>
                 {
-                    TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,
                     List = resultingUsers,
                     SearchFilter = getUsersParams.SearchValue,
-                    CurrentPage = getUsersParams.PageNumber
+                    ContinuationToken = getUsersParams.ContinuationToken
                 };
 
                 return returnMetaData;
