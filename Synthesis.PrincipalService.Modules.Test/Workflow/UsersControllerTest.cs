@@ -22,6 +22,7 @@ using System.Linq;
 using Synthesis.License.Manager.Models;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -296,11 +297,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, true);
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, true));
 
             _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
-
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Failed);
+            
+            
         }
 
         [Fact]
@@ -314,10 +315,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+            await Assert.ThrowsAsync<LicenseAssignmentFailedException>(() =>  _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Exactly(2));
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.FailedToAssignLicense);
         }
 
         [Fact]
@@ -348,12 +348,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Failed);
         }
-
 
         [Fact]
         public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
@@ -372,7 +370,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
         }
 
-
         [Fact]
         public async Task PromoteGuestShoulldThrowValidationErrorIfUserIdEmptyAsync()
         {
@@ -388,7 +385,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             _validatorMock.Setup(m => m.ValidateAsync(userid, CancellationToken.None))
                           .ReturnsAsync(new ValidationResult( new List<ValidationFailure>(){new ValidationFailure("","" )} ));
-
 
             await Assert.ThrowsAsync<ValidationFailedException>( () => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
 

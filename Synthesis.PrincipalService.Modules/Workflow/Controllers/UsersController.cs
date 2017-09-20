@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -206,17 +207,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 if (!licenseAvailable)
                 {
-                    return new PromoteGuestResponse
-                    {
-                        Message = $"Not promoting the user as there are no user licenses available",
-                        ResultCode = PromoteGuestResultCode.Failed
-                    };
+                    throw new PromotionFailedException("Not promoting the user as there are no user licenses available");
                 }
             }
 
             var user = await _userRepository.GetItemAsync(userId);
 
-            var isValidResult = IsValidPromotionForAccount(user, tenantId);
+            var isValidResult = IsValidPromotionForTenant(user, tenantId);
             if (isValidResult != PromoteGuestResultCode.Success)
             {
                 if (isValidResult == PromoteGuestResultCode.UserAlreadyPromoted)
@@ -224,21 +221,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     return userAccountExistsResult;
                 }
 
-                return new PromoteGuestResponse
-                {
-                    Message = "User is not valid for promotion",
-                    ResultCode = PromoteGuestResultCode.Failed
-                };
+                throw new PromotionFailedException("User is not valid for promotion");
             }
 
             var assignGuestResult = await AssignGuestUserToTenant(user, tenantId);
             if (assignGuestResult != PromoteGuestResultCode.Success)
             {
-                return new PromoteGuestResponse
-                {
-                    Message = $"Failed to assign Guest User {userId} to tenant {tenantId}",
-                    ResultCode = PromoteGuestResultCode.Failed
-                };
+                throw new PromotionFailedException($"Failed to assign Guest User {userId} to tenant {tenantId}");
             }
 
             if (!autoPromote && licenseType != LicenseType.Default)
@@ -263,12 +252,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 // If assignign a license fails, then we must disable the user
                 await LockUser(userId, true);
 
-                return new PromoteGuestResponse
-                {
-                    Message = $"Assigned user {userId} to tenant {tenantId}, but failed to assign license",
-                    UserId = userId,
-                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
-                };
+                throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
             }
 
             _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
@@ -289,7 +273,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return item != null && item.TotalAvailable > 0;
         }
 
-        private PromoteGuestResultCode IsValidPromotionForAccount(User user, Guid tenantId)
+        private PromoteGuestResultCode IsValidPromotionForTenant(User user, Guid tenantId)
         {
             if (user?.Email == null)
             {
@@ -302,9 +286,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
-            var hasMatchingAccountDomains = GeTenantEmailDomains(tenantId).Contains(domain);
+            var hasMatchingTenantDomains = GeTenantEmailDomains(tenantId).Contains(domain);
 
-            return hasMatchingAccountDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
+            return hasMatchingTenantDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
 
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
@@ -312,13 +296,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             user.TenantId = tenantId;
             await _userRepository.UpdateItemAsync(user.Id.Value, user);
 
+            _eventService.Publish(new ServiceBusEvent<Guid>
+            {
+                Name = EventNames.UserPromoted,
+                Payload = user.Id.Value
+            });
+
             return PromoteGuestResultCode.Success;
         }
 
 
         private List<string> GeTenantEmailDomains(Guid tenantId)
         {
-            //Todo Get Account domains from tenant Micro service
+            //Todo Get Tenant domains from tenant Micro service
             return new List<string> { "test.com", "prysm.com" };
         }
 

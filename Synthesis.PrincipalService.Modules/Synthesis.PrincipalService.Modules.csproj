@@ -329,6 +329,8 @@
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Workflow\Controllers\IUserInvitesController.cs" />
+    <Compile Include="Workflow\Exceptions\LicenseAssignmentFailedException.cs" />
+    <Compile Include="Workflow\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Workflow\Controllers\UserInvitesController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />

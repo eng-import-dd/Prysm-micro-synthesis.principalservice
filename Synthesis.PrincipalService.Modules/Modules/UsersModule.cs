@@ -11,6 +11,7 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -233,6 +234,14 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (PromotionFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.PromotionFailed, "FAILED", ex.Message);
+            }
+            catch (LicenseAssignmentFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.LicenseAssignmentFailed, "FAILED", ex.Message);
             }
             catch (Exception ex)
             {
