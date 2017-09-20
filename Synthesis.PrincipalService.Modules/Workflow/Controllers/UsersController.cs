@@ -495,7 +495,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     ContinuationToken = getUsersParams.ContinuationToken??""
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-                if (usersInAccountsResult == null)
+                if (!usersInAccountsResult.Items.Any())
                 {
                     throw new NotFoundException("Users for this account could not be found");
                 }
