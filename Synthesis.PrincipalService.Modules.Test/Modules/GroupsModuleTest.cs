@@ -9,7 +9,6 @@ using FluentValidation.Results;
 using Moq;
 using Nancy;
 using Nancy.Bootstrapper;
-using Nancy.Serialization.JsonNet;
 using Nancy.Testing;
 using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
@@ -18,6 +17,7 @@ using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Utilities;
@@ -118,7 +118,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                    with.Dependency(mockEmailUtility.Object);
                                    with.Dependency(mockLicenseApi.Object);
                                    with.Module<GroupsModule>();
-                                   with.Serializer<JsonNetSerializer>();
+                                   with.Serializer<SynthesisJsonSerializer>();
                                });
         }
 
