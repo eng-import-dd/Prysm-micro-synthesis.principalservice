@@ -261,6 +261,39 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+
+            Assert.Equal(3, result.List.Count);
+            Assert.Equal(3, result.CurrentCount);
+            Assert.Equal("test", result.ContinuationToken);
+            Assert.Equal(false, result.IsLastChunk);
+        }
+
+        [Fact]
+        public async Task GetGuestUserForTenantReturnsEmptyResult()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User>{ContinuationToken = "", Items = new List<User>()});
+
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+            Assert.Empty(result.List);
+            Assert.Equal(0, result.CurrentCount);
+            Assert.Equal(true, result.IsLastChunk);
+            Assert.Null(result.SearchFilter);
+            Assert.Null(result.SortColumn);
+        }
     }
 }
 

@@ -16,7 +16,9 @@ using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
@@ -185,6 +187,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
+        public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
+        {
+            try
+            {
+                return await GetGuestUsersForTenantFromDb(tenantId, getGuestUsersParams);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex);
+                return null;
+            }
+        }
+
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
@@ -241,6 +256,97 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var result = await _userRepository.CreateItemAsync(user);
             
             return result;
+        }
+
+        public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantFromDb(Guid tenantId, GetUsersParams getGuestUsersParams)
+        {
+            try
+            {
+                if (tenantId == Guid.Empty)
+                {
+                    var ex = new ArgumentException("tenantId");
+                    _logger.LogMessage(LogLevel.Error, ex);
+                    throw ex;
+                }
+
+                var criteria = new List<Expression<Func<User, bool>>>();
+                Expression<Func<User, string>> orderBy;
+                criteria.Add(u => u.TenantId == null);
+
+                //TODO get the tenantDomains from tenant matching tenantId
+                var tenantemailDomain = "yopmail.com";
+
+                criteria.Add(u => u != null && u.Email.ToLower().Contains("@" + tenantemailDomain));
+
+                if (!string.IsNullOrEmpty(getGuestUsersParams.SearchValue))
+                {
+                    criteria.Add(x =>
+                                     x != null &&
+                                     (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                                   getGuestUsersParams.SearchValue.ToLower()) ||
+                                     x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
+                                     x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+                }
+                if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
+                {
+                    orderBy = u => u.FirstName;
+                }
+                else
+                {
+                    switch (getGuestUsersParams.SortColumn.ToLower())
+                    {
+                        case "firstname":
+                            orderBy = u => u.FirstName;
+                            break;
+
+                        case "lastname":
+                            orderBy = u => u.LastName;
+                            break;
+
+                        case "email":
+                            orderBy = u => u.Email;
+                            break;
+
+                        case "username":
+                            orderBy = u => u.UserName;
+                            break;
+
+                        default:
+                            // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                            orderBy = u => u.FirstName;
+                            break;
+                    }
+                }
+
+                var queryparams = new OrderedQueryParameters<User, string>()
+                {
+                    Criteria = criteria,
+                    OrderBy = orderBy,
+                    SortDescending = getGuestUsersParams.SortOrder == DataSortOrder.Descending,
+                    ContinuationToken = getGuestUsersParams.ContinuationToken
+                };
+
+                var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+                var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
+                var filteredUserCount = guestUsersInTenant.Count;
+                var resultingUsers = guestUsersInTenant.ToList();
+                var returnMetaData = new PagingMetadata<UserResponse>
+                {
+                    CurrentCount = filteredUserCount,
+                    List = _mapper.Map<List<User>, List<UserResponse>>(resultingUsers),
+                    SearchFilter = getGuestUsersParams.SearchValue,
+                    ContinuationToken = guestUsersInTenantResult.ContinuationToken,
+                    IsLastChunk = guestUsersInTenantResult.IsLastChunk
+                };
+
+                return returnMetaData;
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex + " Failed to get guest users for account");
+                throw;
+            }
         }
 
         private async Task AssignUserLicense(User user, LicenseType? licenseType)

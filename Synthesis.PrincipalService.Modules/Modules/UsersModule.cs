@@ -10,6 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Modules
@@ -43,6 +44,9 @@ namespace Synthesis.PrincipalService.Modules
 
             Get("/v1/users/{id:guid}", GetUserAsync, null, "GetUser");
             Get("/api/v1/users/{id:guid}", GetUserAsync, null, "GetUserLegacy");
+
+            Get("/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenant");
+            Get("api/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenantLegacy");
 
             Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
             Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
@@ -85,6 +89,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Delete User",
                 Description = "Delete a specific User resource."
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetGuestUsersForTenant", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new []{HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError},
+                Response = "Get Guest User",
+                Description = "Retrive all the guest users resource for a tenant."
             });
         }
 
@@ -194,6 +205,45 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Unhandled exception encountered while attempting to delete a User resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+        }
+
+        private async Task<object> GetGuestUsersForTenant(dynamic input)
+        {
+            GetUsersParams getGuestUsersParams;
+            try
+            {
+                getGuestUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
+                {
+                    SearchValue = "",
+                    SortColumn = "FirstName",
+                    SortOrder = DataSortOrder.Ascending,
+                    ContinuationToken = ""
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to get geust users", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _userController.GetGuestUsersForTenantAsync(tenantId, getGuestUsersParams);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to get guest users due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestUser);
             }
         }
     }
