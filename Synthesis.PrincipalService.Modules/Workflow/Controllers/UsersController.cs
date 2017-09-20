@@ -495,6 +495,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     ContinuationToken = getUsersParams.ContinuationToken??""
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+                if (usersInAccountsResult == null)
+                {
+                    throw new NotFoundException("Users for this account could not be found");
+                }
                 var usersInAccounts = usersInAccountsResult.Items.ToList();
                 var filteredUserCount = usersInAccounts.Count;
                 var resultingUsers = usersInAccounts.ToList();
@@ -503,7 +507,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     CurrentCount = filteredUserCount,
                     List = resultingUsers,
                     SearchValue = getUsersParams.SearchValue,
-                    ContinuationToken = usersInAccountsResult.ContinuationToken
+                    ContinuationToken = usersInAccountsResult.ContinuationToken,
+                    IsLastChunk = usersInAccountsResult.IsLastChunk
                 };
 
                 return returnMetaData;

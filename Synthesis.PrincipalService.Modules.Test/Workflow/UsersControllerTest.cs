@@ -289,6 +289,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 return (Task.FromResult(items.AsEnumerable()));
                                 
                             });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();
@@ -314,6 +316,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                         return (Task.FromResult(items.AsEnumerable()));
 
                                     });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();

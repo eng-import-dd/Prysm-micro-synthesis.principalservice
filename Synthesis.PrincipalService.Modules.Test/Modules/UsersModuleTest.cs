@@ -323,7 +323,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetUsersForAccountReturnsOk()
         {
             _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetadata<BasicUserResponse>()));
+                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
 
             var response = await _browserAuth.Get($"/api/v1/users/", with =>
             {
@@ -365,7 +365,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetUsersForAccountReturnsUnauthorized()
         {
             _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetadata<BasicUserResponse>()));
+                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
 
             var response = await _browserNoAuth.Get($"/api/v1/users/", with =>
             {

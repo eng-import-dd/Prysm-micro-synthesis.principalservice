@@ -16,9 +16,9 @@ namespace Synthesis.PrincipalService.Entity
         public int CurrentCount { get; set; }
 
         /// <summary>
-        /// The page that is requested. The first page is 1.
+        /// States whether the number of records that are in last page.
         /// </summary>
-        public int CurrentPage { get; set; }
+        public bool IsLastChunk { get; set; }
 
         /// <summary>
         /// The search criteria entered by the user in the search field
