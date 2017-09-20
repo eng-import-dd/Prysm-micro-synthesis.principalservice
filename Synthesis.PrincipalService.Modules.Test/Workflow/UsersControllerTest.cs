@@ -277,12 +277,46 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
-            var idpUserRequest = new IdpUserRequest();
-            idpUserRequest.FirstName = "TestUser";
-            idpUserRequest.LastName = "TestUser";
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
             var userResponse = await _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
             Assert.NotNull(userResponse);
 
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult
+                          {
+                              Errors =
+                              {
+                                  new ValidationFailure("", "")
+                              }
+                          });
+
+            var tenantId = Guid.Empty;
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
     }
 }
