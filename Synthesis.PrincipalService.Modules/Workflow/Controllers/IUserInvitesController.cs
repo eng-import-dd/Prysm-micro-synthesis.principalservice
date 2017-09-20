@@ -10,6 +10,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public interface IUserInvitesController
     {
         Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId);
+        Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId);
 
         Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers);
     }

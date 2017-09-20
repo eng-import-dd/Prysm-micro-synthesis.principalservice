@@ -182,6 +182,53 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
+        public async void ResendUserInviteReturnsSuccess()
+        {
+            var actual = await _browserAuth.Post(
+                                                 "/v1/userinvites/resend",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new List<UserInviteRequest>());
+                                                 });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void ResendUserInviteReturnsRespondWithUnauthorizedNoBearer()
+        {
+            var actual = await _browserNoAuth.Post(
+                                                   "/v1/userinvites/resend",
+                                                   with =>
+                                                   {
+                                                       with.Header("Accept", "application/json");
+                                                       with.Header("Content-Type", "application/json");
+                                                       with.HttpRequest();
+                                                       with.JsonBody(new List<UserInviteRequest>());
+                                                   });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async void ResendUserInviteReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new ServerException());
+            var actual = await _browserAuth.Post(
+                                                 "/v1/userinvites/resend",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new List<UserInviteRequest>());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
         public async Task GetInvitedUsersForTenantReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
             _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))

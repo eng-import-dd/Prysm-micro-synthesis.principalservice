@@ -34,8 +34,10 @@ namespace Synthesis.PrincipalService.Modules
 
             SetupRouteMetadata();
 
-            Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenant");
-            Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenantLegacy");
+            Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForAccount");
+            Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForAccountLegacy");
+            Post("/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
+            Post("api/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitationLegacy");
 
             Get("/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetdUsersInviteForTenantAsync");
             Get("/api/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetUsersInvitedForTenantLegacy");
@@ -57,6 +59,13 @@ namespace Synthesis.PrincipalService.Modules
                 Description = "Email invites for passed user list"
             });
 
+            _metadataRegistry.SetRouteMetadata("ResendEmailInvitation", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "Resend Email Invite",
+                Description = "Resend Email invites for passed user list"
+            });
+
             _metadataRegistry.SetRouteMetadata("GetInvitedUsersForTenant", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
@@ -74,7 +83,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                _logger.Warning("Binding failed while attempting send user invite", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -82,6 +91,39 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 var result = await _userInviteController.CreateUserInviteListAsync(invitedUsersList, tenantId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to send an invite due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+
+        }
+
+        private async Task<Object> ResendEmailInvitationAsync(dynamic input)
+        {
+            List<UserInviteRequest> invitedUsersList;
+            try
+            {
+                invitedUsersList = this.Bind<List<UserInviteRequest>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to resend user invites", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                var result = await _userInviteController.ResendEmailInviteAsync(invitedUsersList, tenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);

@@ -2,6 +2,7 @@
 
 namespace Synthesis.PrincipalService.Utilities
 {
+    //TODO move this to common package
     public static class EmailValidator
     {
         // this is the same Regex used in the EmailAddressAttribute class
