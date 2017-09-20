@@ -17,7 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
+using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
 
@@ -150,7 +152,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return basicUserResponse;
         }
 
-        public async Task<PagingMetadata<BasicUserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
             var errors = new List<ValidationFailure>();
@@ -175,7 +177,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
 
                 var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(users);
+                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -400,6 +402,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             try
             {
+                if (getUsersParams == null)
+                {
+                    getUsersParams = new GetUsersParams
+                    {
+                        SearchValue = "",
+                        OnlyCurrentUser = false,
+                        IncludeInactive = false,
+                        SortColumn = "FirstName",
+                        SortOrder = DataSortOrder.Ascending,
+                        IdpFilter = IdpFilter.All,
+                    };
+                }
                 if (tenantId == Guid.Empty)
                 {
                     var ex = new ArgumentException("tenantId");
@@ -478,7 +492,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     Criteria =criteria,
                     OrderBy = orderBy,
                     SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
-                    ContinuationToken = getUsersParams.ContinuationToken
+                    ContinuationToken = getUsersParams.ContinuationToken??""
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
                 var usersInAccounts = usersInAccountsResult.Items.ToList();
@@ -488,8 +502,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     CurrentCount = filteredUserCount,
                     List = resultingUsers,
-                    SearchFilter = getUsersParams.SearchValue,
-                    ContinuationToken = getUsersParams.ContinuationToken
+                    SearchValue = getUsersParams.SearchValue,
+                    ContinuationToken = usersInAccountsResult.ContinuationToken
                 };
 
                 return returnMetaData;

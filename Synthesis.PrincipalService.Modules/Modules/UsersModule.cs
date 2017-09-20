@@ -246,7 +246,7 @@ namespace Synthesis.PrincipalService.Modules
                 }
 
                 //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                var resultCode = ValidUserLevelAccess(userId);
+                var resultCode = await ValidUserLevelAccess(userId);
                 if (resultCode != ResultCode.Success)
                 {
                     return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
@@ -274,45 +274,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             try
             {
-                GetUsersParams getUsersParams;
-                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
-                {
-                    SearchValue = "",
-                    OnlyCurrentUser = false,
-                    IncludeInactive = false,
-                    SortColumn = "FirstName",
-                    SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All,
-                    ContinuationToken = ""
-                };
-
-                Guid.TryParse(Context.CurrentUser.FindFirst(GuestProjectIdClaim).Value, out var guestProjectId);
-                Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
-                #region Implement once grouping is done 
-                //if (isGuest && (getUsersParams.UserGroupingType != UserGroupingType.Project || getUsersParams.UserGroupingId != guestProjectId))
-                //{
-                //    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                //}
-                //if (IsGuest && (userGroupingType != UserGroupingType.Project || userGroupingId != GuestProperties.ProjectId))
-
-                //if (isGuest && getUsersParams.UserGroupingType != UserGroupingType.Project)
-                //{
-                //    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                //}
-
-                //if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                //{
-                //    //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                //    //Checks to see a user has direct read access to a project or has permissions to view all projects within their account.
-                //    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                //    var resultCode = ResultCode.Success;
-                //    if (resultCode != ResultCode.Success)
-                //    {
-                //        return Response.BadRequest(resultCode.ToString(), "GetUsersBasic", resultCode.ToString());
-                //    }
-                //} 
-                #endregion
-
+                var getUsersParams = this.Bind<GetUsersParams>();
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
                 return await _userController.GetUsersBasicAsync(tenantId, userId, getUsersParams);
@@ -352,33 +314,9 @@ namespace Synthesis.PrincipalService.Modules
             GetUsersParams getUsersParams;
             try
             {
-                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
-                {
-                    SearchValue = "",
-                    OnlyCurrentUser = false,
-                    IncludeInactive = false,
-                    SortColumn = "FirstName",
-                    SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All,
-                    ContinuationToken = ""
-                };
-                #region Implement once grouping is done
-                //if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                //{
-                //    return Response.BadRequest("Unable to get GetUsersForAccount", "Missing Parameter Values", "If the userGroupingType is specified, the userGroupingId must be a valid, non-empty guid!");
-                //}
-                //if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                //{
-                //    //TODO: Revisit to implement and validate project level access
-                //    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                //    var resultCode = ResultCode.Success;
-                //    if (resultCode != ResultCode.Success)
-                //    {
-                //        return Response.BadRequest(resultCode.ToString(), "GetUsersForAccount", resultCode.ToString());
-                //    }
-                //} 
-                #endregion
+                getUsersParams = this.Bind<GetUsersParams>();
             }
+
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to create a User resource", ex);
@@ -457,19 +395,34 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private ResultCode ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
+        private async Task<ResultCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+            Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
             if (currentUserId == accessedUserId)
+            {
                 return ResultCode.Success;
+            }
 
-            if (accessedUserId == Guid.Empty || _userController.GetUserAsync(accessedUserId) == null)
+            if (accessedUserId == Guid.Empty || await _userController.GetUserAsync(accessedUserId) == null)
+            {
                 return ResultCode.RecordNotFound;
+            }
             //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-
-            //if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
-            //    return ResultCode.Success;
+            try
+            {
+                var accessedUser = await _userController.GetUserAsync(accessedUserId);
+                if (tenantId == accessedUser.TenantId)
+                {
+                    return ResultCode.Success;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex.ToString());
+                throw;
+            }
 
             return ResultCode.Unauthorized;
         }
