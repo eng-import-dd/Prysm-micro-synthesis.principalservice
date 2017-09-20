@@ -170,7 +170,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             try
             {
                 var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
-                if (usersInAccount == null)
+                if (!usersInAccount.Any())
                 {
                     _logger.Warning($"Users for the account could not be found");
                     throw new NotFoundException($"Users for the account could not be found");
