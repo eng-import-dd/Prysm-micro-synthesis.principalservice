@@ -200,18 +200,35 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!allUsers)
             {
-                //TODO: What if invitedEmails are more than 200? - Look into working on bunch for 200 each - Yusuf
-                var invitedEmails = existingUserInvites.Select(i => i.Email);
-                var tenantUsers = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId && invitedEmails.Contains(u.Email));
-                var tenantUserEmails = tenantUsers.Select(s => s.Email);
+                var invitedEmails = existingUserInvites.Select(i => i.Email).ToList();
+
+                var tenantUsersList = new List<User>();
+
+                foreach (var batch in invitedEmails.Batch(150))
+                {
+                    var tenantUsers = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId && batch.Contains(u.Email));
+                    tenantUsersList.AddRange(tenantUsers);
+                }
+
+                var tenantUserEmails = tenantUsersList.Select(s => s.Email);
                 existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
-            }
+               }
 
             var returnMetaData = new PagingMetadata<UserInviteResponse>
             {
                 List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
             };
             return returnMetaData;
+        }
+    }
+
+    public static class ListBatchExtensions
+    {
+        public static IEnumerable<IEnumerable<T>> Batch<T>(this List<T> items, int maxItems)
+        {
+            return items.Select((item, inx) => new { item, inx })
+                        .GroupBy(x => x.inx / maxItems)
+                        .Select(g => g.Select(x => x.item));
         }
     }
 }

@@ -37,8 +37,8 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenant");
             Post("api/v1/userinvites", CreateUserInviteListForTenantAsync, null, "CreateUserInviteListForTenantLegacy");
 
-            Get("/v1/userinvites", GetdUsersInviteForTenantAsync, null, "GetdUsersInviteForTenantAsync");
-            Get("/api/v1/userinvites", GetdUsersInviteForTenantAsync, null, "GetUsersInvitedForTenantLegacy");
+            Get("/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetdUsersInviteForTenantAsync");
+            Get("/api/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetUsersInvitedForTenantLegacy");
 
 
             OnError += (ctx, ex) =>
@@ -97,9 +97,9 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetdUsersInviteForTenantAsync(dynamic input)
+        private async Task<object> GetUsersInvitedForTenantAsync(dynamic input)
         {
-            bool allUsers = input.AllUsers;
+            bool allUsers = input.allusers;
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
@@ -114,7 +114,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to get invited users for Tenant due to an error", ex);
+                _logger.Error("Failed to get users invited for Tenant due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
