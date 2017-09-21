@@ -5,7 +5,7 @@ namespace Synthesis.PrincipalService.Constants
         NotFound
     }
 
-    public class ResponseReasons
+    public static class ResponseReasons
     {
         // Internal server errors
         public const string InternalServerErrorCreateUser = "An error occurred while creating the User";
@@ -17,5 +17,10 @@ namespace Synthesis.PrincipalService.Constants
 
         // Not found
         public const string NotFoundUser = "User Not Found";
+
+        //Promote Guest
+        public const string PromotionFailed = "Failed to promote the user";
+        public static string LicenseAssignmentFailed = "Failed to assign the license";
+
     }
 }
