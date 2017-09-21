@@ -291,13 +291,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var promoteGuestResponse = await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
                 if (promoteGuestResponse?.ResultCode == PromoteGuestResultCode.Failed)
                 {
-                    var userResponse = new UserResponse()
-                    {
-                        Message = $"Unable to promote the gest user to user {userId}",
-                        Id = userId,
-                        ResultCode = UserResponseResultCode.Failed
-                    };
-                    return userResponse;
+                    throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
                 _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
             }
@@ -333,13 +327,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
                 if (groupResult == null)
                 {
-                    var userResponse = new UserResponse()
-                    {
-                        Message = $"Unable to update user's group for user {result.Id.Value}",
-                        Id = result.Id.Value,
-                        ResultCode = UserResponseResultCode.Failed
-                    };
-                    return userResponse;
+                   throw  new IdpUserException($"Failed to update Idp user groups for user {result.Id.Value}");
                 }
             }
             else

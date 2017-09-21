@@ -288,6 +288,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
+            catch (IdpUserException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.IdpUserAutoProvisionError);
+            }
             catch (Exception ex)
             {
                 _logger.Error("Failed to auto provision and refresh groups", ex);
