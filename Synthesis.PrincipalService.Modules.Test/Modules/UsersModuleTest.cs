@@ -15,17 +15,20 @@ using Nancy.TinyIoc;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
+using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 using Xunit;
 using Synthesis.Nancy.MicroService;
 using ClaimTypes = System.IdentityModel.Claims.ClaimTypes;
@@ -388,6 +391,156 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Header("Content-Type", "application/json");
             });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        #endregion
+
+        #region PromoteGuest Tests
+        [Fact]
+        public async Task PromoteGuestRespondWithUnauthorizedNoBearerAsync()
+        {
+            var actual = await _browserNoAuth.Post(
+                "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                with =>
+                {
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.HttpRequest();
+                    with.JsonBody(new PromoteGuestRequest());
+                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuestRespondWithOkAsync()
+        {
+            var actual = await _browserAuth.Post(
+                "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                with =>
+                {
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.HttpRequest();
+                    with.JsonBody(new PromoteGuestRequest());
+                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new PromoteGuestRequest());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var invalidBody = "{]";
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(invalidBody);
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new PromoteGuestRequest());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReturnsForbiddenIfPromotionFails()
+        {
+            _controllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                .Throws(new PromotionFailedException(""));
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new PromoteGuestRequest());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.Forbidden, actual.StatusCode);
+            Assert.Equal(ResponseReasons.PromotionFailed, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReturnsForbiddenIfLicenseAssignmentFails()
+        {
+            _controllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                .Throws(new LicenseAssignmentFailedException("", Guid.NewGuid()));
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new PromoteGuestRequest());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.Forbidden, actual.StatusCode);
+            Assert.Equal(ResponseReasons.LicenseAssignmentFailed, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task PromoteGuestReadsTenantIdFromUserClaimAsync()
+        {
+            _controllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(),It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                .ReturnsAsync(new PromoteGuestResponse());
+
+            var actual = await _browserAuth.Post(
+                                                "/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new PromoteGuestRequest{LicenseType = LicenseType.UserLicense});
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+            _controllerMock.Verify(m => m.PromoteGuestUserAsync(Guid.Parse("C3220603-09D9-452B-B204-6CC3946CE1F4"), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), LicenseType.UserLicense, false));
         }
         #endregion
     }
