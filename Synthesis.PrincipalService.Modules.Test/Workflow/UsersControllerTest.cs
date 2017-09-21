@@ -447,8 +447,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
     }
+    #endregion
 }
 
-        #endregion
-    }
-}
+ 

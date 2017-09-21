@@ -18,7 +18,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task DeleteUserAsync(Guid userId);
 
         Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false);
-        Task<PromoteGuestResponse> PromoteGuestUser(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false);
+       
 
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
     }

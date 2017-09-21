@@ -288,7 +288,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var userId = model.UserId.Value;
             if (model.IsGuestUser)
             {
-                var promoteGuestResponse = await PromoteGuestUser(userId, model.TenantId, LicenseType.UserLicense, true);
+                var promoteGuestResponse = await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
                 if (promoteGuestResponse?.ResultCode == PromoteGuestResultCode.Failed)
                 {
                     var userResponse = new UserResponse()
@@ -374,19 +374,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (model.Groups.Contains(accountGroup.Name))
                 {
                     //Add the user to the group
-                    if(currentGroupsResult.Groups.Contains(accountGroup.Id))
+                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.Value))
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
 
-                    currentGroupsResult.Groups.Add(accountGroup.Id);
+                    currentGroupsResult.Groups.Add(accountGroup.Id.Value);
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
                 else
                 {
                     //remove the user from the group
-                    currentGroupsResult.Groups.Remove(accountGroup.Id);
+                    currentGroupsResult.Groups.Remove(accountGroup.Id.Value);
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
