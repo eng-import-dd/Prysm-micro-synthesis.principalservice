@@ -311,6 +311,7 @@
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
     <Compile Include="Modules\UserInviteModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
@@ -319,6 +320,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
+    <Compile Include="Requests\PromoteGuestRequest.cs" />
+    <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
@@ -327,11 +330,17 @@
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Workflow\Controllers\IUserInvitesController.cs" />
+    <Compile Include="Workflow\Exceptions\LicenseAssignmentFailedException.cs" />
+    <Compile Include="Workflow\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Workflow\Controllers\UserInvitesController.cs" />
+    <Compile Include="Workflow\Controllers\GroupsController.cs" />
+    <Compile Include="Workflow\Controllers\IGroupsController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
   </ItemGroup>

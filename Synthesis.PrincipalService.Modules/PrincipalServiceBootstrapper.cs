@@ -228,6 +228,9 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
 
+            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
+
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
                    .WithParameter(new ResolvedParameter(
@@ -236,6 +239,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
 
 
+            builder.RegisterType<GroupsController>().As<IGroupsController>();
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 
