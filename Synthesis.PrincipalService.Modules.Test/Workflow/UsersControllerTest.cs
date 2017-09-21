@@ -22,9 +22,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Synthesis.License.Manager.Models;
-using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -401,7 +398,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
         }
-    
+        #endregion
 
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
@@ -479,9 +476,5 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
-    }
-}
-
-        #endregion
     }
 }
