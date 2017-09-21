@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Remoting;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +12,6 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Testing;
 using Nancy.TinyIoc;
-using Newtonsoft.Json;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
@@ -432,7 +430,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetGuestUsersForTenantReturnsInternalServerError()
         {
             _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<GetUsersParams>()))
-                           .ThrowsAsync(new ServerException());
+                           .ThrowsAsync(new Exception());
             var actual = await _browserAuth.Get(
                                                   "/v1/users/guests",
                                                   with =>

@@ -266,13 +266,7 @@ namespace Synthesis.PrincipalService.Modules
             GetUsersParams getGuestUsersParams;
             try
             {
-                getGuestUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
-                {
-                    SearchValue = "",
-                    SortColumn = "FirstName",
-                    SortOrder = DataSortOrder.Ascending,
-                    ContinuationToken = ""
-                };
+                getGuestUsersParams = this.Bind<GetUsersParams>();
             }
             catch (Exception ex)
             {

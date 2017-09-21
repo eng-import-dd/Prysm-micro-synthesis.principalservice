@@ -33,11 +33,9 @@ namespace Synthesis.PrincipalService.Entity
         /// <summary>
         /// The sort order
         /// </summary>
-        public DataSortOrder SortOrder { get; set; }
+        public bool SortDescending { get; set; }
 
         public List<T> List { get; set; }
 
     }
-
-    public enum DataSortOrder { Ascending, Descending }
 }

@@ -80,5 +80,11 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         [DataMember]
         public List<Guid> Groups { get; set; }
+
+        [DataMember]
+        public string EmailDomain {
+            get { return Email?.Substring((int)Email?.IndexOf("@") + 1); }
+            set { }
+        }
     }
 }
