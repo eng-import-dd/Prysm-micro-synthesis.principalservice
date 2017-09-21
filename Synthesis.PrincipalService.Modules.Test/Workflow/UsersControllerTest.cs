@@ -505,6 +505,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(new User());
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest();
+            _validatorMock.Setup(m => m.ValidateAsync(userId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.ValidateAsync(user, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
             Assert.Equal(ex.Errors.ToList().Count,3);
         }
