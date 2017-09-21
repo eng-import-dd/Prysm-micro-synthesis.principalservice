@@ -379,7 +379,7 @@ namespace Synthesis.PrincipalService.Modules
             {
                 userId = Guid.Parse(input.id);
                 userModel = this.Bind<UpdateUserRequest>();
-                var resultCode = ValidUserLevelAccess(userId, requiredPermission: PermissionEnum.CanEditUser);
+                var resultCode = await ValidUserLevelAccess(userId, requiredPermission: PermissionEnum.CanEditUser);
                 if (resultCode != ResultCode.Success)
                 {
                     return Response.Unauthorized("Unauthorized", resultCode.ToString(), "UpdateUser: Error occured!");
