@@ -15,6 +15,7 @@ using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -57,6 +58,9 @@ namespace Synthesis.PrincipalService.Modules
 
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
+
+            Post("/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuest");
+            Post("/api/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuestLegacy");
 
             OnError += (ctx, ex) =>
             {
@@ -130,6 +134,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Delete User",
                 Description = "Delete a specific User resource."
+            });
+
+            _metadataRegistry.SetRouteMetadata("PromoteGuest", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "Promote Guest",
+                Description = "Promote a guest to licensed User."
             });
         }
 
@@ -263,7 +274,7 @@ namespace Synthesis.PrincipalService.Modules
                 }
 
                 //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                var resultCode = ValidUserLevelAccess(userId);
+                var resultCode = await ValidUserLevelAccess(userId);
                 if (resultCode != ResultCode.Success)
                 {
                     return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
@@ -291,51 +302,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             try
             {
-                GetUsersParams getUsersParams;
-                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
-                {
-                    SearchValue = "",
-                    PageNumber = 1,
-                    PageSize = 10,
-                    UserGroupingType = UserGroupingType.None,
-                    UserGroupingId = Guid.Empty,
-                    ExcludeUsersInGroup = false,
-                    OnlyCurrentUser = false,
-                    IncludeInactive = false,
-                    SortColumn = "FirstName",
-                    SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All
-                };
-
-                if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && (getUsersParams.UserGroupingId.Equals(Guid.Empty)))
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: If the userGroupingType is specified, the userGroupingId must be a valid, non - empty guid!");
-                }
-                Guid.TryParse(Context.CurrentUser.FindFirst(GuestProjectIdClaim).Value, out var guestProjectId);
-                Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
-                if (isGuest && (getUsersParams.UserGroupingType != UserGroupingType.Project || getUsersParams.UserGroupingId != guestProjectId))
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                }
-                //if (IsGuest && (userGroupingType != UserGroupingType.Project || userGroupingId != GuestProperties.ProjectId))
-                
-                if (isGuest && getUsersParams.UserGroupingType != UserGroupingType.Project)
-                {
-                    return Response.Unauthorized("Unauthorized", "Missing Parameter Values", "GetUsersBasic: you must call get users with the project your a guest of!");
-                }
-
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
-                    //Checks to see a user has direct read access to a project or has permissions to view all projects within their account.
-                    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                    var resultCode = ResultCode.Success;
-                    if(resultCode != ResultCode.Success)
-                    {
-                        return Response.BadRequest(resultCode.ToString(), "GetUsersBasic", resultCode.ToString());
-                    }
-                }
-
+                var getUsersParams = this.Bind<GetUsersParams>();
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
                 return await _userController.GetUsersBasicAsync(tenantId, userId, getUsersParams);
@@ -375,35 +342,9 @@ namespace Synthesis.PrincipalService.Modules
             GetUsersParams getUsersParams;
             try
             {
-                getUsersParams = this.Bind<GetUsersParams>() ?? new GetUsersParams
-                {
-                    SearchValue = "",
-                    PageNumber = 1,
-                    PageSize = 10,
-                    UserGroupingType = UserGroupingType.None,
-                    UserGroupingId = Guid.Empty,
-                    ExcludeUsersInGroup = false,
-                    OnlyCurrentUser = false,
-                    IncludeInactive = false,
-                    SortColumn = "FirstName",
-                    SortOrder = DataSortOrder.Ascending,
-                    IdpFilter = IdpFilter.All
-                };
-                if (!getUsersParams.UserGroupingType.Equals(UserGroupingType.None) && getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    return Response.BadRequest("Unable to get GetUsersForAccount", "Missing Parameter Values", "If the userGroupingType is specified, the userGroupingId must be a valid, non-empty guid!");
-                }
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project) && !getUsersParams.UserGroupingId.Equals(Guid.Empty))
-                {
-                    //TODO: Revisit to implement and validate project level access
-                    //var resultCode = ValidProjectLevelAccess(userGroupingId.Value, DataTypeEnum.Project);
-                    var resultCode = ResultCode.Success;
-                    if (resultCode != ResultCode.Success)
-                    {
-                        return Response.BadRequest(resultCode.ToString(), "GetUsersForAccount", resultCode.ToString());
-                    }
-                }
+                getUsersParams = this.Bind<GetUsersParams>();
             }
+
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to create a User resource", ex);
@@ -488,21 +429,78 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private ResultCode ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
+        private async Task<ResultCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+            Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
             if (currentUserId == accessedUserId)
+            {
                 return ResultCode.Success;
+            }
 
-            if (accessedUserId == Guid.Empty || _userController.GetUserAsync(accessedUserId) == null)
+            if (accessedUserId == Guid.Empty || await _userController.GetUserAsync(accessedUserId) == null)
+            {
                 return ResultCode.RecordNotFound;
-            //TODO: address the code once group permissions is implemented
+            }
+            //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
+            try
+            {
+                var accessedUser = await _userController.GetUserAsync(accessedUserId);
+                if (tenantId == accessedUser.TenantId)
+                {
+                    return ResultCode.Success;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex.ToString());
+                throw;
+            }
 
-            //if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
-            //    return ResultCode.Success;
-            //TODO: For now returning success
-            return ResultCode.Success;
+            return ResultCode.Unauthorized;
+        }
+
+        private async Task<object> PromoteGuestAsync(dynamic input)
+        {
+            PromoteGuestRequest promoteRequest;
+            try
+            {
+                promoteRequest = this.Bind<PromoteGuestRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to promote guest", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+
+                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (PromotionFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.PromotionFailed, "FAILED", ex.Message);
+            }
+            catch (LicenseAssignmentFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.LicenseAssignmentFailed, "FAILED", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to promote a user due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
         }
     }
 }

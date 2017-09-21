@@ -16,11 +16,14 @@ using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
 using Nancy;
 using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -91,7 +94,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             var user = _mapper.Map<CreateUserRequest, User>(model);
 
-
             if (IsBuiltInOnPremTenant(tenantId))
             {
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
@@ -142,7 +144,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var userListResult = GetAccountUsersFromDb(tenantId, userId, getUsersParams);
+            var userListResult = await GetAccountUsersFromDb(tenantId, userId, getUsersParams);
             if(userListResult == null)
             {
                 _logger.Warning($"Users resource could not be found for input data.");
@@ -153,10 +155,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return basicUserResponse;
         }
 
-        public async Task<PagingMetadata<BasicUserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
-            var userValidationResult = await _createUserRequestValidator.ValidateAsync(currentUserId);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
@@ -172,14 +173,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             try
             {
                 var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
-                if (usersInAccount == null)
+                if (!usersInAccount.Any())
                 {
                     _logger.Warning($"Users for the account could not be found");
                     throw new NotFoundException($"Users for the account could not be found");
                 }
 
-                var users = GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(users);
+                var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
+                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
                 return userResponse;
             }
             catch (Exception ex)
@@ -301,6 +302,132 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
+        public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
+        {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to promote guest.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var userAccountExistsResult = new PromoteGuestResponse
+            {
+                Message = $"User {userId} is not valid for promotion because they are already assigned to a tenant",
+                UserId = userId,
+                ResultCode = PromoteGuestResultCode.UserAlreadyPromoted
+            };
+
+            if (autoPromote)
+            {
+                var licenseAvailable = await IsLicenseAvailable(tenantId, licenseType);
+
+                if (!licenseAvailable)
+                {
+                    throw new PromotionFailedException("Not promoting the user as there are no user licenses available");
+                }
+            }
+
+            var user = await _userRepository.GetItemAsync(userId);
+
+            var isValidResult = IsValidPromotionForTenant(user, tenantId);
+            if (isValidResult != PromoteGuestResultCode.Success)
+            {
+                if (isValidResult == PromoteGuestResultCode.UserAlreadyPromoted)
+                {
+                    return userAccountExistsResult;
+                }
+
+                throw new PromotionFailedException("User is not valid for promotion");
+            }
+
+            var assignGuestResult = await AssignGuestUserToTenant(user, tenantId);
+            if (assignGuestResult != PromoteGuestResultCode.Success)
+            {
+                throw new PromotionFailedException($"Failed to assign Guest User {userId} to tenant {tenantId}");
+            }
+
+            if (!autoPromote && licenseType != LicenseType.Default)
+            {
+                //Todo Check if the user has CanManageUserLicenses permission
+                //var permissions = CollaborationService.GetGroupPermissionsForUser(UserId).Payload;
+                //if (permissions == null || !permissions.Contains(PermissionEnum.CanManageUserLicenses))
+                //{
+                //    // Don't allow user to pick the license type without the CanManageUserLicenses permission
+                //    licenseType = LicenseType.Default;
+                //}
+            }
+
+            var assignLicenseResult = await _licenseApi.AssignUserLicenseAsync(new UserLicenseDto{
+                AccountId = tenantId.ToString(),
+                UserId = userId.ToString(),
+                LicenseType = licenseType.ToString()
+            });
+
+            if (assignLicenseResult == null || assignLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+            {
+                // If assignign a license fails, then we must disable the user
+                await LockUser(userId, true);
+
+                throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
+            }
+
+            _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+
+            return new PromoteGuestResponse
+            {
+                Message = "",
+                UserId = userId,
+                ResultCode = PromoteGuestResultCode.Success
+            };
+        }
+
+        private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
+        {
+            var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
+            var item = summary.FirstOrDefault(x => string.Equals(x.LicenseName, licenseType.ToString(), StringComparison.CurrentCultureIgnoreCase));
+
+            return item != null && item.TotalAvailable > 0;
+        }
+
+        private PromoteGuestResultCode IsValidPromotionForTenant(User user, Guid tenantId)
+        {
+            if (user?.Email == null)
+            {
+                return PromoteGuestResultCode.Failed;
+            }
+
+            if (user.TenantId != Guid.Empty)
+            {
+                return PromoteGuestResultCode.UserAlreadyPromoted;
+            }
+
+            var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
+            var hasMatchingTenantDomains = GeTenantEmailDomains(tenantId).Contains(domain);
+
+            return hasMatchingTenantDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
+        }
+
+        private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
+        {
+            user.TenantId = tenantId;
+            await _userRepository.UpdateItemAsync(user.Id.Value, user);
+
+            _eventService.Publish(new ServiceBusEvent<Guid>
+            {
+                Name = EventNames.UserPromoted,
+                Payload = user.Id.Value
+            });
+
+            return PromoteGuestResultCode.Success;
+        }
+
+
+        private List<string> GeTenantEmailDomains(Guid tenantId)
+        {
+            //Todo Get Tenant domains from tenant Micro service
+            return new List<string> { "test.com", "prysm.com" };
+        }
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
@@ -501,180 +628,117 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
-        public PagingMetadata<User> GetAccountUsersFromDb(Guid accountId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             try
             {
-                if (accountId == Guid.Empty)
+                if (getUsersParams == null)
                 {
-                    var ex = new ArgumentException("accountId");
+                    getUsersParams = new GetUsersParams
+                    {
+                        SearchValue = "",
+                        OnlyCurrentUser = false,
+                        IncludeInactive = false,
+                        SortColumn = "FirstName",
+                        SortOrder = DataSortOrder.Ascending,
+                        IdpFilter = IdpFilter.All,
+                    };
+                }
+                if (tenantId == Guid.Empty)
+                {
+                    var ex = new ArgumentException("tenantId");
                     _logger.LogMessage(LogLevel.Error, ex);
                     throw ex;
                 }
 
-                IEnumerable<User> users = new List<User>();
-                var usersInAccounts = _userRepository.GetItemsAsync(u => u.TenantId == accountId);
-                    var userCountTotal = getUsersParams.OnlyCurrentUser
-                                             ? 1
-                                             : usersInAccounts.Result.ToList().Count;
+                var  criteria = new List<Expression<Func<User, bool>>>();
+                Expression<Func<User, string>> orderBy;
+                criteria.Add(u => u.TenantId == tenantId);
 
-                //Todo: Convert all the queries to existing Documentdb supported queries
-
-                if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Project))
-                {
-                    //ToDo: Get the users in the project-Dependency on project service
-                    #region Dependancy on project service
-                    //if (getUsersParams.ExcludeUsersInGroup)
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-
-                    //             let usersInProject = (from uc2 in sdc.UserAccounts
-                    //                                   join u2 in sdc.SynthesisUsers on uc2.SynthesisUserID equals u2.UserID
-                    //                                   join up2 in sdc.UserProjects on uc2.SynthesisUserID equals up2.UserID
-                    //                                   where uc2.AccountID == accountId && up2.ProjectID == getUsersParams.UserGroupingId
-                    //                                   select u2)
-
-                    //             where uc.AccountID == accountId && !usersInProject.Any(x => x.UserID == u.UserID)
-                    //             select u);
-                    //}
-                    //else
-                    //{
-                    //    users = (from uc in sdc.UserAccounts
-                    //             join u in sdc.SynthesisUsers on uc.SynthesisUserID equals u.UserID
-                    //             join up in sdc.UserProjects on uc.SynthesisUserID equals up.UserID
-                    //             where uc.AccountID == accountId && up.ProjectID == getUsersParams.UserGroupingId
-                    //             select u);
-                    //}
-                    #endregion
-                }
-                else if (getUsersParams.UserGroupingType.Equals(UserGroupingType.Permission))
-                {
-                    
-                    if (getUsersParams.ExcludeUsersInGroup)
-                    {
-                        users = usersInAccounts.Result.Where(u => !u.Groups.Contains(getUsersParams.UserGroupingId) );
-                        
-                    }
-                    else
-                    {
-                        users = usersInAccounts.Result.Where(u => u.Groups.Contains(getUsersParams.UserGroupingId));
-                    }
-                    
-                }
-                else
-                {
-                    users = usersInAccounts.Result;
-                }
                 if (getUsersParams.OnlyCurrentUser)
                 {
-                    users = users.Where(u => u.Id == currentUserId);
+                    criteria.Add(u => u.Id == currentUserId);
                 }
 
                 if (!getUsersParams.IncludeInactive)
                 {
-                    users = users.Where( u => !u.IsLocked);
+                    criteria.Add(u => !u.IsLocked);
                 }
                 switch (getUsersParams.IdpFilter)
                 {
                     case IdpFilter.IdpUsers:
-                        users = users.Where(u => u.IsIdpUser == true);
+                        criteria.Add(u => u.IsIdpUser == true);
                         break;
                     case IdpFilter.LocalUsers:
-                        users = users.Where(u => u.IsIdpUser == false);
+                        criteria.Add(u => u.IsIdpUser == false);
                         break;
                     case IdpFilter.NotSet:
-                        users = users.Where(u => u.IsIdpUser == null);
+                        criteria.Add(u => u.IsIdpUser == null);
                         break;
                 }
 
                 if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
                 {
-                    users = users.Where
-                        (x =>
+                    criteria.Add(x =>
                              x != null &&
                              (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
                                                                                            getUsersParams.SearchValue.ToLower()) ||
                              x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower())
-                        );
+                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
                 }
                 if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
                 {
                     // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                    users = users.OrderBy(x => x.FirstName);
+                    orderBy = u => u.FirstName;
                 }
                 else
                 {
-                    if (getUsersParams.SortOrder == DataSortOrder.Ascending)
-                    {
                         switch (getUsersParams.SortColumn.ToLower())
                         {
                             case "firstname":
-                                users = users.OrderBy(x => x.FirstName);
+                                orderBy = u => u.FirstName;
                                 break;
 
                             case "lastname":
-                                users = users.OrderBy(x => x.LastName);
+                                orderBy = u => u.LastName;
                                 break;
 
                             case "email":
-                                users = users.OrderBy(x => x.Email);
+                                orderBy = u => u.Email;
                                 break;
 
                             case "username":
-                                users = users.OrderBy(x => x.UserName);
+                                orderBy = u => u.UserName;
                                 break;
 
                             default:
                                 // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderBy(x => x.FirstName);
+                                orderBy = u => u.FirstName;
                                 break;
-
-                        }
-                    }
-                    else
-                    {
-                        switch (getUsersParams.SortColumn.ToLower())
-                        {
-                            case "firstname":
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-
-                            case "lastname":
-                                users = users.OrderByDescending(x => x.LastName);
-                                break;
-
-                            case "email":
-                                users = users.OrderByDescending(x => x.Email);
-                                break;
-
-                            case "username":
-                                users = users.OrderByDescending(x => x.UserName);
-                                break;
-
-                            default:
-                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                users = users.OrderByDescending(x => x.FirstName);
-                                break;
-                        }
                     }
                 }
-
-                var filteredUserCount = users.Count();
-                if (getUsersParams.PageSize > 0)
+                var queryparams = new OrderedQueryParameters<User, string>()
                 {
-                    var pageNumber = getUsersParams.PageNumber > 0 ? getUsersParams.PageNumber - 1 : 0;
-                    users = users.Skip(pageNumber * getUsersParams.PageSize).Take(getUsersParams.PageSize);
+                    Criteria =criteria,
+                    OrderBy = orderBy,
+                    SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
+                    ContinuationToken = getUsersParams.ContinuationToken??""
+                };
+                var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+                if (!usersInAccountsResult.Items.Any())
+                {
+                    throw new NotFoundException("Users for this account could not be found");
                 }
-                var resultingUsers = users.ToList();
+                var usersInAccounts = usersInAccountsResult.Items.ToList();
+                var filteredUserCount = usersInAccounts.Count;
+                var resultingUsers = usersInAccounts.ToList();
                 var returnMetaData = new PagingMetadata<User>
                 {
-                    TotalCount = userCountTotal,
                     CurrentCount = filteredUserCount,
                     List = resultingUsers,
-                    SearchFilter = getUsersParams.SearchValue,
-                    CurrentPage = getUsersParams.PageNumber
+                    SearchValue = getUsersParams.SearchValue,
+                    ContinuationToken = usersInAccountsResult.ContinuationToken,
+                    IsLastChunk = usersInAccountsResult.IsLastChunk
                 };
 
                 return returnMetaData;

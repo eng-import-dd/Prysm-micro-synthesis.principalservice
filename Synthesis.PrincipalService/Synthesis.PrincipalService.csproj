@@ -200,11 +200,11 @@
     <Reference Include="Synthesis.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.7, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.7-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta002\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta001\lib\net452\Synthesis.Http.dll</HintPath>

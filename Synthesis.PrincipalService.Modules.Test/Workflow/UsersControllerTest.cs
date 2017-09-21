@@ -22,6 +22,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -270,7 +271,134 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
-    
+
+        #region PromoteGuest Tests
+
+        [Fact]
+        public async Task PromoteGuestSuccssTestAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User{ Id = Guid.NewGuid(), Email = "a@test.com"});
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId,LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(),It.IsAny<User>()), Times.Once);
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>()));
+
+
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Success);
+        }
+
+        [Fact]
+        public async Task PromoteGuestAutoShouldFaileIfNoLicenceAvailableAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, true));
+
+            _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            
+            
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFaileIfNoLicenceAvailableAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            await Assert.ThrowsAsync<LicenseAssignmentFailedException>(() =>  _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfUserIsAlreadyInTenantAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", TenantId = Guid.NewGuid()});
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfUserEmailIsEmptyAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com", TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false);
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+        }
+
+        [Fact]
+        public async Task PromoteGuestShoulldThrowValidationErrorIfUserIdEmptyAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", TenantId = Guid.NewGuid() });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.Empty;
+
+            _validatorMock.Setup(m => m.ValidateAsync(userid, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult( new List<ValidationFailure>(){new ValidationFailure("","" )} ));
+
+            await Assert.ThrowsAsync<ValidationFailedException>( () => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+        }
+        #endregion
 
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
@@ -289,12 +417,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 return (Task.FromResult(items.AsEnumerable()));
                                 
                             });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();
 
             var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
-            Assert.Equal(count, result.TotalCount);
+            Assert.Equal(count, result.List.Count);
         }
 
         [Fact]
@@ -314,12 +444,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                         return (Task.FromResult(items.AsEnumerable()));
 
                                     });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();
 
             var result = await _controller.GetUsersForAccountAsync(getUsersParams, tenantId, userId);
-            Assert.Equal(count, result.TotalCount);
+            Assert.Equal(count, result.List.Count);
         }
 
         [Fact]
@@ -387,4 +520,3 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
     }
 }
-
