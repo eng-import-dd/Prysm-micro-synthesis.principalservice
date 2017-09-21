@@ -11,6 +11,7 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -93,10 +94,10 @@ namespace Synthesis.PrincipalService.Modules
                 Description = "Delete a specific User resource."
             });
 
-            _metadataRegistry.SetRouteMetadata("PromoteUser", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("PromoteGuest", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Promote User",
+                Response = "Promote Guest",
                 Description = "Promote a guest to licensed User."
             });
 
@@ -234,15 +235,23 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
 
-                var result = await _userController.PromoteGuestUser(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
+                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
 
                 return Negotiate
                     .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.Created);
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (PromotionFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.PromotionFailed, "FAILED", ex.Message);
+            }
+            catch (LicenseAssignmentFailedException ex)
+            {
+                return Response.Forbidden(ResponseReasons.LicenseAssignmentFailed, "FAILED", ex.Message);
             }
             catch (Exception ex)
             {
