@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Synthesis.DocumentStorage;
-using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Requests;
@@ -10,7 +9,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using FluentValidation;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -21,18 +24,21 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILogger _logger;
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
+        private readonly IValidator _tenantIdValidator;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
             ILogger logger,
             IEmailUtility emailUtility,
-            IMapper mapper)
+            IMapper mapper,
+            IValidatorLocator validatorLocator)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _userRepository = repositoryFactory.CreateRepository<User>();
             _logger = logger;
             _emailUtility = emailUtility;
             _mapper = mapper;
+            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
         }
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
@@ -207,6 +213,55 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
             }
 
+        }
+
+        public async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        {
+            return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
+        }
+
+        private async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var existingUserInvites = (await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId)).ToList();
+
+            if (!allUsers)
+            {
+                var invitedEmails = existingUserInvites.Select(i => i.Email).ToList();
+
+                var tenantUsersList = new List<User>();
+
+                foreach (var batch in invitedEmails.Batch(150))
+                {
+                    var tenantUsers = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId && batch.Contains(u.Email));
+                    tenantUsersList.AddRange(tenantUsers);
+                }
+
+                var tenantUserEmails = tenantUsersList.Select(s => s.Email);
+                existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
+               }
+
+            var returnMetaData = new PagingMetadata<UserInviteResponse>
+            {
+                List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
+            };
+            return returnMetaData;
+        }
+    }
+
+    public static class ListBatchExtensions
+    {
+        public static IEnumerable<IEnumerable<T>> Batch<T>(this List<T> items, int maxItems)
+        {
+            return items.Select((item, inx) => new { item, inx })
+                        .GroupBy(x => x.inx / maxItems)
+                        .Select(g => g.Select(x => x.item));
         }
     }
 }

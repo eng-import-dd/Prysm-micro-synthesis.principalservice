@@ -323,6 +323,7 @@
     <Compile Include="Requests\PromoteGuestRequest.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
+    <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
@@ -334,6 +335,7 @@
     <Compile Include="Dao\Models\InvitedUser.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
