@@ -218,54 +218,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
             //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
-            #region Check Group Permissions for a user and allow him to modify License type
-            //if (!CollaborationService.GetGroupPermissionsForUser(UserId).Payload.Contains(PermissionEnum.CanManageUserLicenses))
-            //{
-            //    ServiceResult<LicenseType?> existingLicenseResult;
-
-            //    try
-            //    {
-            //        existingLicenseResult = await _licenseService.GetUserLicenseType(id, AccountId);
-            //    }
-            //    catch (FailedToConnectToLicenseServiceException failedToConnectException)
-            //    {
-            //        _loggingService.LogError(LogTopic.LICENSING, failedToConnectException, "Failed to update user because a connection could not be made to the license service.");
-            //        return new ServiceResult<SynthesisUserDTO>
-            //        {
-            //            Payload = null,
-            //            Message = "Failed to update user because a connection could not be made to the license service.",
-            //            ResultCode = ResultCode.Failed
-            //        };
-            //    }
-
-            //    if (existingLicenseResult.ResultCode == ResultCode.Success)
-            //    {
-            //        if (userDto.LicenseType != existingLicenseResult.Payload)
-            //        {
-            //            return new ServiceResult<SynthesisUserDTO>
-            //            {
-            //                Payload = null,
-            //                Message = "You are not authorized to manage license types",
-            //                ResultCode = ResultCode.Success
-            //            };
-            //        }
-            //    }
-            //    else
-            //    {
-            //        return new ServiceResult<SynthesisUserDTO>
-            //        {
-            //            Payload = null,
-            //            Message = existingLicenseResult.Message,
-            //            ResultCode = existingLicenseResult.ResultCode
-            //        };
-            //    }
-            //}
-            #endregion
-
             try
             {
                 var user = _mapper.Map<UpdateUserRequest, User>(userModel);
                 return await UpdateUserInDb(user, userId);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not find the user to update", ex);
+                throw;
             }
             catch (Exception ex)
             {
@@ -512,9 +473,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
             existingUser.Email = user.Email;
-            existingUser.PasswordAttempts = user.PasswordAttempts ?? user.PasswordAttempts;
+            existingUser.PasswordAttempts = user.PasswordAttempts;
             existingUser.IsLocked = user.IsLocked;
-            existingUser.IsIdpUser = user.IsIdpUser ?? user.IsIdpUser;
+            existingUser.IsIdpUser = user.IsIdpUser;
             if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != existingUser.PasswordHash)
             {
                 existingUser.PasswordHash = user.PasswordHash;
@@ -717,7 +678,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                 break;
                     }
                 }
-                var queryparams = new OrderedQueryParameters<User, string>()
+                var queryparams = new OrderedQueryParameters<User, string>
                 {
                     Criteria =criteria,
                     OrderBy = orderBy,
