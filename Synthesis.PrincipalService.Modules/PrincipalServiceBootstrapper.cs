@@ -6,7 +6,6 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Nancy.Responses;
-using Nancy.Serialization.JsonNet;
 using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
@@ -82,7 +81,7 @@ namespace Synthesis.PrincipalService
             {
                 return NancyInternalConfiguration.WithOverrides(config =>
                                                                 {
-                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(JsonNetSerializer) };
+                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) };
                                                                 });
             }
         }
@@ -219,6 +218,7 @@ namespace Synthesis.PrincipalService
             //Mapper
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<UserInviteProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -227,14 +227,20 @@ namespace Synthesis.PrincipalService
             // Individual validators must be registered here (as they are below)
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<TenantIdValidator>().AsSelf().As<IValidator>();
+
+            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
                    .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
 
 
+            builder.RegisterType<GroupsController>().As<IGroupsController>();
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 

@@ -187,9 +187,6 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Nancy.Serialization.JsonNet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.JsonNet.2.0.0-clinteastwood\lib\net452\Nancy.Serialization.JsonNet.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -307,9 +304,15 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\Machine.cs" />
     <Compile Include="Dao\Models\User.cs" />
+    <Compile Include="Dao\Models\UserInvite.cs" />
+    <Compile Include="Entity\PagingMetadata.cs" />
+    <Compile Include="Enums\DataSortOrder.cs" />
+    <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
+    <Compile Include="Modules\UserInviteModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
@@ -317,16 +320,31 @@
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
+    <Compile Include="Requests\PromoteGuestRequest.cs" />
+    <Compile Include="Responses\PromoteGuestResponse.cs" />
+    <Compile Include="Requests\UserInviteRequest.cs" />
+    <Compile Include="Responses\InviteUserStatus.cs" />
+    <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
+    <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Validators\GroupIdValidator.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
+    <Compile Include="Workflow\Controllers\IUserInvitesController.cs" />
+    <Compile Include="Workflow\Exceptions\LicenseAssignmentFailedException.cs" />
+    <Compile Include="Workflow\Exceptions\PromotionFailedException.cs" />
+    <Compile Include="Workflow\Controllers\UserInvitesController.cs" />
+    <Compile Include="Workflow\Controllers\GroupsController.cs" />
+    <Compile Include="Workflow\Controllers\IGroupsController.cs" />
     <Compile Include="Workflow\Controllers\IMachineController.cs" />
     <Compile Include="Workflow\Controllers\MachinesController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
@@ -340,9 +358,7 @@
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Entity\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />
