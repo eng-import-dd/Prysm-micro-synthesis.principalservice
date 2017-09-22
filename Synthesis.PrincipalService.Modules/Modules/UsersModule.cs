@@ -270,14 +270,14 @@ namespace Synthesis.PrincipalService.Modules
                 Boolean.TryParse(Context.CurrentUser.FindFirst(IsGuestClaim).Value, out var isGuest);
                 if (isGuest)
                 {
-                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: Guest user is not authorized to call this route!");
+                    return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetUserById: Guest user is not authorized to call this route!");
                 }
 
                 //TODO: Call Projects Microservice to get project level access result here. Currently hard coding to 1 (Success) - Yusuf
                 var resultCode = await ValidUserLevelAccess(userId);
-                if (resultCode != ResultCode.Success)
+                if (resultCode != HttpStatusCode.OK)
                 {
-                    return Response.Unauthorized("Unauthorized", ResultCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
+                    return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetUserById: No valid user level access to project!");
                 }
 
                 return await _userController.GetUserAsync(userId);
@@ -429,18 +429,18 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<ResultCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
+        private async Task<HttpStatusCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
             Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
             if (currentUserId == accessedUserId)
             {
-                return ResultCode.Success;
+                return HttpStatusCode.OK;
             }
 
             if (accessedUserId == Guid.Empty || await _userController.GetUserAsync(accessedUserId) == null)
             {
-                return ResultCode.RecordNotFound;
+                return HttpStatusCode.NotFound;
             }
             //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
@@ -449,7 +449,7 @@ namespace Synthesis.PrincipalService.Modules
                 var accessedUser = await _userController.GetUserAsync(accessedUserId);
                 if (tenantId == accessedUser.TenantId)
                 {
-                    return ResultCode.Success;
+                    return HttpStatusCode.OK;
                 }
             }
             catch (Exception ex)
@@ -458,7 +458,7 @@ namespace Synthesis.PrincipalService.Modules
                 throw;
             }
 
-            return ResultCode.Unauthorized;
+            return HttpStatusCode.Unauthorized;
         }
 
         private async Task<object> PromoteGuestAsync(dynamic input)

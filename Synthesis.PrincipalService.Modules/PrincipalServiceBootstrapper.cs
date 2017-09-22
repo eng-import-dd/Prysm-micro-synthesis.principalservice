@@ -230,6 +230,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UpdateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<TenantIdValidator>().AsSelf().As<IValidator>();
 
             builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();

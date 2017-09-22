@@ -1,13 +1,10 @@
 ﻿using Nancy;
-using Nancy.Json;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
-using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
-using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Collections.Generic;
@@ -42,6 +39,10 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitation");
             Post("api/v1/userinvites/resend", ResendEmailInvitationAsync, null, "ResendEmailInvitationLegacy");
 
+            Get("/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetdUsersInviteForTenantAsync");
+            Get("/api/v1/userinvites", GetUsersInvitedForTenantAsync, null, "GetUsersInvitedForTenantLegacy");
+
+
             OnError += (ctx, ex) =>
             {
                 _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
@@ -63,6 +64,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Resend Email Invite",
                 Description = "Resend Email invites for passed user list"
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetInvitedUsersForTenant", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "Get Invited User",
+                Description = "Gets all invited users for Tenant"
             });
         }
 
@@ -127,6 +135,28 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Error("Failed to resend an invite due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> GetUsersInvitedForTenantAsync(dynamic input)
+        {
+            bool allUsers = input.allusers;
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                var result = await _userInviteController.GetUsersInvitedForTenantAsync(tenantId, allUsers);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to get users invited for Tenant due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }

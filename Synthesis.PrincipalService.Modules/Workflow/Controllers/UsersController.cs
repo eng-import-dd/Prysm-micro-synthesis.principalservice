@@ -37,6 +37,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
+        private readonly IValidator _tenantIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
@@ -73,6 +74,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
+            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -158,11 +160,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
+            var tenantIdValidationresult = await _tenantIdValidator.ValidateAsync(tenantId);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
             {
                 errors.AddRange(userIdValidationResult.Errors);
+            }
+            if (!tenantIdValidationresult.IsValid)
+            {
+                errors.AddRange(tenantIdValidationresult.Errors);
             }
             if (errors.Any())
             {
@@ -601,17 +608,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                         OnlyCurrentUser = false,
                         IncludeInactive = false,
                         SortColumn = "FirstName",
-                        SortOrder = DataSortOrder.Ascending,
+                        SortDescending = false,
                         IdpFilter = IdpFilter.All,
                     };
                 }
-                if (tenantId == Guid.Empty)
-                {
-                    var ex = new ArgumentException("tenantId");
-                    _logger.LogMessage(LogLevel.Error, ex);
-                    throw ex;
-                }
-
                 var  criteria = new List<Expression<Func<User, bool>>>();
                 Expression<Func<User, string>> orderBy;
                 criteria.Add(u => u.TenantId == tenantId);
@@ -682,7 +682,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     Criteria =criteria,
                     OrderBy = orderBy,
-                    SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
+                    SortDescending = getUsersParams.SortDescending,
                     ContinuationToken = getUsersParams.ContinuationToken??""
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);

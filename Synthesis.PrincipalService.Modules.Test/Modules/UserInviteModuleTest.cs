@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.Remoting;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using AutoMapper;
 using Moq;
 using Nancy;
@@ -14,8 +15,10 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
@@ -148,6 +151,37 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
+        public async void GetInvitedUsersForTenantReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .Returns(Task.FromResult(new PagingMetadata<UserInviteResponse>()));
+
+            var response = await _browserAuth.Get("/v1/userinvites",
+                                                  with =>
+                                                  {
+                                                      with.HttpsRequest();
+                                                      with.Header("Accept","application/json");
+                                                      with.Header("Content-Type","application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async void GetInvitedUsersForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .ThrowsAsync(new ServerException());
+            var actual = await _browserAuth.Get("/v1/userinvites",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
         public async void ResendUserInviteReturnsSuccess()
         {
             var actual = await _browserAuth.Post(
@@ -193,5 +227,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
+
+        [Fact]
+        public async Task GetInvitedUsersForTenantReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Get("/v1/userinvites", 
+                                                    with =>
+                                                    {
+                                                        with.HttpRequest();
+                                                        with.Header("Accept", "application/json");
+                                                        with.Header("Content-Type", "application/json");
+                                                    });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
     }
 }

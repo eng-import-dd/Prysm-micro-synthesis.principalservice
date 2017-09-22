@@ -310,7 +310,6 @@
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Requests\UpdateUserRequest.cs" />
-    <Compile Include="Responses\ResultCode.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
@@ -336,6 +335,7 @@
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
