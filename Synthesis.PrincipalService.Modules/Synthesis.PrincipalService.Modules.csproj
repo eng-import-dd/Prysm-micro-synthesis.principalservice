@@ -305,8 +305,10 @@
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\Group.cs" />
+    <Compile Include="Dao\Models\Machine.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="Modules\MachinesModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
@@ -315,14 +317,18 @@
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
+    <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
+    <Compile Include="Workflow\Controllers\IMachineController.cs" />
+    <Compile Include="Workflow\Controllers\MachinesController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
   </ItemGroup>

@@ -23,12 +23,6 @@ namespace Synthesis.PrincipalService.Dao.Models
         public Guid? SettingProfileId { get; set; }
 
         [DataMember]
-        public string SettingProfileName { get; set; }
-
-        [DataMember]
-        public bool IsSelected { get; set; }
-
-        [DataMember]
         public Guid AccountId { get; set; }
 
         [DataMember]
@@ -45,15 +39,5 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         [DataMember]
         public DateTime? LastOnline { get; set; }
-
-        [DataMember]
-        public bool CurrentlyOnline { get; set; }
-
-        [DataMember]
-        public TimeSpan AveragePingTime { get; set; }
-
-        [Obsolete("Must keep because 2.3/2.4/2.5 clients have a hard reference")]
-        [DataMember]
-        public bool? IsUserLicenseRequired { get; set; }
     }
 }

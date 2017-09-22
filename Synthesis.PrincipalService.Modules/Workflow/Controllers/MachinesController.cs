@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<Machine> _machineRepository;
         private readonly IValidator _createMachineRequestValidator;
-        private readonly IValidator _userIdValidator;
+        private readonly IValidator _machineIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -48,13 +48,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             _machineRepository = repositoryFactory.CreateRepository<Machine>();
             _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
-            _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _eventService = eventService;
             _logger = logger;
             _mapper = mapper;
         }
 
-        public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId, Guid createdBy)
+        public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model)
         {
             var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
@@ -64,6 +63,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             var machine = _mapper.Map<CreateMachineRequest, Machine>(model);
+
+            var result = await CreateMachineInDB(machine);
+
+            await _eventService.PublishAsync(EventNames.MachineCreated);
+
+            return _mapper.Map<Machine, MachineResponse>(result);
         }
 
         private async Task<Machine> CreateMachineInDB(Machine machine)
@@ -90,7 +95,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             var result = await _machineRepository.CreateItemAsync(machine);
 
-
             return result;
         }
 
@@ -106,17 +110,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return machinesWithMatchingMachinesKey.Any(x => x.MachineId != machine.MachineId) == false;
         }
 
-        private async Task<bool> CopyMachineSettings(Guid machineId, Guid fromMachineId)
-        {
-            if(machineId == Guid.Empty)
-            {
-                _logger.Error("MachineId cannot be empty");
-                return false;
-            }
+        //private async Task<bool> CopyMachineSettings(Guid machineId, Guid fromMachineId)
+        //{
+        //    if(machineId == Guid.Empty)
+        //    {
+        //        _logger.Error("MachineId cannot be empty");
+        //        return false;
+        //    }
 
-            // TODO: The cloud implementation involves an SP. Need to figure out the correct way to implement it here.
-            var result = await _machineRepository.CreateItemAsync();
-            return true;
-        }
+        //    // TODO: The cloud implementation involves an SP. Need to figure out the correct way to implement it here.
+        //    var result = await _machineRepository.CreateItemAsync();
+        //    return true;
+        //}
     }
 }
