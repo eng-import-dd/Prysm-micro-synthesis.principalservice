@@ -309,7 +309,6 @@
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
-    <Compile Include="Responses\ResultCode.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
