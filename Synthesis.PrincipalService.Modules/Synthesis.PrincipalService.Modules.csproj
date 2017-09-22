@@ -304,7 +304,7 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
-    <Compile Include="Entity\PagingMetaData.cs" />
+    <Compile Include="Entity\PagingMetadata.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
@@ -329,7 +329,6 @@
     <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
-    <Compile Include="Dao\Models\InvitedUser.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />

@@ -8,18 +8,11 @@ namespace Synthesis.PrincipalService.Entity
 {
     public class PagingMetadata<T>
     {
-        public string ContinuationToken { get; set; }
-
         /// <summary>
         /// The number of records that macth the searched criteria
         /// </summary>
         public int CurrentCount { get; set; }
-
-        /// <summary>
-        /// States whether the number of records that are in last page.     
-        /// </summary>
-        public bool IsLastChunk { get; set; }
-
+        
         /// <summary>
         /// The search criteria entered by the user in the search field
         /// </summary>
@@ -37,5 +30,8 @@ namespace Synthesis.PrincipalService.Entity
 
         public List<T> List { get; set; }
 
+        public IEnumerable<char> ContinuationToken { get; set; }
+
+        public bool IsLastChunk { get; set; }
     }
 }
