@@ -29,13 +29,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<Machine> _machineRepository;
         private readonly IValidator _createMachineRequestValidator;
-        private readonly IValidator _machineIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
-        private readonly ILicenseApi _licenseApi;
-        private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
-        private readonly string _deploymentType;
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
 
@@ -74,7 +70,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private async Task<Machine> CreateMachineInDB(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
-
+            var t = await IsUniqueLocation(machine);
             if (!await IsUniqueLocation(machine))
             {
                 validationErrors.Add(new ValidationFailure(nameof(machine.MachineId), "Location was not unique"));
@@ -101,7 +97,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
             var accountMachines = await _machineRepository.GetItemsAsync(m => m.AccountId == machine.AccountId);
-            return accountMachines.Any(x => x.Location == machine.Location && x.MachineId == machine.MachineId);
+            return accountMachines.Any(x => x.Location == machine.Location && x.MachineId == machine.MachineId) == false;
         }
 
         private async Task<bool> IsUniqueMachineKey(Machine machine)

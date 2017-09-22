@@ -77,7 +77,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
 
-                var result = await _machineController.CreateMachineAsync(newMachine, tenantId, createdBy);
+                var result = await _machineController.CreateMachineAsync(newMachine);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -89,7 +89,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Error("Failed to create machine resource due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateMachine); ;
             }
         }
     }

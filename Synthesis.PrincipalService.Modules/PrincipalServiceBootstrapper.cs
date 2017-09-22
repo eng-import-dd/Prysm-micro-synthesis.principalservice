@@ -219,6 +219,7 @@ namespace Synthesis.PrincipalService
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
+                cfg.AddProfile<MachineProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -231,6 +232,7 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
@@ -238,6 +240,7 @@ namespace Synthesis.PrincipalService
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
+            builder.RegisterType<MachinesController>().As<IMachineController>();
 
 
             builder.RegisterType<GroupsController>().As<IGroupsController>();
