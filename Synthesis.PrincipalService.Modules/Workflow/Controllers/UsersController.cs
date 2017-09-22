@@ -543,7 +543,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                         OnlyCurrentUser = false,
                         IncludeInactive = false,
                         SortColumn = "FirstName",
-                        SortOrder = DataSortOrder.Ascending,
+                        SortDescending = false,
                         IdpFilter = IdpFilter.All,
                     };
                 }
@@ -617,7 +617,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     Criteria =criteria,
                     OrderBy = orderBy,
-                    SortDescending = getUsersParams.SortOrder == DataSortOrder.Descending,
+                    SortDescending = getUsersParams.SortDescending,
                     ContinuationToken = getUsersParams.ContinuationToken??""
                 };
                 var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);

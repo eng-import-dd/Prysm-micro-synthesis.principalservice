@@ -31,13 +31,12 @@ namespace Synthesis.PrincipalService.Entity
         public string SortColumn { get; set; }
 
         /// <summary>
-        /// The sort order
+        /// Flag to indicate data is sorted in decending order.
         /// </summary>
-        public DataSortOrder SortOrder { get; set; }
+        public bool SortDescending { get; set; }
 
         public List<T> List { get; set; }
 
     }
 
-    public enum DataSortOrder { Ascending, Descending }
 }

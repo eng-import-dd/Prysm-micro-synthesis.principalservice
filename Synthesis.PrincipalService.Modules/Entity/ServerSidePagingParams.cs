@@ -13,6 +13,7 @@ namespace Synthesis.PrincipalService.Entity
         public string  ContinuationToken { get; set; }
 
         public string SortColumn { get; set; }
-        public DataSortOrder SortOrder { get; set; }
+
+        public bool SortDescending { get; set; }
     }
 }
