@@ -467,10 +467,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 user.UserName = existingUser.UserName;
             }
-            if (!await IsUniqueUsername(id, user.UserName))
-            {
-                errors.Add(new ValidationFailure(nameof(user.UserName), "A user with that UserName already exists."));
-            }
             if (errors.Any())
             {
                 _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
