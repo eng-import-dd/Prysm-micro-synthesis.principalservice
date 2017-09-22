@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Synthesis.PrincipalService.Entity
 {
@@ -24,14 +20,22 @@ namespace Synthesis.PrincipalService.Entity
         public string SortColumn { get; set; }
 
         /// <summary>
-        /// The sort order
+        /// Flag to indicate data is sorted in decending order.
         /// </summary>
         public bool SortDescending { get; set; }
 
-        public List<T> List { get; set; }
+        /// <summary>
+        /// The continuation token get next chunk of data
+        /// </summary>
+        public string ContinuationToken { get; set; }
 
-        public IEnumerable<char> ContinuationToken { get; set; }
-
+        /// <summary>
+        /// Flag to indicate the last chunk of data
+        /// </summary>
         public bool IsLastChunk { get; set; }
+        /// <summary>
+        /// List of objects to be returned
+        /// </summary>
+        public List<T> List { get; set; }
     }
 }
