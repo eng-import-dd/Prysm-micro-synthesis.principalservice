@@ -323,7 +323,6 @@
     <Compile Include="Requests\PromoteGuestRequest.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
-    <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
