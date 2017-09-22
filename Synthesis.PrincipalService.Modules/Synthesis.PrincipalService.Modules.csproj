@@ -313,6 +313,7 @@
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
+    <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
