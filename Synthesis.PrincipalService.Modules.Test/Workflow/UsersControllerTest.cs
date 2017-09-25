@@ -566,11 +566,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             };
             await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
-    }
-    #endregion
-}
 
- 
         [Fact]
         public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
         {
