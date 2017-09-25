@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace Synthesis.PrincipalService.Requests
 {
@@ -21,10 +17,8 @@ namespace Synthesis.PrincipalService.Requests
 
         public Guid TenantId { get; set; }
 
-        [JsonProperty("is_guest")]
         public bool IsGuestUser { get; set; }
 
-        [JsonProperty("idp_mapped_groups")]
         public List<string> IdpMappedGroups { get; set; }
     }
 }
