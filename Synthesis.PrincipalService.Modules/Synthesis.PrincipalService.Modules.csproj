@@ -307,7 +307,8 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
-    <Compile Include="Responses\InviteUserStatus.cs" />
+    <Compile Include="Entity\PagingMetadata.cs" />
+    <Compile Include="Enums\DataSortOrder.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
@@ -323,6 +324,7 @@
     <Compile Include="Requests\PromoteGuestRequest.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
+    <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
@@ -332,6 +334,7 @@
     <Compile Include="Dao\Models\InvitedUser.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
@@ -355,9 +358,7 @@
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Entity\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />

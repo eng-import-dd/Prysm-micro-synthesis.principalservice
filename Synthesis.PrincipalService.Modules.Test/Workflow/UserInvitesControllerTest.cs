@@ -13,6 +13,12 @@ using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using FluentValidation;
+using FluentValidation.Results;
+using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
@@ -27,6 +33,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUserInvitesController _controller;
+        private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
 
         public UserInvitesControllerTest()
         {
@@ -39,13 +47,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
                                   .Returns(_userRepositoryMock.Object);
 
+            _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult());
+
+            _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
+                                 .Returns(_validatorMock.Object);
+
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
 
             _controller = new UserInvitesController(_repositoryFactoryMock.Object,
                                               _loggerMock.Object,
                                               _emailUtilityMock.Object,
-                                              mapper);
+                                              mapper,
+                                              _validatorLocatorMock.Object);
         }
 
         [Fact]
@@ -194,6 +209,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
 
             Assert.Empty(userInvite);
+        }
+
+        [Fact]
+        public async Task GetInvitedUsersForTenantIfUsersExists()
+        {
+            const int count = 5;
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+                                      .Returns(() =>
+                                               {
+                                                   var itemsList = new List<UserInvite>();
+                                                   for (var i = 0; i < count; i++)
+                                                   {
+                                                       itemsList.Add(new UserInvite());
+                                                   }
+
+                                                   IEnumerable<UserInvite> items = itemsList;
+                                                   return (Task.FromResult(items));
+                                               });
+
+            var tenantId = Guid.NewGuid();
+            var result = await _controller.GetUsersInvitedForTenantAsync(tenantId, true);
+
+            Assert.Equal(count, result.List.Count);
+
+
         }
     }
 }
