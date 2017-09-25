@@ -455,8 +455,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<UserResponse> UpdateUserInDb(User user, Guid id)
         {
-           var errors = new List<ValidationFailure>();
-            
             var existingUser = await _userRepository.GetItemAsync(id);
             if (existingUser == null)
             {
@@ -467,12 +465,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 user.UserName = existingUser.UserName;
             }
-            if (errors.Any())
-            {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
-                throw new ValidationFailedException(errors);
-            }
-
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
             existingUser.Email = user.Email;
