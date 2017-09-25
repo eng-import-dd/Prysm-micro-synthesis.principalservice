@@ -301,7 +301,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
             var tempPassword = GenerateRandomPassword(64);
