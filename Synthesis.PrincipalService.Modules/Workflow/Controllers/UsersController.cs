@@ -271,10 +271,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
-            //TODO: Validating tenant id in below block of code is temporary. - Yusuf
-            //SEC-76 branch has complete code to validate tenant id through validator classes.
-            //Once code is merged, the following code will be updated to use tenant id validator.
-
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
             {
