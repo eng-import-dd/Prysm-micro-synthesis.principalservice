@@ -466,7 +466,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
             }
             /* If a license could not be obtained lock the user that was just created. */
-            await LockUserAsync(user.Id.Value, true);
+            await LockUser(user.Id.Value, true);
             user.IsLocked = true;
 
             //Intimate the Org Admin of the user's teanant about locked user
@@ -495,8 +495,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
             return groups.FirstOrDefault()?.Id;
         }
+        private async Task<User> LockUser(Guid userId, bool locked)
+        {
+            var user = await _userRepository.GetItemAsync(userId);
+            user.IsLocked = locked;
 
-        public async Task<bool> LockUserAsync(Guid userId, bool locked)
+            await _userRepository.UpdateItemAsync(userId, user);
+            return user;
+        }
+        public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
             if (!validationResult.IsValid)
@@ -601,10 +608,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     throw new ValidationFailedException(validationErrors);
                 }
-            
-            existingUser.IsLocked = isLocked;
 
-            await _userRepository.UpdateItemAsync(id, existingUser);
+            await LockUser(id, isLocked);
+
             return true;
                 }
             }

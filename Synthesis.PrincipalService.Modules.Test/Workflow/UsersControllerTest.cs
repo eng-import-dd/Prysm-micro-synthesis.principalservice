@@ -282,7 +282,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                            .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
             var userId = Guid.NewGuid();
             var isLocked = false;
-            var result = await _controller.LockUserAsync(userId, isLocked);
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
             Assert.Equal(result, true);
 
@@ -295,7 +295,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
             var userId = Guid.NewGuid();
             var isLocked = false;
-            var result = await _controller.LockUserAsync(userId, isLocked);
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
             Assert.Equal(result, false);
 
         }
@@ -307,7 +307,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _licenseApiMock.Setup(m => m.ReleaseUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
             var userId = Guid.NewGuid();
             var isLocked = true;
-            var result = await _controller.LockUserAsync(userId, isLocked);
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
             Assert.Equal(result, false);
 
         }
@@ -323,7 +323,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var isLocked = false;
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
-            var result = await _controller.LockUserAsync(userId, isLocked);
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
             Assert.Equal(result, false);
 
         } 

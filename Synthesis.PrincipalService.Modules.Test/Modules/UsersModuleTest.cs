@@ -549,7 +549,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task LockUserReturnsSuccess()
         {
             _controllerMock
-                .Setup(uc => uc.LockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
             var actual = await _browserAuth.Post(
@@ -568,7 +568,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task LockUserReturnsBadRequest()
         {
             _controllerMock
-                .Setup(uc => uc.LockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
             var actual = await _browserAuth.Post(
@@ -587,7 +587,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task LockUserReturnsValidationException()
         {
             _controllerMock
-                .Setup(uc => uc.LockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var actual = await _browserAuth.Post(
@@ -606,7 +606,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task LockUserReturnsInternalServerError()
         {
             _controllerMock
-                .Setup(uc => uc.LockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .Throws(new Exception());
 
             var actual = await _browserAuth.Post(
