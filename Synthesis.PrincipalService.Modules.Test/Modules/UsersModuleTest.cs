@@ -30,7 +30,9 @@ using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 using Xunit;
-using ClaimTypes = System.Security.Claims.ClaimTypes;
+using Synthesis.Nancy.MicroService;
+using ClaimTypes = System.IdentityModel.Claims.ClaimTypes;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -152,9 +154,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
         }
-
-        #region Create User tests
-        
+        #region Create User Response Test  Cases
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()
         {
@@ -169,7 +169,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
         }
-
         [Fact]
         public async Task CreateUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
@@ -187,7 +186,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
-
         [Fact]
         public async Task CreateUserReturnsItemWithInvalidBodyReturnsBadRequest()
         {
@@ -206,7 +204,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
         }
-
         [Fact]
         public async Task CreateUserReturnsBadRequestIfValidationFails()
         {
@@ -225,8 +222,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
-
-
         [Fact]
         public async Task CreateUserReadsTenantIdFromUserClaimAsync()
         {
@@ -245,6 +240,157 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                 });
             Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
             _controllerMock.Verify(m=>m.CreateUserAsync(It.IsAny<CreateUserRequest>(), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), Guid.Parse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2")));
+        }
+        #endregion
+
+        #region GetUserByIdBasic Response Test Cases
+        [Fact]
+        public async Task GetUserByIdBasicReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new UserResponse()));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/api/v1/users/{validUserId}/basic", with =>
+             {
+                 with.HttpRequest();
+                 with.Header("Accept", "application/json");
+                 with.Header("Content-Type", "application/json");
+             });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUserByIdBasicReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/api/v1/users/{validUserId}/basic", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUserByIdBasicReturnsUnauthorized()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new UserResponse()));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserNoAuth.Get($"/api/v1/users/{validUserId}/basic", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUserByIdBasicReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Throws(new Exception());
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/api/v1/users/{validUserId}/basic", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUserByIdBasicReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                .Throws(new NotFoundException(string.Empty));
+
+            var validUserId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"v1/users/{validUserId}/basic", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        #endregion
+
+        #region GetUsersForAccount Response Test Cases
+        [Fact]
+        public async Task GetUsersForAccountReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
+
+            var response = await _browserAuth.Get($"/api/v1/users/", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUsersForAccountReturnsNotFound()
+        {
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new NotFoundException(string.Empty));
+
+            var response = await _browserAuth.Get($"/api/v1/users/", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUsersForAccountReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await _browserAuth.Get($"/api/v1/users/", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUsersForAccountReturnsUnauthorized()
+        {
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
+
+            var response = await _browserNoAuth.Get($"/api/v1/users/", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUsersForAccountReturnsInternalError()
+        {
+            _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new Exception());
+
+            var response = await _browserAuth.Get($"/api/v1/users/", with =>
+            {
+                with.HttpRequest();
+                with.Header("Accept", "application/json");
+                with.Header("Content-Type", "application/json");
+            });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
         #endregion
 

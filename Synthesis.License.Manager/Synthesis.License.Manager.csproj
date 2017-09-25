@@ -125,7 +125,7 @@
     <Compile Include="Models\LicenseDto.cs" />
     <Compile Include="Models\LicenseResponse.cs" />
     <Compile Include="Models\LicenseSummaryDto.cs" />
-    <Compile Include="Models\LicenseTypeEnum.cs" />
+    <Compile Include="Models\LicenseType.cs" />
     <Compile Include="Models\ServiceResult.cs" />
     <Compile Include="Models\UserLicenseDto.cs" />
     <Compile Include="Models\UserLicenseResponse.cs" />

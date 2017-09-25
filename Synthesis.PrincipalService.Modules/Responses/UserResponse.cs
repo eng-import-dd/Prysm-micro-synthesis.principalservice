@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
 using System;
+using System.Linq;
 using Nancy;
 using Newtonsoft.Json.Converters;
 
@@ -44,6 +45,10 @@ namespace Synthesis.PrincipalService.Responses
         public DateTime? CreatedDate { get; set; }
 
         public DateTime? LastAccessDate { get; set; }
+
+        public string FullName { get { return string.Format("{0} {1}", FirstName, LastName); } }
+
+        public string Initials { get { return string.Format("{0}{1}", FirstName?.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault()); } }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public UserResponseResultCode ResultCode { get; set; }
