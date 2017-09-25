@@ -157,9 +157,6 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Nancy.Serialization.JsonNet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.JsonNet.2.0.0-clinteastwood\lib\net452\Nancy.Serialization.JsonNet.dll</HintPath>
-    </Reference>
     <Reference Include="Nancy.Testing, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Testing.2.0.0-clinteastwood\lib\net452\Nancy.Testing.dll</HintPath>
     </Reference>
@@ -176,8 +173,8 @@
     <Reference Include="Synthesis.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.7, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.7-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus">
       <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
@@ -251,9 +248,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Modules\UserInviteModuleTest.cs" />
+    <Compile Include="Modules\GroupsModuleTest.cs" />
     <Compile Include="Modules\UsersModuleTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
+    <Compile Include="Workflow\UserInvitesControllerTest.cs" />
+    <Compile Include="Workflow\GroupsControllerTest.cs" />
     <Compile Include="Workflow\UsersControllerTest.cs" />
   </ItemGroup>
   <ItemGroup>

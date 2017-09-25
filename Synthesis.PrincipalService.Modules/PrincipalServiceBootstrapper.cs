@@ -6,7 +6,6 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Bootstrappers.Autofac;
 using Nancy.Responses;
-using Nancy.Serialization.JsonNet;
 using Newtonsoft.Json;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
@@ -82,7 +81,7 @@ namespace Synthesis.PrincipalService
             {
                 return NancyInternalConfiguration.WithOverrides(config =>
                                                                 {
-                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(JsonNetSerializer) };
+                                                                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) };
                                                                 });
             }
         }
@@ -127,7 +126,9 @@ namespace Synthesis.PrincipalService
                         new Claim(ClaimTypes.Name, "Test User"),
                         new Claim(ClaimTypes.Email, "test@user.com"),
                         new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
-                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
+                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2"),
+                        new Claim("IsGuest","false"),
+                        new Claim("GuestProjectId","45411E97-03D4-4449-9EFE-552EA42C35C7")
                     },
                     AuthenticationTypes.Basic);
                 ctx.CurrentUser = new ClaimsPrincipal(identity);
@@ -219,6 +220,7 @@ namespace Synthesis.PrincipalService
             //Mapper
             var mapper = new MapperConfiguration(cfg => {
                                                      cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<UserInviteProfile>();
                                                  }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -227,14 +229,20 @@ namespace Synthesis.PrincipalService
             // Individual validators must be registered here (as they are below)
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<TenantIdValidator>().AsSelf().As<IValidator>();
+
+            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
                    .WithParameter(new ResolvedParameter(
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
 
 
+            builder.RegisterType<GroupsController>().As<IGroupsController>();
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 

@@ -187,9 +187,6 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Nancy.Serialization.JsonNet, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nancy.Serialization.JsonNet.2.0.0-clinteastwood\lib\net452\Nancy.Serialization.JsonNet.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -206,11 +203,11 @@
     <Reference Include="Synthesis.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.7, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.7-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta002\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.0.13, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
@@ -261,6 +258,7 @@
       <HintPath>..\packages\Synthesis.Tracking.Web.1.0.0-beta1\lib\net452\Synthesis.Tracking.Web.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -306,22 +304,45 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
+    <Compile Include="Dao\Models\UserInvite.cs" />
+    <Compile Include="Responses\InviteUserStatus.cs" />
+    <Compile Include="Mapper\UserInviteProfile.cs" />
+    <Compile Include="Entity\PagingMetaData.cs" />
+    <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
+    <Compile Include="Modules\UserInviteModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
+    <Compile Include="Requests\PromoteGuestRequest.cs" />
+    <Compile Include="Responses\PromoteGuestResponse.cs" />
+    <Compile Include="Requests\UserInviteRequest.cs" />
+    <Compile Include="Responses\UserInviteResponse.cs" />
+    <Compile Include="Requests\GetUserParams.cs" />
+    <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
+    <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Validators\GroupIdValidator.cs" />
+    <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
+    <Compile Include="Workflow\Controllers\IUserInvitesController.cs" />
+    <Compile Include="Workflow\Exceptions\LicenseAssignmentFailedException.cs" />
+    <Compile Include="Workflow\Exceptions\PromotionFailedException.cs" />
+    <Compile Include="Workflow\Controllers\UserInvitesController.cs" />
+    <Compile Include="Workflow\Controllers\GroupsController.cs" />
+    <Compile Include="Workflow\Controllers\IGroupsController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
   </ItemGroup>
@@ -332,9 +353,6 @@
     <None Include="x64\librdkafkacpp.lib" />
     <None Include="x86\librdkafka.lib" />
     <None Include="x86\librdkafkacpp.lib" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Entity\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
