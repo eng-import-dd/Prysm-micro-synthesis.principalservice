@@ -1,27 +1,27 @@
-﻿using FluentValidation;
+﻿using AutoMapper;
+using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.Logging;
-using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Workflow.Controllers;
-using Synthesis.Nancy.MicroService;
-using System;
-using System.Threading.Tasks;
-using Xunit;
-using System.Threading;
-using AutoMapper;
 using Synthesis.License.Manager.Interfaces;
+using Synthesis.License.Manager.Models;
+using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
-using System.Linq.Expressions;
-using System.Collections.Generic;
-using System.Linq;
-using Synthesis.License.Manager.Models;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Workflow.Controllers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -44,8 +44,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _mapper = new MapperConfiguration(cfg =>
                                               {
-                                                  cfg.AddProfile<UserProfile>();
-                                              }).CreateMapper();
+                                                         cfg.AddProfile<UserProfile>();
+                                                     }).CreateMapper();
 
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
@@ -76,23 +76,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               deploymentType);
         }
 
+        /// <summary>
+        /// Gets the user by identifier asynchronous returns user if exists.
+        /// </summary>
+        /// <returns>Task object.</returns>
         [Fact]
         public async Task GetUserByIdAsyncReturnsUserIfExistsAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new User());
+                           .ReturnsAsync(new User());
 
             var userId = Guid.NewGuid();
             var result = await _controller.GetUserAsync(userId);
 
-            Assert.IsType<User>(result);
+            Assert.IsType<UserResponse>(result);
         }
 
+        /// <summary>
+        /// Gets the user by identifier asynchronous throws not found exception if user does not exist.
+        /// </summary>
+        /// <returns>Task object.</returns>
         [Fact]
         public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExistAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(default(User));
+                           .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
@@ -103,7 +111,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicateAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                               .ReturnsAsync(new List<User> { new User() });
+                           .ReturnsAsync(new List<User> { new User() });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
@@ -117,7 +125,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicateAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                               .ReturnsAsync(new List<User> { new User() });
+                           .ReturnsAsync(new List<User> { new User() });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
@@ -138,7 +146,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                              });
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
-                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
@@ -170,7 +178,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                              });
 
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new User());
+                           .ReturnsAsync(new User());
 
             _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
                                 .ReturnsAsync(new List<Group> { new Group { Id = adminGroupId } }.AsEnumerable());
@@ -182,7 +190,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(new List<User> { new User() { FirstName = "admin", Email = "admin@test.com" } }.AsEnumerable());
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
-                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Failed });
+                .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Failed });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
 
@@ -201,14 +209,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task CreatUserAsyncUserIsLockedIfLicenseApiThrowsExceptionAsync()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                               .ReturnsAsync((User u) =>
-                                             {
-                                                 u.Id = Guid.NewGuid();
-                                                 return u;
-                                             });
+                           .ReturnsAsync((User u) =>
+                                         {
+                                             u.Id = Guid.NewGuid();
+                                             return u;
+                                         });
 
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new User());
+                           .ReturnsAsync(new User());
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
 
@@ -390,7 +398,83 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
         }
-
         #endregion
+
+        [Fact]
+        public async Task GetUsersBasicAsyncReturnsUsersIfExists()
+        {
+            const int count = 3;
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .Returns(() =>
+                            {
+                                var userList = new List<User>();
+                                for (var i = 0; i < count; i++)
+                                {
+                                    userList.Add(new User());
+                                }
+
+                                List<User> items = userList;
+                                return (Task.FromResult(items.AsEnumerable()));
+                                
+                            });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var getUsersParams = new GetUsersParams();
+
+            var result = await _controller.GetUsersBasicAsync(tenantId, userId, getUsersParams);
+            Assert.Equal(count, result.List.Count);
+        }
+
+        [Fact]
+        public async Task GetUsersForAccountIfExists()
+        {
+            const int count = 3;
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                           .Returns(() =>
+                                    {
+                                        var userList = new List<User>();
+                                        for (var i = 0; i < count; i++)
+                                        {
+                                            userList.Add(new User());
+                                        }
+
+                                        List<User> items = userList;
+                                        return (Task.FromResult(items.AsEnumerable()));
+
+                                    });
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+
+            var tenantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var getUsersParams = new GetUsersParams();
+
+            var result = await _controller.GetUsersForAccountAsync(getUsersParams, tenantId, userId);
+            Assert.Equal(count, result.List.Count);
+        }
+
+        [Fact]
+        public async Task GetUserByIdBasicReturnsUserIfExists()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                          .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var result = await _controller.GetUserAsync(userId);
+
+            Assert.IsType<UserResponse>(result);
+        }
+
+        [Fact]
+        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(default(User));
+
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+        }
     }
 }

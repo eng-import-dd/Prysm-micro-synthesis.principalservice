@@ -16,7 +16,11 @@ using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
+using Synthesis.Nancy.MicroService.Security;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
@@ -32,6 +36,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
+        private readonly IValidator _tenantIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -66,6 +71,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
+            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -107,7 +113,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<User> GetUserAsync(Guid id)
+        /// <inheritdoc />
+        public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
             if (!validationResult.IsValid)
@@ -115,7 +122,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-
+            
             var result = await _userRepository.GetItemAsync(id);
 
             if (result == null)
@@ -123,10 +130,70 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning($"A User resource could not be found for id {id}");
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
-
-            return result;
+            return _mapper.Map<User, UserResponse>(result);
         }
 
+        /// <inheritdoc />
+        public async Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var userListResult = await GetAccountUsersFromDb(tenantId, userId, getUsersParams);
+            if(userListResult == null)
+            {
+                _logger.Warning($"Users resource could not be found for input data.");
+                throw new NotFoundException($"Users resource could not be found for input data.");
+            }
+
+            var basicUserResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(userListResult);
+            return basicUserResponse;
+        }
+
+        public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        {
+            var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
+            var tenantIdValidationresult = await _tenantIdValidator.ValidateAsync(tenantId);
+            var errors = new List<ValidationFailure>();
+
+            if (!userIdValidationResult.IsValid)
+            {
+                errors.AddRange(userIdValidationResult.Errors);
+            }
+            if (!tenantIdValidationresult.IsValid)
+            {
+                errors.AddRange(tenantIdValidationresult.Errors);
+            }
+            if (errors.Any())
+            {
+                _logger.Warning("Failed to validate the resource id and/or resource while attempting to get a User resource.");
+                throw new ValidationFailedException(errors);
+            }
+
+            try
+            {
+                var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
+                if (!usersInAccount.Any())
+                {
+                    _logger.Warning($"Users for the account could not be found");
+                    throw new NotFoundException($"Users for the account could not be found");
+                }
+
+                var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
+                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
+                return userResponse;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex);
+                return null;
+            }
+
+        }
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
         {
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
@@ -323,7 +390,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                    tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
-
         private async Task<User> CreateUserInDb(User user)
         {
             var validationErrors = new List<ValidationFailure>();
@@ -464,6 +530,119 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     ? u.LdapId == ldapId
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
+        }
+        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
+        {
+            try
+            {
+                if (getUsersParams == null)
+                {
+                    getUsersParams = new GetUsersParams
+                    {
+                        SearchValue = "",
+                        OnlyCurrentUser = false,
+                        IncludeInactive = false,
+                        SortColumn = "FirstName",
+                        SortDescending = false,
+                        IdpFilter = IdpFilter.All,
+                    };
+                }
+                var  criteria = new List<Expression<Func<User, bool>>>();
+                Expression<Func<User, string>> orderBy;
+                criteria.Add(u => u.TenantId == tenantId);
+
+                if (getUsersParams.OnlyCurrentUser)
+                {
+                    criteria.Add(u => u.Id == currentUserId);
+                }
+
+                if (!getUsersParams.IncludeInactive)
+                {
+                    criteria.Add(u => !u.IsLocked);
+                }
+                switch (getUsersParams.IdpFilter)
+                {
+                    case IdpFilter.IdpUsers:
+                        criteria.Add(u => u.IsIdpUser == true);
+                        break;
+                    case IdpFilter.LocalUsers:
+                        criteria.Add(u => u.IsIdpUser == false);
+                        break;
+                    case IdpFilter.NotSet:
+                        criteria.Add(u => u.IsIdpUser == null);
+                        break;
+                }
+
+                if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
+                {
+                    criteria.Add(x =>
+                             x != null &&
+                             (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                           getUsersParams.SearchValue.ToLower()) ||
+                             x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
+                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
+                }
+                if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
+                {
+                    orderBy = u => u.FirstName;
+                }
+                else
+                {
+                        switch (getUsersParams.SortColumn.ToLower())
+                        {
+                            case "firstname":
+                                orderBy = u => u.FirstName;
+                                break;
+
+                            case "lastname":
+                                orderBy = u => u.LastName;
+                                break;
+
+                            case "email":
+                                orderBy = u => u.Email;
+                                break;
+
+                            case "username":
+                                orderBy = u => u.UserName;
+                                break;
+
+                            default:
+                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                                orderBy = u => u.FirstName;
+                                break;
+                    }
+                }
+                var queryparams = new OrderedQueryParameters<User, string>()
+                {
+                    Criteria =criteria,
+                    OrderBy = orderBy,
+                    SortDescending = getUsersParams.SortDescending,
+                    ContinuationToken = getUsersParams.ContinuationToken??""
+                };
+                var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+                if (!usersInAccountsResult.Items.Any())
+                {
+                    throw new NotFoundException("Users for this account could not be found");
+                }
+                var usersInAccounts = usersInAccountsResult.Items.ToList();
+                var filteredUserCount = usersInAccounts.Count;
+                var resultingUsers = usersInAccounts;
+                var returnMetaData = new PagingMetadata<User>
+                {
+                    CurrentCount = filteredUserCount,
+                    List = resultingUsers,
+                    SearchValue = getUsersParams.SearchValue,
+                    ContinuationToken = usersInAccountsResult.ContinuationToken,
+                    IsLastChunk = usersInAccountsResult.IsLastChunk
+                };
+
+                return returnMetaData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, ex+" Failed to get users for account");
+                throw;
+            }
         }
     }
 }

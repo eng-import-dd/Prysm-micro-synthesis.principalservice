@@ -18,7 +18,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 
