@@ -34,6 +34,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IRepository<Group> _groupRepository;
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
+        private readonly IValidator _tenantIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -68,6 +69,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
+            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -273,11 +275,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //SEC-76 branch has complete code to validate tenant id through validator classes.
             //Once code is merged, the following code will be updated to use tenant id validator.
 
-           if (tenantId == Guid.Empty)
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
             {
-                IEnumerable<ValidationFailure> errors = new []{new ValidationFailure("","") };
-                _logger.Warning("Failed to validate the tenant id .");
-                throw new ValidationFailedException(errors);
+                _logger.Warning("Failed to validate the tenant id.");
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             if (model.UserId == null || model.UserId == Guid.Empty)
@@ -303,7 +305,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        public async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
             var tempPassword = GenerateRandomPassword(64);
@@ -327,16 +329,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
                 if (groupResult == null)
                 {
-                   throw  new IdpUserException($"Failed to update Idp user groups for user {result.Id.Value}");
-                }
-            }
-            else
-            {
-                //if the user is created but the license allocation fails, CreateUserAsync locks the 
-                //user account, but returns the usr object without setting the locked flag. We update it before returning the object
-                if (result != null)
-                {
-                    result.IsLocked = true;
+                   throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
                 }
             }
 
@@ -406,8 +399,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             salt = cryptoService.Salt;
             return hash;
         }
-
-
+        
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -447,10 +439,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return PromoteGuestResultCode.Success;
         }
-
-
-
-
+        
         private List<string> GeTenantEmailDomains(Guid tenantId)
         {
             //Todo Get Tenant domains from tenant Micro service
@@ -467,7 +456,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
                    tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
-
 
         private async Task<User> CreateUserInDb(User user)
         {

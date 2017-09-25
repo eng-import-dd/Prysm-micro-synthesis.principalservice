@@ -346,7 +346,7 @@
     <Compile Include="Workflow\Controllers\IGroupsController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
-    <Compile Include="Workflow\Exceptions\IdpUserException.cs" />
+    <Compile Include="Workflow\Exceptions\IdpUserProvisioningException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

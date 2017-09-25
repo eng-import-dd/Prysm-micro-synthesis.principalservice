@@ -444,6 +444,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 LastName = "TestUser"
             };
 
+            _validatorMock.Setup(m => m.ValidateAsync(tenantId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
+
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
     }
