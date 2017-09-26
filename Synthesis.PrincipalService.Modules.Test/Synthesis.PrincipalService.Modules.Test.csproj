@@ -174,8 +174,8 @@
     <Reference Include="Synthesis.Configuration, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.1.0.0\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage, Version=1.0.0.3, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.3-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage">
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.0.7-beta\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus">
       <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
@@ -275,7 +275,9 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
