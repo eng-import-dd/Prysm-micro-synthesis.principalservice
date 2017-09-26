@@ -32,8 +32,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
-        //private const string OrgAdminRoleName = "Org_Admin";
-        //private const string BasicUserRoleName = "Basic_User";
 
         public MachinesController(
             IRepositoryFactory repositoryFactory,
@@ -108,18 +106,5 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey);
             return machinesWithMatchingMachinesKey.Any(x => x.Id != machine.Id) == false;
         }
-
-        //private async Task<bool> CopyMachineSettings(Guid machineId, Guid fromMachineId)
-        //{
-        //    if(machineId == Guid.Empty)
-        //    {
-        //        _logger.Error("MachineId cannot be empty");
-        //        return false;
-        //    }
-
-        //    // TODO: The cloud implementation involves an SP. Need to figure out the correct way to implement it here.
-        //    var result = await _machineRepository.CreateItemAsync();
-        //    return true;
-        //}
     }
 }
