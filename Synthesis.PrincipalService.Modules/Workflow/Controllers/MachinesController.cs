@@ -33,6 +33,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Constructor for the MachinesController.
+        /// </summary>
+        /// <param name="repositoryFactory">The Repository Factory </param>
+        /// <param name="validatorLocator">The Validator Locator </param>
+        /// <param name="logger">The Logger Object </param>
+        /// <param name="mapper">The Mapper Object </param>
+        /// <param name="eventService">The Event Service </param>
         public MachinesController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
