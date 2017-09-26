@@ -311,7 +311,6 @@
     <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
-    <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
