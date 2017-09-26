@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Dao.Models
     {
         [DataMember]
         [JsonProperty("id")]
-        public Guid MachineId { get; set; }
+        public Guid Id { get; set; }
 
         [DataMember]
         public string MachineKey { get; set; }

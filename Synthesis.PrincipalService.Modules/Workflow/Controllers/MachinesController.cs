@@ -32,8 +32,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
-        private const string OrgAdminRoleName = "Org_Admin";
-        private const string BasicUserRoleName = "Basic_User";
+        //private const string OrgAdminRoleName = "Org_Admin";
+        //private const string BasicUserRoleName = "Basic_User";
 
         public MachinesController(
             IRepositoryFactory repositoryFactory,
@@ -52,6 +52,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model)
         {
             var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
+
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a Machine resource.");
@@ -64,21 +65,23 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             await _eventService.PublishAsync(EventNames.MachineCreated);
 
+            // TODO: Call to CopyMachineSettings. To be implemented as a service call to SettingsService.
+
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
         private async Task<Machine> CreateMachineInDB(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
-            var t = await IsUniqueLocation(machine);
+
             if (!await IsUniqueLocation(machine))
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.MachineId), "Location was not unique"));
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Location was not unique"));
             }
 
             if (!await IsUniqueMachineKey(machine))
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.MachineId), "Machine Key was not unique"));
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
             }
 
             if(validationErrors.Any())
@@ -97,13 +100,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
             var accountMachines = await _machineRepository.GetItemsAsync(m => m.AccountId == machine.AccountId);
-            return accountMachines.Any(x => x.Location == machine.Location && x.MachineId == machine.MachineId) == false;
+            return accountMachines.Any(x => x.Location == machine.Location && x.Id == machine.Id) == false;
         }
 
         private async Task<bool> IsUniqueMachineKey(Machine machine)
         {
             var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey);
-            return machinesWithMatchingMachinesKey.Any(x => x.MachineId != machine.MachineId) == false;
+            return machinesWithMatchingMachinesKey.Any(x => x.Id != machine.Id) == false;
         }
 
         //private async Task<bool> CopyMachineSettings(Guid machineId, Guid fromMachineId)
