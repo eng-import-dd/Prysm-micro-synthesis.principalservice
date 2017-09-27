@@ -385,7 +385,6 @@ namespace Synthesis.PrincipalService.Modules
                     return Response.Unauthorized("Unauthorized", resultCode.ToString(), "UpdateUser: Error occured!");
                 }
             }
-            
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to update a User resource.", ex);
@@ -396,6 +395,14 @@ namespace Synthesis.PrincipalService.Modules
             {
                return await _userController.UpdateUserAsync(userId, userModel);
 
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (Exception ex)
             {
