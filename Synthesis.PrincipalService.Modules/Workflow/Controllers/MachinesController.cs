@@ -49,6 +49,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IEventService eventService)
         {
             _machineRepository = repositoryFactory.CreateRepository<Machine>();
+
             _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
             _eventService = eventService;
             _logger = logger;
@@ -105,14 +106,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
-            var accountMachines = await _machineRepository.GetItemsAsync(m => m.AccountId == machine.AccountId);
-            return accountMachines.Any(x => x.Location == machine.Location && x.Id == machine.Id) == false;
+            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id == machine.Id));
+            return accountMachines.Any() == false;
         }
 
         private async Task<bool> IsUniqueMachineKey(Machine machine)
         {
-            var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey);
-            return machinesWithMatchingMachinesKey.Any(x => x.Id != machine.Id) == false;
+            var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey && (m.Id != machine.Id));
+            return machinesWithMatchingMachinesKey.Any() == false;
         }
     }
 }

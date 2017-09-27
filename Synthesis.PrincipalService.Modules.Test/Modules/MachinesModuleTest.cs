@@ -76,7 +76,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                     MachineKey = string.Empty,
                     Location = string.Empty,
                     SettingProfileId = Guid.Parse("5558bf1d-8fa5-4332-9a79-dc7ee9a390e9"),
-                    AccountId = Guid.Parse("24a5372f-b6b5-4901-82db-ca9779cf051f"),
+                    TenantId = Guid.Parse("24a5372f-b6b5-4901-82db-ca9779cf051f"),
                     DateCreated = DateTime.UtcNow,
                     DateModified = DateTime.UtcNow,
                     ModifiedBy = Guid.Parse("61be0f58-0a89-43d8-937a-6eae3d8d441b"),

@@ -54,9 +54,9 @@ namespace Synthesis.PrincipalService.Modules
         {
             _metadataRegistry.SetRouteMetadata("CreateMachine", new SynthesisRouteMetadata
             {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Create a new machine",
-                Description = ""
+                Description = "Create a new machine resource."
             });
         }
 

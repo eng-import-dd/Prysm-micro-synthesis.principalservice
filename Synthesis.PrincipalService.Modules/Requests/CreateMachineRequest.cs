@@ -6,7 +6,7 @@ namespace Synthesis.PrincipalService.Requests
     public class CreateMachineRequest
     {
         [JsonProperty("id")]
-        public Guid MachineId { get; set; }
+        public Guid Id { get; set; }
          
         public string MachineKey { get; set; }
          
@@ -33,8 +33,6 @@ namespace Synthesis.PrincipalService.Requests
         public bool CurrentlyOnline { get; set; }
          
         public TimeSpan AveragePingTime { get; set; }
-
-        [Obsolete("Must keep because 2.3/2.4/2.5 clients have a hard reference")]
-        public bool? IsUserLicenseRequired { get; set; }
+       
     }
 }

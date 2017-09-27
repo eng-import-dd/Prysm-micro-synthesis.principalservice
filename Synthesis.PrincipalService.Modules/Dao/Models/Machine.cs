@@ -20,10 +20,11 @@ namespace Synthesis.PrincipalService.Dao.Models
         public string Location { get; set; }
 
         [DataMember]
+        [NullableSchema]
         public Guid? SettingProfileId { get; set; }
 
         [DataMember]
-        public Guid AccountId { get; set; }
+        public Guid TenantId { get; set; }
 
         [DataMember]
         public DateTime DateCreated { get; set; }
