@@ -523,6 +523,11 @@ namespace Synthesis.PrincipalService.Modules
                 _logger.Error("Failed to auto provision and refresh groups", ex);
                 return Response.Forbidden(ResponseReasons.IdpUserAutoProvisionError);
             }
+            catch (PromotionFailedException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.PromotionFailed);
+            }
             catch (Exception ex)
             {
                 _logger.Error("Failed to auto provision and refresh groups", ex);
