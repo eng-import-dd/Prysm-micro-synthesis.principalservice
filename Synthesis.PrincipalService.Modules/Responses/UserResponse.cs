@@ -49,16 +49,5 @@ namespace Synthesis.PrincipalService.Responses
         public string FullName { get { return string.Format("{0} {1}", FirstName, LastName); } }
 
         public string Initials { get { return string.Format("{0}{1}", FirstName?.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault()); } }
-
-        [JsonConverter(typeof(StringEnumConverter))]
-        public UserResponseResultCode ResultCode { get; set; }
-
-        public string Message { get; set; }
-    }
-
-    public enum UserResponseResultCode
-    {
-        Failed = 0,
-        Success = 1
     }
 }
