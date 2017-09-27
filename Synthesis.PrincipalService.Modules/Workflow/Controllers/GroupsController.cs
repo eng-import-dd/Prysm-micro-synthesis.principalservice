@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using FluentValidation;
+﻿using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -7,12 +6,12 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -79,6 +78,25 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var result = await CreateGroupInDb(model);
 
             _eventService.Publish(EventNames.GroupCreated, result);
+            return result;
+        }
+
+        public async Task<Group> GetGroupByIdAsync(Guid groupId)
+        {
+            var validationResult = await _groupValidatorId.ValidateAsync(groupId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a Group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _groupRepository.GetItemAsync(groupId);
+            if (result == null)
+            {
+                _logger.Warning($"A Group resource could not be found for id {groupId}");
+                throw new NotFoundException($"A Group resource could not be found for id {groupId}");
+            }
+
             return result;
         }
 
