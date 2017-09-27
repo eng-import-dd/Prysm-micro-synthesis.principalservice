@@ -7,7 +7,7 @@ using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    public class GetUsersParams : ServerSidePagingParams
+    public class GetUsersParams: ServerSidePagingParams
     {
         public bool OnlyCurrentUser { get; set; }
         public bool IncludeInactive { get; set; }

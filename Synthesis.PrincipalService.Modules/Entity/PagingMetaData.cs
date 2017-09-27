@@ -12,7 +12,7 @@ namespace Synthesis.PrincipalService.Entity
         /// <summary>
         /// The search criteria entered by the user in the search field
         /// </summary>
-        public string SearchFilter { get; set; }
+        public string SearchValue { get; set; }
 
         /// <summary>
         /// The name of the column to sort
@@ -38,4 +38,5 @@ namespace Synthesis.PrincipalService.Entity
         /// </summary>
         public List<T> List { get; set; }
     }
+
 }
