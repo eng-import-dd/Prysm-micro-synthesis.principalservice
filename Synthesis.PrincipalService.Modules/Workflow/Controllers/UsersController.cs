@@ -548,7 +548,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
             return groups.FirstOrDefault()?.Id;
         }
-
         private async Task<User> LockUser(Guid userId, bool locked)
         {
             var user = await _userRepository.GetItemAsync(userId);
@@ -557,7 +556,128 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await _userRepository.UpdateItemAsync(userId, user);
             return user;
         }
+        public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
+        {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+            try
+            {
+                //TODO: dependency on group implementation to get all the groupIds
+                #region  Get superadmin group ids
 
+                // if trying to lock a user we need to check if it is a superAdmin user
+                //if (isLocked && _collaborationService.IsSuperAdmin(userId))
+                //{
+                //    // Determine the number of non locked superAdmin users
+                //    var superAdminUserIds = _collaborationService.GetUserGroupsForGroup(_collaborationService.SuperAdminGroupId).Payload.Select(x => x.UserId);
+                //    var countOfNonLockedSuperAdmins = superAdminUserIds.Count(id => !_collaborationService.GetUserById(id).Payload.IsLocked ?? false);
+
+                //    // reject locking the last non-locked superAdmin user
+                //    if (countOfNonLockedSuperAdmins <= 1)
+                //    {
+                //        return new ServiceResult<bool>
+                //        {
+                //            Payload = false,
+                //            Message = "LockUser: Failed to lock user", // Do not disclose that this user is in the superadmin group
+                //            ResultCode = ResultCode.Failed
+                //        };
+                //    }
+                //}
+
+
+                #endregion
+                return await UpdateLockUserDetailsInDb(userId, locked);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Couldn't Lock the user: ", ex);
+                throw;
+            }
+        }
+
+        private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
+        {
+            var validationErrors = new List<ValidationFailure>();
+            try
+            {
+                var existingUser = await _userRepository.GetItemAsync(id);
+                if (existingUser == null)
+                {
+                    validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));
+                }
+                else
+                {
+                    var licenseRequestDto = new UserLicenseDto
+                    {
+                        UserId = id.ToString(),
+                        AccountId = existingUser.TenantId.ToString()
+                    };
+
+                    if (isLocked)
+                    {
+                        try
+                        {
+                            /* If the user is being locked, remove the associated license. */
+                            var removeUserLicenseResult = await _licenseApi.ReleaseUserLicenseAsync(licenseRequestDto);
+
+                            if (removeUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+                            {
+                                validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to remove license for the user"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogMessage(LogLevel.Error, "Erro removing license from user", ex);
+                            throw;
+                        }
+                    }
+                    else // unlock
+                    {
+                        try
+                        {
+                            /* If not locked, request a license. */
+                            var assignUserLicenseResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
+
+                            if (assignUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+                            {
+
+                                validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to assign license to the user"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
+                            throw;
+
+                        }
+                    }
+                
+
+                if (validationErrors.Any())
+                {
+                    throw new ValidationFailedException(validationErrors);
+                }
+
+            await LockUser(id, isLocked);
+
+            return true;
+                }
+            }
+        catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Erro occured while updating locked/unlocked field in the DB", ex);
+
+            }
+
+            return false;
+        }
+
+        
+        
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {
             var users = await _userRepository

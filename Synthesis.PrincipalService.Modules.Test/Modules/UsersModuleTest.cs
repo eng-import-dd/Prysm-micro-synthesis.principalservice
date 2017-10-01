@@ -630,5 +630,83 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         }
         #endregion
+
+        #region Lock User Response Test Cases
+        [Fact]
+        public async Task LockUserReturnsSuccess()
+        {
+            _controllerMock
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .ReturnsAsync(true);
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new User() { IsLocked = true });
+                                                 });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+            //_controllerMock.Verify(m => m.LockUserAsync(Guid.Parse("f629f87c-366d-4790-ac34-964e3558bdcd"),true));
+        }
+        [Fact]
+        public async Task LockUserReturnsBadRequest()
+        {
+            _controllerMock
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .ReturnsAsync(true);
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody("{]");
+                                                 });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            //_controllerMock.Verify(m => m.LockUserAsync(Guid.Parse("f629f87c-366d-4790-ac34-964e3558bdcd"),true));
+        }
+        [Fact]
+        public async Task LockUserReturnsValidationException()
+        {
+            _controllerMock
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new User());
+                                                 });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task LockUserReturnsInternalServerError()
+        {
+            _controllerMock
+                .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
+                .Throws(new Exception());
+
+            var actual = await _browserAuth.Post(
+                                                 "/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new User());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        } 
+        #endregion
     }
 }

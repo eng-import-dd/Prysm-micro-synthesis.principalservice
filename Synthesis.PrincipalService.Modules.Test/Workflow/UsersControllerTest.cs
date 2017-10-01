@@ -272,6 +272,63 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
 
+        #region Lock User Test Cases
+        [Fact]
+        public async Task LockUserAsyncIfUserExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
+            Assert.Equal(result, true);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfAssigningLicenseFails()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfReleaseLicenseFails()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.ReleaseUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
+            var userId = Guid.NewGuid();
+            var isLocked = true;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfUserNotFound()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        } 
+        #endregion
+
         #region PromoteGuest Tests
 
         [Fact]
@@ -412,7 +469,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 {
                                     userList.Add(new User());
                                 }
-
                                 List<User> items = userList;
                                 return (Task.FromResult(items.AsEnumerable()));
                                 
