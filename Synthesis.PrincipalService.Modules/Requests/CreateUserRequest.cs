@@ -28,6 +28,5 @@ namespace Synthesis.PrincipalService.Requests
         public bool? IsIdpUser { get; set; }
 
         public LicenseType? LicenseType { get; set; }
-
     }
 }
