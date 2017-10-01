@@ -637,7 +637,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
                 if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
                 {
-                    // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
                     orderBy = u => u.FirstName;
                 }
                 else
@@ -680,7 +679,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 }
                 var usersInAccounts = usersInAccountsResult.Items.ToList();
                 var filteredUserCount = usersInAccounts.Count;
-                var resultingUsers = usersInAccounts.ToList();
+                var resultingUsers = usersInAccounts;
                 var returnMetaData = new PagingMetadata<User>
                 {
                     CurrentCount = filteredUserCount,
