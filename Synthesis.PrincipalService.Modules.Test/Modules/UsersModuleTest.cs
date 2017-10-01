@@ -543,5 +543,92 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Verify(m => m.PromoteGuestUserAsync(Guid.Parse("C3220603-09D9-452B-B204-6CC3946CE1F4"), Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"), LicenseType.UserLicense, false));
         }
         #endregion
+
+        #region Update User Async Response Test Cases
+
+        [Fact]
+        public async Task UpdateUserReturnsOk()
+        {
+            var actual = await _browserAuth.Put(
+                                                 "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(new User());
+                                                 });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+
+        }
+
+
+        [Fact]
+        public async Task UpdateUserReturnsUnauthorized()
+        {
+            var actual = await _browserNoAuth.Put(
+                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new User());
+                                                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task UpdateUserReturnsNotFound()
+        {
+            var actual = await _browserAuth.Put(
+                                                  "/v1/users/somestring",
+                                                  with =>
+                                                  {
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                      with.HttpRequest();
+                                                      with.JsonBody(new User());
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task UpdateUserReturnsBadRequestDueToBindingException()
+        {
+            
+            var actual = await _browserAuth.Put(
+                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody("[}");
+                                                });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task UpdateUserReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
+                           .Throws(new Exception());
+            var actual = await _browserAuth.Put(
+                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new UpdateUserRequest());
+                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+
+        }
+        #endregion
     }
 }

@@ -476,5 +476,51 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
+
+        [Fact]
+        public async Task UpdateUserSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest()
+            {
+               FirstName = "FirstName",
+               LastName = "LastName",
+               Email = "cmalyala@prysm.com",
+               PasswordAttempts = 3,
+               IsLocked = false,
+               IsIdpUser = false
+            };
+
+            var result = await _controller.UpdateUserAsync(userId,user);
+            Assert.IsType<UserResponse>(result);
+        }
+
+        [Fact]
+        public async Task UpdateUserValidationException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            _validatorMock.Setup(m => m.ValidateAsync(userId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.ValidateAsync(user, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
+            Assert.Equal(ex.Errors.ToList().Count,3);
+        }
+
+        [Fact]
+        public async Task UpdateUserNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
+        }
     }
 }
