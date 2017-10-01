@@ -82,6 +82,34 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
+        public async Task<Guid> DeleteGroupAsync(Guid groupId)
+        {
+            var validationResult = await _groupValidatorId.ValidateAsync(groupId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to delete a Group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            try
+            {
+                await _groupRepository.DeleteItemAsync(groupId);
+
+                _eventService.Publish(new ServiceBusEvent<Guid>
+                {
+                    Name = EventNames.GroupDeleted,
+                    Payload = groupId
+                });
+                return groupId;
+            }
+            catch (DocumentNotFoundException)
+            {
+                // The resource not being there is what we wanted.
+            }
+
+            return Guid.Empty;
+        }
+
         /// <summary>
         /// Creates the group in database.
         /// </summary>

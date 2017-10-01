@@ -69,5 +69,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId,userId);
             Assert.IsType<Group>(result);
         }
+
+        [Fact]
+        public async Task DeleteGroupAsyncReturnsNonEmptyGuidIfSuccessful()
+        {
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Returns(Task.FromResult(Guid.NewGuid()));
+
+            var groupId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(groupId);
+            Assert.IsType<Guid>(result);
+        }
     }
 }

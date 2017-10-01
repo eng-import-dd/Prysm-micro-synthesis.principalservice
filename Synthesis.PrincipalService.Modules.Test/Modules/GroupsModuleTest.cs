@@ -122,6 +122,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                });
         }
 
+        #region Create Group Test cases
         [Fact]
         public async Task CreateGroupReturnsOk()
         {
@@ -192,5 +193,59 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
+        #endregion
+
+        #region Delete Group Test cases
+        [Fact]
+        public async Task DeleteGroupReturnsOk()
+        {
+            var actual = await _browserAuth.Delete(
+                                                 "/v1/groups/", with =>
+                                                               {
+                                                                   with.Header("Accept", "application/json");
+                                                                   with.Header("Content-Type", "application/json");
+                                                                   with.HttpRequest();
+                                                                   with.JsonBody(Guid.NewGuid());
+                                                               });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Delete(
+                                                 "/v1/groups/",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(Guid.NewGuid());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Delete(
+                                                 "/v1/groups/",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     with.JsonBody(Guid.NewGuid());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+        #endregion
     }
 }

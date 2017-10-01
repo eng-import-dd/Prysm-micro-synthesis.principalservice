@@ -7,5 +7,6 @@ namespace Synthesis.PrincipalService.Constants
         public const string UserPromoted = "UserPromoted";
 
         public const string GroupCreated = "GroupCreated";
+        public const string GroupDeleted = "GroupDeleted";
     }
 }

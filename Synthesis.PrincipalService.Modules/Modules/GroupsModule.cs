@@ -47,6 +47,7 @@ namespace Synthesis.PrincipalService.Modules
 
             SetupRouteMetadata();
             SetupRoute_CreateGroup();
+            SetupRoute_DeleteGroup();
         }
 
         /// <summary>
@@ -98,6 +99,32 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_DeleteGroup()
+        {
+            const string path = "/v1/groups/";
+            Delete(path, DeleteGroupAsync, null, "CreateGroupAsync");
+            Delete(LegacyBaseRoute + path, DeleteGroupAsync, null, "CreateGroupAsync");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataDescription = "Deletes a Group";
+
+            _metadataRegistry.SetRouteMetadata("DeleteGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("DeleteGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
         /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
@@ -124,6 +151,26 @@ namespace Synthesis.PrincipalService.Modules
                 var result = await _groupsController.CreateGroupAsync(newGroup, tenantId, userId);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to create group resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> DeleteGroupAsync(dynamic input)
+        {
+            try
+            {
+                Guid groupId = Guid.Parse(input.groupId);
+                var result = await _groupsController.DeleteGroupAsync(groupId);
+
+                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
             {
