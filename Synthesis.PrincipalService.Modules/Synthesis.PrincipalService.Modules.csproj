@@ -305,6 +305,7 @@
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
+    <Compile Include="Responses\CanPromoteUserResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />

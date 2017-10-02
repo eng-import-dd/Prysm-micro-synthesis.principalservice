@@ -706,6 +706,50 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new User());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+        #endregion
+
+        #region Can Promote user Test cases
+        [Fact]
+        public async Task CanPromoteuserReturnsSuccess()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Returns(Task.FromResult(new CanPromoteUserResponse()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                     {
+                                                                         with.HttpRequest();
+                                                                         with.Header("Accept", "application/json");
+                                                                         with.Header("Content-Type", "application/json");
+                                                                     });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsBadrequest()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new ValidationException(new List<ValidationFailure>()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         } 
         #endregion
     }

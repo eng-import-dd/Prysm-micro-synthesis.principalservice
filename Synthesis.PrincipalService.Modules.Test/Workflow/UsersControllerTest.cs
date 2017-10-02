@@ -578,5 +578,36 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
+
+        [Fact]
+        public async Task CanPromoteUserIfUserExists()
+        {
+            
+            var email = "ch@gmm.com";
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            var result = await _controller.CanPromoteUserAsync(email);
+            var response = CanPromoteUserResultCode.UserCanBePromoted;
+            Assert.Equal(response, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteUserIfEmailIsEmpty()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            var email = "";
+            await Assert.ThrowsAsync<ValidationException>(() => _controller.CanPromoteUserAsync(email));
+        }
+        [Fact]
+        public async Task CanPromoteUserNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+            var email = "ch@gmm.com";
+            var result = await _controller.CanPromoteUserAsync(email);
+            var response = CanPromoteUserResultCode.UserDoesNotExist;
+            Assert.Equal(response, result.ResultCode);
+        }
     }
 }

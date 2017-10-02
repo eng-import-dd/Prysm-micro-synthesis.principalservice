@@ -243,7 +243,58 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             
         }
 
-        
+        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
+        {
+            var isValidEmail = EmailValidator.IsValid(email);
+            if (!isValidEmail)
+            {
+                _logger.Warning("Email is either empty or invalid.");
+                throw new ValidationException("Email is either empty or invalid");
+            }
+
+            try
+            {
+                var existingUser = await _userRepository.GetItemAsync(u => u.Email.Equals(email));
+                if (existingUser==null)
+                {
+                    _logger.Error("User not found with that email.");
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserDoesNotExist,
+                    }; 
+                }
+                if (existingUser.TenantId != Guid.Empty)
+                {
+                    _logger.Warning("User already in an account");
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                    };
+                }
+                var domain = existingUser.Email.Substring(existingUser.Email.IndexOf('@') + 1);
+                var hasMatchingTenantDomains = GeTenantEmailDomains(existingUser.TenantId).Contains(domain);
+                if (hasMatchingTenantDomains)
+                {
+                    _logger.Warning("User already in an account");
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                    };
+                }
+
+                return new CanPromoteUserResponse
+                {
+                    ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
+                    UserId = existingUser.Id
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("User not found with that email.", ex);
+                throw;
+            }
+        }
+
         public async Task DeleteUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);

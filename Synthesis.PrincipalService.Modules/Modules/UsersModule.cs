@@ -11,6 +11,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using FluentValidation;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
@@ -49,6 +50,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersForAccount();
             SetupRoute_UpdateUser();
             SetupRouteMetadata_LockUser();
+            SetupRoute_CanPromoteUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -109,6 +111,32 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("UpdateUserLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_CanPromoteUser()
+        {
+            const string path = "/v1/users/canpromoteuser";
+            Get(path, CanPromoteUser, null, "CanPromoteUser");
+            Get(LegacyBaseRoute + path, CanPromoteUser, null, "CanPromoteUserLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "States whether a user can be promoted";
+
+            _metadataRegistry.SetRouteMetadata("CanPromoteUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("CanPromoteUserLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -500,6 +528,26 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> CanPromoteUser(dynamic input)
+        {
+            string email = input.email;
+            try
+            {
+                var result= await _userController.CanPromoteUserAsync(email);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while determining a User can be promoted", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+        }
         private async Task<HttpStatusCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
