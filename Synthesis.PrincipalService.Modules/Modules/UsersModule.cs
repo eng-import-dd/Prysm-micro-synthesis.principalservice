@@ -47,6 +47,8 @@ namespace Synthesis.PrincipalService.Modules
             // Initialize documentation
             SetupRouteMetadata();
             SetupRoute_GetUsersForAccount();
+            SetupRoute_UpdateUser();
+            SetupRouteMetadata_LockUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -54,9 +56,6 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUserById();
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
-
-            Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
-            Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
 
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
@@ -70,14 +69,11 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ex.Message);
             };
         }
+
         private void SetupRoute_GetUsersForAccount()
         {
             const string path = "/v1/users/";
-            Get(path, GetUsersForAccount, with=>
-                                          {
-                                              var requestQuery = with.Request.Query;
-                                              return true;
-                                          } , "GetUsersForAccount");
+            Get(path, GetUsersForAccount, null, "GetUsersForAccount");
             Get(LegacyBaseRoute + path, GetUsersForAccount, null, "GetUsersForAccountLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
@@ -90,6 +86,29 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("GetUsersLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_UpdateUser()
+        {
+            const string path = "/v1/users/{id:guid}";
+            Put(path, UpdateUserAsync, null, "UpdateUser");
+            Put(LegacyBaseRoute + path, UpdateUserAsync, null, "UpdateUserLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Update User";
+            var metadataDescription = "Update User resource.";
+            _metadataRegistry.SetRouteMetadata("UpdateUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("UpdateUserLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -209,6 +228,68 @@ namespace Synthesis.PrincipalService.Modules
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
+        }
+
+        
+        private void SetupRouteMetadata_LockUser()
+        {
+            const string path = "/v1/users/{userId:guid}/lock";
+            Post(path, LockUserAsync, null, "LockuserAsync");
+            Post(LegacyBaseRoute + path, LockUserAsync, null, "LockuserAsyncLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Lock User";
+            var metadataDescription = "Locks the respective user";
+            _metadataRegistry.SetRouteMetadata("LockUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("LockUserLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private async Task<object> LockUserAsync(dynamic input)
+        {
+            Guid id = input.userId;
+            User newUser;
+            try
+            {
+                newUser = this.Bind<User>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            try
+            {
+                var result =await _userController.LockOrUnlockUserAsync(id, newUser.IsLocked);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                _logger.Error("Error occured", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to Lock/Unlock user resource due to an error", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.InternalServerError);
+            }
         }
 
         private async Task<object> CreateUserAsync(dynamic input)
@@ -357,12 +438,16 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;
-            User userModel;
-
+            UpdateUserRequest userModel;
             try
             {
-                userId = input.id;
-                userModel = this.Bind<User>();
+                userId = Guid.Parse(input.id);
+                userModel = this.Bind<UpdateUserRequest>();
+                var resultCode = await ValidUserLevelAccess(userId, requiredPermission: PermissionEnum.CanEditUser);
+                if (resultCode != HttpStatusCode.OK)
+                {
+                    return Response.Unauthorized("Unauthorized", resultCode.ToString(), "UpdateUser: Error occured!");
+                }
             }
             catch (Exception ex)
             {
@@ -372,7 +457,16 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.UpdateUserAsync(userId, userModel);
+               return await _userController.UpdateUserAsync(userId, userModel);
+
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (Exception ex)
             {
