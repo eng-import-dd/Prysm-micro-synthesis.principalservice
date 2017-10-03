@@ -258,6 +258,7 @@
     <Compile Include="Workflow\MachinesControllerTest.cs" />
     <Compile Include="Workflow\UserInvitesControllerTest.cs" />
     <Compile Include="Workflow\GroupsControllerTest.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidatorTest.cs" />
     <Compile Include="Workflow\UsersControllerTest.cs" />
   </ItemGroup>
   <ItemGroup>
