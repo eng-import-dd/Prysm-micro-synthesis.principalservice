@@ -205,7 +205,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                    with.Header("Accept", "application/json");
                                                                    with.Header("Content-Type", "application/json");
                                                                    with.HttpRequest();
-                                                                   with.JsonBody(Guid.NewGuid());
+                                                                   
                                                                });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
         }
@@ -223,7 +223,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.Header("Accept", "application/json");
                                                      with.Header("Content-Type", "application/json");
                                                      with.HttpRequest();
-                                                     with.JsonBody(Guid.NewGuid());
+                                                     
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
@@ -240,7 +240,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.Header("Accept", "application/json");
                                                      with.Header("Content-Type", "application/json");
                                                      with.HttpRequest();
-                                                     with.JsonBody(Guid.NewGuid());
+                                                     
                                                  });
 
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
