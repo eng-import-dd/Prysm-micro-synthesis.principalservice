@@ -90,19 +90,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var assignedTenantId = await GetTenantIdForGroup(groupId);
-            if (assignedTenantId != Guid.Empty)
-            {
-                if (assignedTenantId != tenantId)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-            }
-            else
-            {
-                throw new UnauthorizedAccessException();
-            }
-
             var result = await _groupRepository.GetItemAsync(groupId);
             if (result == null)
             {
@@ -110,19 +97,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException($"A Group resource could not be found for id {groupId}");
             }
 
-            return result;
-        }
-
-        public async Task<Guid> GetTenantIdForGroup(Guid groupId)
-        {
-           var result = await _groupRepository.GetItemAsync(groupId);
-            if (result == null)
+            var assignedTenantId = result.TenantId;
+            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
             {
-                _logger.Warning($"A Group resource could not be found for id {groupId}");
-                throw new NotFoundException($"A Group resource could not be found for id {groupId}");
+                throw new UnauthorizedAccessException();
             }
-
-            return result.TenantId;
+           
+            return result;
         }
 
         /// <summary>
