@@ -200,7 +200,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task DeleteGroupReturnsOk()
         {
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/", with =>
+                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830", with =>
                                                                {
                                                                    with.Header("Accept", "application/json");
                                                                    with.Header("Content-Type", "application/json");
@@ -217,7 +217,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Throws(new Exception());
 
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/",
+                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
@@ -234,7 +234,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/",
+                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");

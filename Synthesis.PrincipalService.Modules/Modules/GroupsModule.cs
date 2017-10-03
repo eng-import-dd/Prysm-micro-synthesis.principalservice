@@ -101,9 +101,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_DeleteGroup()
         {
-            const string path = "/v1/groups/";
-            Delete(path, DeleteGroupAsync, null, "CreateGroupAsync");
-            Delete(LegacyBaseRoute + path, DeleteGroupAsync, null, "CreateGroupAsync");
+            const string path = "/v1/groups/{groupId}";
+            Delete(path, DeleteGroupAsync, null, "DeleteGroupAsync");
+            Delete(LegacyBaseRoute + path, DeleteGroupAsync, null, "DeleteGroupAsync");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
