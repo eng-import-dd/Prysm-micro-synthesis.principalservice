@@ -56,7 +56,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUserById();
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
-
+            SetupRoute_ResendUserWelcomeEmailAsync();
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
 
@@ -86,6 +86,29 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("GetUsersLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_ResendUserWelcomeEmailAsync()
+        {
+            const string path = "/v1/users/resendwelcomemail";
+            Post(path, ResendUserWelcomeEmailAsync, null, "ResendUserWelcomeEmail");
+            Post(LegacyBaseRoute + path, ResendUserWelcomeEmailAsync, null, "ResendUserWelcomeEmailLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Resend Welcome Email";
+            var metadataDescription = "Resend Welcome Email to the User.";
+            _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmail", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmailLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -435,6 +458,44 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+
+        private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
+        {
+            BasicUserResponse basicUser;
+            try
+            {
+                basicUser = this.Bind<BasicUserResponse>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to update a User resource.", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            try
+            {
+                var result = await _userController.ResendUserWelcomeEmailAsync(basicUser.Email, basicUser.FirstName);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                _logger.Error("Error occured", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to send email due to an error", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.InternalServerError);
+            }
+
+        }
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;

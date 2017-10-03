@@ -706,7 +706,54 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new User());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
-        } 
+        }
+        #endregion
+
+        #region Resend welcome Email Test Cases
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsOk()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Returns(Task.FromResult(true));
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                      with.JsonBody(new BasicUserResponse());
+                                                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                   {
+                                                                                       with.HttpRequest();
+                                                                                       with.Header("Accept", "application/json");
+                                                                                       with.Header("Content-Type", "application/json");
+                                                                                       with.JsonBody(new BasicUserResponse());
+                                                                                   });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsBadRequestDuetoBinding()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                   {
+                                                                                       with.HttpRequest();
+                                                                                       with.Header("Accept", "application/json");
+                                                                                       with.Header("Content-Type", "application/json");
+                                                                                       with.JsonBody("{]");
+                                                                                   });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
         #endregion
     }
 }

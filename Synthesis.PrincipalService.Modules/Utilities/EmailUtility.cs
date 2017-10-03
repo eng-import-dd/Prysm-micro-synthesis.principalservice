@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
+using System.Threading.Tasks;
 using Nancy.Helpers;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
@@ -89,7 +90,7 @@ namespace Synthesis.PrincipalService.Utilities
             return email;
         }
 
-        public bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from)
+        public async Task<bool> SendGuestInvite(string projectName, string projectCode, string guestEmail, string @from)
         {
             try
             {
@@ -104,7 +105,7 @@ namespace Synthesis.PrincipalService.Utilities
                 replacedContent = replacedContent.Replace("{ProjectName}", projectName);
                 replacedContent = replacedContent.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
 
-                SendEmail(guestEmail, "", "", subject, replacedContent, "");
+                await SendEmail(guestEmail, "", "", subject, replacedContent, "");
             }
             catch (Exception ex)
             {
@@ -115,7 +116,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendResetPasswordEmail(string email, string name, string link)
+        public async Task<bool> SendResetPasswordEmail(string email, string name, string link)
         {
             try
             {
@@ -124,7 +125,7 @@ namespace Synthesis.PrincipalService.Utilities
                 var replacedContent = _resetPasswordEmail.Replace("{Link}", link);
                 replacedContent = replacedContent.Replace("{Name}", name);
 
-                SendEmail(email, "", "", subject, replacedContent, "");
+                await SendEmail(email, "", "", subject, replacedContent, "");
             }
             catch (Exception ex)
             {
@@ -135,7 +136,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
+        public async Task<bool> SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
         {
             try
             {
@@ -149,7 +150,7 @@ namespace Synthesis.PrincipalService.Utilities
                 var replacedContent = _createGuestInviteEmail.Replace("{Link}", link);
                 replacedContent = replacedContent.Replace("{FirstName}", firstName);
 
-                SendEmail(email, "", "", subject, replacedContent, "");
+                await SendEmail(email, "", "", subject, replacedContent, "");
             }
             catch (Exception ex)
             {
@@ -160,7 +161,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
+        public async Task<bool> SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
         {
             try
             {
@@ -172,7 +173,7 @@ namespace Synthesis.PrincipalService.Utilities
                 replacedContent = replacedContent.Replace("{FirstName}", userFirstName);
                 replacedContent = replacedContent.Replace("{WebClientLink}", ConfigurationManager.AppSettings.Get("BaseWebClientUrl"));
 
-                SendEmail(email, "", "", subject, replacedContent, "");
+                await SendEmail(email, "", "", subject, replacedContent, "");
             }
             catch (Exception ex)
             {
@@ -183,8 +184,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments,
-            string fromFullName)
+        public async Task<bool> SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName)
         {
             try
             {
@@ -204,7 +204,7 @@ namespace Synthesis.PrincipalService.Utilities
                                 i => string.Format("<img src=\"cid:{1}\" alt={0} width=\"400\"/>", i.Name, i.Name))));
                 }
 
-                SendEmail(emailAddresses, cc, bcc, subject, replacedContent, "", true, attachmentList);
+                await SendEmail(emailAddresses, cc, bcc, subject, replacedContent, "", true, attachmentList);
             }
             catch (Exception ex)
             {
@@ -215,7 +215,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendUserInvite(List<UserInviteResponse> newInvitedUsers)
+        public async Task<bool> SendUserInvite(List<UserInviteResponse> newInvitedUsers)
         {
             if (newInvitedUsers == null)
             {
@@ -234,7 +234,7 @@ namespace Synthesis.PrincipalService.Utilities
 
                     replacedContent = replacedContent.Replace("{Firstname}", user.FirstName);
 
-                    SendEmail(user.Email, "", "", subject, replacedContent, "");
+                    await SendEmail(user.Email, "", "", subject, replacedContent, "");
                     user.LastInvitedDate = DateTime.Now;
                 }
             }
@@ -247,7 +247,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public bool SendWelcomeEmail(string email, string firstname)
+        public async Task<bool> SendWelcomeEmail(string email, string firstname)
         {
             try
             {
@@ -257,7 +257,7 @@ namespace Synthesis.PrincipalService.Utilities
 
                 replacedContent = replacedContent.Replace("{Firstname}", firstname);
 
-                SendEmail(email, "", "", subject, replacedContent, "");
+                await SendEmail(email, "", "", subject, replacedContent, "");
             }
             catch (Exception ex)
             {
@@ -269,7 +269,7 @@ namespace Synthesis.PrincipalService.Utilities
 
         }
 
-        public bool SendUserLockedMail(List<User> orgAdmins,string userfullname, string useremail)
+        public async Task<bool> SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail)
         {
             try
             {
@@ -282,7 +282,7 @@ namespace Synthesis.PrincipalService.Utilities
                 foreach (var orgAdmin in orgAdmins)
                 {
                     replacedContent = replacedContent.Replace("{Firstname}", orgAdmin.FirstName);
-                    SendEmail(orgAdmin.Email, "", "", subject, replacedContent, "");
+                    await SendEmail(orgAdmin.Email, "", "", subject, replacedContent, "");
                 }
                
             }
@@ -297,17 +297,17 @@ namespace Synthesis.PrincipalService.Utilities
 
         #region Send Emails
 
-        private void SendEmail(string toEmail, string ccEmail, string bccEmail, string subject, string htmlBody,
+        private async Task SendEmail(string toEmail, string ccEmail, string bccEmail, string subject, string htmlBody,
             string textBody)
         {
             string[] to = {toEmail};
             string[] cc = {ccEmail};
             string[] bcc = {bccEmail};
 
-            SendEmail(to, cc, bcc, subject, htmlBody, textBody, true, new List<Attachment>());
+            await SendEmail(to, cc, bcc, subject, htmlBody, textBody, true, new List<Attachment>());
         }
 
-        private void SendEmail(IEnumerable<string> toEmail, IEnumerable<string> ccEmail, IEnumerable<string> bccEmail, string subject,
+        private async Task SendEmail(IEnumerable<string> toEmail, IEnumerable<string> ccEmail, IEnumerable<string> bccEmail, string subject,
             string htmlBody, string textBody, bool asHtml, IEnumerable<Attachment> attachments)
         {
             MailMessage message = new MailMessage();
@@ -367,7 +367,7 @@ namespace Synthesis.PrincipalService.Utilities
 
             try
             {
-                client.Send(message);
+                await client.SendMailAsync(message);
             }
             catch (Exception ex)
             {

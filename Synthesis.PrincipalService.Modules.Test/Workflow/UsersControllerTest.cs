@@ -533,6 +533,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
 
+        #region Update User test cases
         [Fact]
         public async Task UpdateUserSuccess()
         {
@@ -542,12 +543,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest()
             {
-               FirstName = "FirstName",
-               LastName = "LastName",
-               Email = "cmalyala@prysm.com",
-               PasswordAttempts = 3,
-               IsLocked = false,
-               IsIdpUser = false
+                FirstName = "FirstName",
+                LastName = "LastName",
+                Email = "cmalyala@prysm.com",
+                PasswordAttempts = 3,
+                IsLocked = false,
+                IsIdpUser = false
             };
 
             var result = await _controller.UpdateUserAsync(userId,user);
@@ -577,6 +578,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
+        } 
+        #endregion
+
+        #region Resend Welcom Email test Cases
+        [Fact]
+        public async Task ResendWelcomeEmailSuccess()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
+            Assert.Equal(true, result);
         }
+
+        [Fact]
+        public async Task ResendWelcomeEmailIfEmailIsEmpty()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).Throws(new ValidationException(new List<ValidationFailure>()));
+            await Assert.ThrowsAsync<ValidationException>(() => _controller.ResendUserWelcomeEmailAsync("", "charan"));
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailFailed()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            await Assert.ThrowsAsync<Exception>(() => _controller.ResendUserWelcomeEmailAsync("ch@gg.com", "charan"));
+        } 
+        #endregion
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net.Mail;
+using System.Threading.Tasks;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Responses;
 
@@ -7,19 +8,19 @@ namespace Synthesis.PrincipalService.Utilities
 {
     public interface IEmailUtility
     {
-        bool SendGuestInvite(string projectName, string projectCode, string guestEmail, string from);
+        Task<bool> SendGuestInvite(string projectName, string projectCode, string guestEmail, string @from);
 
-        bool SendResetPasswordEmail(string email, string name, string link);
+        Task<bool> SendResetPasswordEmail(string email, string name, string link);
 
-        bool SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId);
+        Task<bool> SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId);
 
-        bool SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName);
+        Task<bool> SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName);
 
-        bool SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName);
+        Task<bool> SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName);
 
-        bool SendUserInvite(List<UserInviteResponse>  newInvitedUsers);
+        Task<bool> SendUserInvite(List<UserInviteResponse> newInvitedUsers);
 
-        bool SendWelcomeEmail(string email, string firstname);
-        bool SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail);
+        Task<bool> SendWelcomeEmail(string email, string firstname);
+        Task<bool> SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail);
     }
 }

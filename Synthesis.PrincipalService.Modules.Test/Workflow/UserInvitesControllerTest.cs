@@ -174,7 +174,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                            .ReturnsAsync(new List<UserInvite> { new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } });
 
             _emailUtilityMock.Setup(m => m.SendUserInvite(It.IsAny<List<UserInviteResponse>>()))
-                             .Returns(true);
+                             .ReturnsAsync(true);
 
             var resendUserInviteRequest = new List<UserInviteRequest>();
             resendUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });

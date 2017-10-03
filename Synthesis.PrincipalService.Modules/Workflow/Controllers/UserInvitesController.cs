@@ -96,7 +96,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
 
                 //Mail newly created users
-                var usersMailed = _emailUtility.SendUserInvite(validUsers);
+                var usersMailed = await _emailUtility.SendUserInvite(validUsers);
 
                 
                 if (usersMailed)
@@ -135,7 +135,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 var validUsers = userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList();
 
-                var userReinvited = _emailUtility.SendUserInvite(validUsers);
+                var userReinvited = await _emailUtility.SendUserInvite(validUsers);
 
                 if (userReinvited)
                     await UpdateUserInviteAsync(validUsers);
