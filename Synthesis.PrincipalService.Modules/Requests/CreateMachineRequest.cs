@@ -29,10 +29,6 @@ namespace Synthesis.PrincipalService.Requests
         public string SynthesisVersion { get; set; }
          
         public DateTime? LastOnline { get; set; }
-         
-        public bool CurrentlyOnline { get; set; }
-         
-        public TimeSpan AveragePingTime { get; set; }
        
     }
 }
