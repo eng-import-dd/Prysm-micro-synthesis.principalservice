@@ -66,10 +66,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task GetGroupByIdReturnsGroupIfExists()
         {
             _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new Group());
+                               .ReturnsAsync(new Group()
+                                {
+                                    TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3")
+                                });
 
             var groupId = Guid.NewGuid();
-            var result = await _controller.GetGroupByIdAsync(groupId);
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+            var result = await _controller.GetGroupByIdAsync(groupId, tenantId);
 
             Assert.IsType<Group>(result);
         }
@@ -81,7 +85,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(default(Group));
 
             var groupId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupByIdAsync(groupId));
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
         }
 
         [Fact]
@@ -92,7 +97,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 .Throws(new ValidationFailedException(errors));
 
             var groupId = Guid.NewGuid();
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId));
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
         }
 
     }

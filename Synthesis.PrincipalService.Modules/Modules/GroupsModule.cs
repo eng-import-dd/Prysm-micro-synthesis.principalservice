@@ -168,16 +168,9 @@ namespace Synthesis.PrincipalService.Modules
             Guid groupId = input.id;
             try
             {
-                //TODO: Call Accounts Microservice to get Account level access result here. Currently hard coding to 1 (Success) - Yusuf
-                //var resultCode = ValidAccountLevelAccess(groupId, DataTypeEnum.Group, result.Payload.AccountId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
 
-                var resultCode = HttpStatusCode.OK;
-                if (resultCode != HttpStatusCode.OK)
-                {
-                    return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid account level access to groups!");
-                }
-
-                return await _groupsController.GetGroupByIdAsync(groupId);
+                return await _groupsController.GetGroupByIdAsync(groupId, tenantId);
             }
             catch (NotFoundException)
             {
@@ -186,6 +179,10 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid account level access to groups!");
             }
             catch (Exception ex)
             {

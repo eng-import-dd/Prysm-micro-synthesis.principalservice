@@ -81,13 +81,26 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
-        public async Task<Group> GetGroupByIdAsync(Guid groupId)
+        public async Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId)
         {
             var validationResult = await _groupValidatorId.ValidateAsync(groupId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a Group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var assignedTenantId = await GetTenantIdForGroup(groupId);
+            if (assignedTenantId != Guid.Empty)
+            {
+                if (assignedTenantId != tenantId)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+            }
+            else
+            {
+                throw new UnauthorizedAccessException();
             }
 
             var result = await _groupRepository.GetItemAsync(groupId);
@@ -98,6 +111,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             return result;
+        }
+
+        public async Task<Guid> GetTenantIdForGroup(Guid groupId)
+        {
+           var result = await _groupRepository.GetItemAsync(groupId);
+            if (result == null)
+            {
+                _logger.Warning($"A Group resource could not be found for id {groupId}");
+                throw new NotFoundException($"A Group resource could not be found for id {groupId}");
+            }
+
+            return result.TenantId;
         }
 
         /// <summary>

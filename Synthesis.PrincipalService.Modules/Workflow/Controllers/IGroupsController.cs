@@ -21,6 +21,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// </returns>
         Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId);
 
-        Task<Group> GetGroupByIdAsync(Guid groupId);
+        Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
+
+        Task<Guid> GetTenantIdForGroup(Guid groupId);
     }
 }

@@ -204,7 +204,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new Group()));
 
             var validGroupId = Guid.NewGuid();
@@ -221,7 +221,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var validGroupId = Guid.NewGuid();
@@ -238,7 +238,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new Group()));
 
             var validGroupId = Guid.NewGuid();
@@ -255,7 +255,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var validGroupId = Guid.NewGuid();
@@ -272,7 +272,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsNotFoundIfItemDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             var validGroupId = Guid.NewGuid();
@@ -290,7 +290,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetGroupByIdReturnsValidationFailedException()
         {
             var errors = Enumerable.Empty<ValidationFailure>();
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(errors));
 
             var validGroupId = Guid.NewGuid();
