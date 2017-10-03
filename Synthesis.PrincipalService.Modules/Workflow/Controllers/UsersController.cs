@@ -19,6 +19,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
+using Nancy;
 using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Utilities;
@@ -37,6 +38,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IValidator _tenantIdValidator;
+        private readonly IValidator _updateUserRequestValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -70,6 +72,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
+            _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _eventService = eventService;
@@ -194,12 +197,17 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
         }
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel)
+        public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
+            
+            TrimNameOfUser(userModel);
+            var errors=new List<ValidationFailure>();
+            if (!await IsUniqueUsername(userId, userModel.UserName))
+            {
+                errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
+            }
             var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var userValidationResult = await _createUserRequestValidator.ValidateAsync(userModel);
-            var errors = new List<ValidationFailure>();
-
+            var userValidationResult = await _updateUserRequestValidator.ValidateAsync(userModel);
             if (!userIdValidationResult.IsValid)
             {
                 errors.AddRange(userIdValidationResult.Errors);
@@ -215,17 +223,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
-
+            /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
+            //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
             try
             {
-                return await _userRepository.UpdateItemAsync(userId, userModel);
+                var user = _mapper.Map<UpdateUserRequest, User>(userModel);
+                return await UpdateUserInDb(user, userId);
             }
-            catch (DocumentNotFoundException)
+            catch (DocumentNotFoundException ex)
             {
-                return null;
+                _logger.LogMessage(LogLevel.Error, "Could not find the user to update", ex);
+                throw;
             }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not update the user", ex);
+                throw;
+            }
+            
         }
 
+        
         public async Task DeleteUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -517,6 +535,41 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
+        private async Task<UserResponse> UpdateUserInDb(User user, Guid id)
+        {
+            var existingUser = await _userRepository.GetItemAsync(id);
+            if (existingUser == null)
+            {
+                throw new NotFoundException($"A User resource could not be found for id {id}");
+            }
+
+            if (string.IsNullOrEmpty(user.UserName))
+            {
+                user.UserName = existingUser.UserName;
+            }
+            existingUser.FirstName = user.FirstName;
+            existingUser.LastName = user.LastName;
+            existingUser.Email = user.Email;
+            existingUser.PasswordAttempts = user.PasswordAttempts;
+            existingUser.IsLocked = user.IsLocked;
+            existingUser.IsIdpUser = user.IsIdpUser;
+            if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != existingUser.PasswordHash)
+            {
+                existingUser.PasswordHash = user.PasswordHash;
+                existingUser.PasswordLastChanged = DateTime.Now;
+            }
+            try
+            {
+                await _userRepository.UpdateItemAsync(id, existingUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "User Updation failed", ex);
+                throw;
+            }
+
+            return _mapper.Map<User, UserResponse>(existingUser);
+        }
         private async Task AssignUserLicense(User user, LicenseType? licenseType)
         {
             if (user.Id == null || user.Id == Guid.Empty)
@@ -577,7 +630,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
             return groups.FirstOrDefault()?.Id;
         }
-
         private async Task<User> LockUser(Guid userId, bool locked)
         {
             var user = await _userRepository.GetItemAsync(userId);
@@ -586,7 +638,128 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await _userRepository.UpdateItemAsync(userId, user);
             return user;
         }
+        public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
+        {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+            try
+            {
+                //TODO: dependency on group implementation to get all the groupIds
+                #region  Get superadmin group ids
 
+                // if trying to lock a user we need to check if it is a superAdmin user
+                //if (isLocked && _collaborationService.IsSuperAdmin(userId))
+                //{
+                //    // Determine the number of non locked superAdmin users
+                //    var superAdminUserIds = _collaborationService.GetUserGroupsForGroup(_collaborationService.SuperAdminGroupId).Payload.Select(x => x.UserId);
+                //    var countOfNonLockedSuperAdmins = superAdminUserIds.Count(id => !_collaborationService.GetUserById(id).Payload.IsLocked ?? false);
+
+                //    // reject locking the last non-locked superAdmin user
+                //    if (countOfNonLockedSuperAdmins <= 1)
+                //    {
+                //        return new ServiceResult<bool>
+                //        {
+                //            Payload = false,
+                //            Message = "LockUser: Failed to lock user", // Do not disclose that this user is in the superadmin group
+                //            ResultCode = ResultCode.Failed
+                //        };
+                //    }
+                //}
+
+
+                #endregion
+                return await UpdateLockUserDetailsInDb(userId, locked);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Couldn't Lock the user: ", ex);
+                throw;
+            }
+        }
+
+        private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
+        {
+            var validationErrors = new List<ValidationFailure>();
+            try
+            {
+                var existingUser = await _userRepository.GetItemAsync(id);
+                if (existingUser == null)
+                {
+                    validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));
+                }
+                else
+                {
+                    var licenseRequestDto = new UserLicenseDto
+                    {
+                        UserId = id.ToString(),
+                        AccountId = existingUser.TenantId.ToString()
+                    };
+
+                    if (isLocked)
+                    {
+                        try
+                        {
+                            /* If the user is being locked, remove the associated license. */
+                            var removeUserLicenseResult = await _licenseApi.ReleaseUserLicenseAsync(licenseRequestDto);
+
+                            if (removeUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+                            {
+                                validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to remove license for the user"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogMessage(LogLevel.Error, "Erro removing license from user", ex);
+                            throw;
+                        }
+                    }
+                    else // unlock
+                    {
+                        try
+                        {
+                            /* If not locked, request a license. */
+                            var assignUserLicenseResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
+
+                            if (assignUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
+                            {
+
+                                validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to assign license to the user"));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
+                            throw;
+
+                        }
+                    }
+                
+
+                if (validationErrors.Any())
+                {
+                    throw new ValidationFailedException(validationErrors);
+                }
+
+            await LockUser(id, isLocked);
+
+            return true;
+                }
+            }
+        catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Erro occured while updating locked/unlocked field in the DB", ex);
+
+            }
+
+            return false;
+        }
+
+        
+        
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {
             var users = await _userRepository
@@ -694,7 +867,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                 break;
                     }
                 }
-                var queryparams = new OrderedQueryParameters<User, string>()
+                var queryparams = new OrderedQueryParameters<User, string>
                 {
                     Criteria =criteria,
                     OrderBy = orderBy,
@@ -726,5 +899,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw;
             }
         }
+
+        private void TrimNameOfUser(UpdateUserRequest user)
+        {
+            if (!string.IsNullOrEmpty(user.FirstName))
+            {
+                user.FirstName = user.FirstName.Trim();
+            }
+            if (!string.IsNullOrEmpty(user.LastName))
+            {
+                user.LastName = user.LastName.Trim();
+            }
+        }
+
     }
 }

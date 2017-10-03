@@ -48,6 +48,10 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         [NullableSchema]
         [DataMember]
+        public DateTime? PasswordLastChanged { get; set; }
+
+        [NullableSchema]
+        [DataMember]
         public string LdapId { get; set; }
 
         [DataMember]
