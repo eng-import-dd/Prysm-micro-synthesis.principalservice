@@ -15,8 +15,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var request = new CreateMachineRequest
             {
                 AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
-                AveragePingTime = new TimeSpan(0, 0, 1),
-                CurrentlyOnline = false,
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsSelected = false,
@@ -40,8 +38,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var request = new CreateMachineRequest
             {
                 AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
-                AveragePingTime = new TimeSpan(0, 0, 1),
-                CurrentlyOnline = false,
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsSelected = false,
@@ -65,8 +61,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var request = new CreateMachineRequest
             {
                 AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
-                AveragePingTime = new TimeSpan(0, 0, 1),
-                CurrentlyOnline = false,
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsSelected = false,
