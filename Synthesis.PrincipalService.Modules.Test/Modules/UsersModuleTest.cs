@@ -708,5 +708,49 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         } 
         #endregion
+
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            var actual = await _browserAuth.Get(
+                                                "/v1/users/guests",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantReturnsUnauthorized()
+        {
+            var actual = await _browserNoAuth.Get(
+                                                "/v1/users/guests",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<GetUsersParams>()))
+                           .ThrowsAsync(new Exception());
+            var actual = await _browserAuth.Get(
+                                                  "/v1/users/guests",
+                                                  with =>
+                                                  {
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                      with.HttpRequest();
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
     }
 }

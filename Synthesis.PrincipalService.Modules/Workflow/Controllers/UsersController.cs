@@ -390,12 +390,94 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return PromoteGuestResultCode.Success;
         }
 
-
         private List<string> GeTenantEmailDomains(Guid tenantId)
         {
             //Todo Get Tenant domains from tenant Micro service
             return new List<string> { "test.com", "prysm.com" };
         }
+
+        public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the tenant id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var criteria = new List<Expression<Func<User, bool>>>();
+            Expression<Func<User, string>> orderBy;
+            criteria.Add(u => u.TenantId == Guid.Empty);
+
+            //TODO get the tenantDomains from tenant matching tenantId
+            var tenantemailDomain = new List<string>{"yopmail.com", "dispostable.com"};
+
+
+            criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
+
+            if (!string.IsNullOrEmpty(getGuestUsersParams.SearchValue))
+            {
+                criteria.Add(x =>
+                                    x != null &&
+                                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                                getGuestUsersParams.SearchValue.ToLower()) ||
+                                    x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
+                                    x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+            }
+            if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
+            {
+                orderBy = u => u.FirstName;
+            }
+            else
+            {
+                switch (getGuestUsersParams.SortColumn.ToLower())
+                {
+                    case "firstname":
+                        orderBy = u => u.FirstName;
+                        break;
+
+                    case "lastname":
+                        orderBy = u => u.LastName;
+                        break;
+
+                    case "email":
+                        orderBy = u => u.Email;
+                        break;
+
+                    case "username":
+                        orderBy = u => u.UserName;
+                        break;
+
+                    default:
+                        orderBy = u => u.FirstName;
+                        break;
+                }
+            }
+
+            var queryparams = new OrderedQueryParameters<User, string>()
+            {
+                Criteria = criteria,
+                OrderBy = orderBy,
+                SortDescending = getGuestUsersParams.SortDescending,
+                ContinuationToken = getGuestUsersParams.ContinuationToken,
+                ChunkSize = getGuestUsersParams.PageSize
+            };
+
+            var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+            var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
+            var filteredUserCount = guestUsersInTenant.Count;
+            var returnMetaData = new PagingMetadata<UserResponse>
+            {
+                CurrentCount = filteredUserCount,
+                List = _mapper.Map<List<User>, List<UserResponse>>(guestUsersInTenant),
+                SearchValue = getGuestUsersParams.SearchValue,
+                ContinuationToken = guestUsersInTenantResult.ContinuationToken,
+                IsLastChunk = guestUsersInTenantResult.IsLastChunk
+            };
+
+            return returnMetaData;
+        }
+
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
