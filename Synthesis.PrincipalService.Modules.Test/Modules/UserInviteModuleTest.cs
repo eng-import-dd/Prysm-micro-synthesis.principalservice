@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.Remoting;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -137,7 +136,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void CreateUserInviteReturnsInternalServerError()
         {
             _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
-                           .ThrowsAsync(new ServerException());
+                           .ThrowsAsync(new Exception());
             var actual = await _browserAuth.Post(
                                                  "/v1/userinvites",
                                                  with =>
@@ -170,7 +169,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void GetInvitedUsersForTenantReturnsInternalServerError()
         {
             _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
-                           .ThrowsAsync(new ServerException());
+                           .ThrowsAsync(new Exception());
             var actual = await _browserAuth.Get("/v1/userinvites",
                                                  with =>
                                                  {
@@ -215,7 +214,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void ResendUserInviteReturnsInternalServerError()
         {
             _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
-                           .ThrowsAsync(new ServerException());
+                           .ThrowsAsync(new Exception());
             var actual = await _browserAuth.Post(
                                                  "/v1/userinvites/resend",
                                                  with =>
