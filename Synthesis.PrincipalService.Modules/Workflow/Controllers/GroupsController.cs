@@ -106,7 +106,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
-        public async Task<Guid> DeleteGroupAsync(Guid groupId)
+        public async Task<bool> DeleteGroupAsync(Guid groupId)
         {
             var validationResult = await _groupValidatorId.ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -124,14 +124,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     Name = EventNames.GroupDeleted,
                     Payload = groupId
                 });
-                return groupId;
+                return true;
             }
             catch (DocumentNotFoundException)
             {
                 // The resource not being there is what we wanted.
+                return true;
             }
 
-            return Guid.Empty;
+            catch (Exception ex)
+            {
+                _logger.Warning("Problem occured while attempting to delete a Group resource.", ex);
+                return false;
+            }
         }
 
         /// <summary>

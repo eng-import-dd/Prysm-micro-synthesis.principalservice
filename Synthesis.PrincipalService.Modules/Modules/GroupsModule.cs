@@ -225,7 +225,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid groupId = Guid.Parse(input.groupId);
                 var result = await _groupsController.DeleteGroupAsync(groupId);
 
-                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
+                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.NoContent);
             }
             catch (ValidationFailedException ex)
             {

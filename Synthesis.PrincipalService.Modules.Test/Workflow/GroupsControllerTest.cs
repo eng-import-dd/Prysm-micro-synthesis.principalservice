@@ -102,15 +102,37 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
 
+        #region Delete Group Test Cases
         [Fact]
-        public async Task DeleteGroupAsyncReturnsNonEmptyGuidIfSuccessful()
+        public async Task DeleteGroupAsyncReturnsTrueIfSuccessful()
         {
             _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
                                 .Returns(Task.FromResult(Guid.NewGuid()));
 
             var groupId = Guid.NewGuid();
             var result = await _controller.DeleteGroupAsync(groupId);
-            Assert.IsType<Guid>(result);
+            Assert.Equal(true, result);
         }
+
+        [Fact]
+        public async Task DeleteGroupAsyncReturnstrueIfDocumentNotFound()
+        {
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Throws(new DocumentNotFoundException());
+
+            var result = await _controller.DeleteGroupAsync(Guid.Empty);
+            Assert.Equal(true, result);
+        }
+
+        [Fact]
+        public async Task DeleteGroupAsyncReturnsFalse()
+        {
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Throws(new Exception());
+
+            var result = await _controller.DeleteGroupAsync(Guid.Empty);
+            Assert.Equal(false, result);
+        } 
+        #endregion
     }
 }

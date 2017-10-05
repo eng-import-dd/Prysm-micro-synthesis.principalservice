@@ -23,6 +23,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
 
-        Task<Guid> DeleteGroupAsync(Guid groupId);
+        Task<bool> DeleteGroupAsync(Guid groupId);
     }
 }

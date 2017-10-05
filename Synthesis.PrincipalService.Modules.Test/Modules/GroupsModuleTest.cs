@@ -308,7 +308,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #region Delete Group Test cases
         [Fact]
-        public async Task DeleteGroupReturnsOk()
+        public async Task DeleteGroupReturnsNoContent()
         {
             var actual = await _browserAuth.Delete(
                                                  "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830", with =>
@@ -318,7 +318,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                    with.HttpRequest();
                                                                    
                                                                });
-            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+            Assert.Equal(HttpStatusCode.NoContent, actual.StatusCode);
         }
 
         [Fact]
