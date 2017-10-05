@@ -25,5 +25,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, bool isLocked);
+
+        Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
     }
 }

@@ -39,6 +39,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
+        private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
 
         public UsersControllerTest()
         {
@@ -578,5 +579,96 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
+
+        #region User Groups Test Cases
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsUserIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()
+                               {
+                                   TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                                   Groups = new List<Guid>() { Guid.NewGuid() }
+                               }));
+
+            var newUserGroupRequest = new CreateUserGroupRequest
+            {
+                UserId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30"),
+                GroupId = Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115")
+            };
+
+            var userId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId))
+                               .Returns(Task.FromResult(new User()));
+            
+            var result = await _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+            Assert.IsType<User>(result);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsValidationException()
+        {
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+            Assert.Equal(ex.Errors.ToList().Count, 1); 
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
+        {
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult<User>(null));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsDuplicateUserGroupValidationException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()
+                               {
+                                   TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                                   Groups = new List<Guid>() { Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115") }
+                               }));
+
+            var newUserGroupRequest = new CreateUserGroupRequest
+            {
+                UserId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30"),
+                GroupId = Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115")
+            };
+
+            var userId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        #endregion
     }
 }
