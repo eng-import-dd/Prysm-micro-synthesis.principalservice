@@ -56,6 +56,12 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
 
+            Get("/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenant");
+            Get("api/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenantLegacy");
+
+            Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
+            Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
+
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
 
@@ -145,6 +151,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Promote Guest",
                 Description = "Promote a guest to licensed User."
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetGuestUsersForTenant", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new []{HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError},
+                Response = "Get Guest User",
+                Description = "Retrive all the guest users resource for a tenant."
             });
         }
 
@@ -599,6 +612,39 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to promote a user due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> GetGuestUsersForTenant(dynamic input)
+        {
+            GetUsersParams getGuestUsersParams;
+            try
+            {
+                getGuestUsersParams = this.Bind<GetUsersParams>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to get geust users", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _userController.GetGuestUsersForTenantAsync(tenantId, getGuestUsersParams);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to get guest users due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestUser);
             }
         }
 
