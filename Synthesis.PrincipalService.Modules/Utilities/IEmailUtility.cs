@@ -8,19 +8,19 @@ namespace Synthesis.PrincipalService.Utilities
 {
     public interface IEmailUtility
     {
-        Task<bool> SendGuestInvite(string projectName, string projectCode, string guestEmail, string @from);
+        Task<bool> SendGuestInviteAsync(string projectName, string projectCode, string guestEmail, string @from);
 
-        Task<bool> SendResetPasswordEmail(string email, string name, string link);
+        Task<bool> SendResetPasswordEmailAsync(string email, string name, string link);
 
-        Task<bool> SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId);
+        Task<bool> SendVerifyAccountEmailAsync(string firstName, string email, string accessCode, string emailVerificationId);
 
-        Task<bool> SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName);
+        Task<bool> SendHostEmailAsync(string email, string userFullName, string userFirstName, string userEmail, string projectName);
 
-        Task<bool> SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName);
+        Task<bool> SendContentAsync(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName);
 
-        Task<bool> SendUserInvite(List<UserInviteResponse> newInvitedUsers);
+        Task<bool> SendUserInviteAsync(List<UserInviteResponse> newInvitedUsers);
 
-        Task<bool> SendWelcomeEmail(string email, string firstname);
-        Task<bool> SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail);
+        Task<bool> SendWelcomeEmailAsync(string email, string firstname);
+        Task<bool> SendUserLockedMailAsync(List<User> orgAdmins, string userfullname, string useremail);
     }
 }

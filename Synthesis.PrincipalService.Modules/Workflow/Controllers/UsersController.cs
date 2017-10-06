@@ -340,7 +340,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
             }
 
-            await _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+            await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
 
             return new PromoteGuestResponse
             {
@@ -361,7 +361,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             try
             {
-                var userMailed =  await _emailUtility.SendWelcomeEmail(email, firstName);
+                var userMailed =  await _emailUtility.SendWelcomeEmailAsync(email, firstName);
 
                 return userMailed;
             }
@@ -531,7 +531,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
                     /* If the user is created and a license successfully assigned, mail and return the user. */
-                    await _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+                    await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
                     return;
                 }
             }
@@ -548,7 +548,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (orgAdmins.Count > 0)
             {
-                await _emailUtility.SendUserLockedMail(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
+                await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
             }
         }
 

@@ -154,7 +154,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync("a@b.com", "first"));
             _eventServiceMock.Verify(m=>m.PublishAsync("UserCreated", It.IsAny<User>()));
 
             Assert.NotNull(user);
@@ -197,7 +197,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendUserLockedMail(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
+            _emailUtilityMock.Verify(m => m.SendUserLockedMailAsync(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
 
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
@@ -345,7 +345,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId,LicenseType.UserLicense, false);
 
             _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(),It.IsAny<User>()), Times.Once);
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>()));
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()));
 
 
             Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Success);
@@ -585,7 +585,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task ResendWelcomeEmailSuccess()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
             var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
             Assert.Equal(true, result);
         }
@@ -593,14 +593,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task ResendWelcomeEmailIfEmailIsEmpty()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).Throws(new ValidationException(new List<ValidationFailure>()));
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new ValidationException(new List<ValidationFailure>()));
             await Assert.ThrowsAsync<ValidationException>(() => _controller.ResendUserWelcomeEmailAsync("", "charan"));
         }
 
         [Fact]
         public async Task ResendWelcomeEmailFailed()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
             await Assert.ThrowsAsync<Exception>(() => _controller.ResendUserWelcomeEmailAsync("ch@gg.com", "charan"));
         } 
         #endregion

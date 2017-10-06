@@ -461,10 +461,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
         {
-            BasicUserResponse basicUser;
+            ResendEmailRequest basicUser;
             try
             {
-                basicUser = this.Bind<BasicUserResponse>();
+                basicUser = this.Bind<ResendEmailRequest>();
             }
             catch (Exception ex)
             {

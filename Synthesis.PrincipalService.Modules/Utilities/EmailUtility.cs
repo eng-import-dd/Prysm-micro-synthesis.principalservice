@@ -90,7 +90,7 @@ namespace Synthesis.PrincipalService.Utilities
             return email;
         }
 
-        public async Task<bool> SendGuestInvite(string projectName, string projectCode, string guestEmail, string @from)
+        public async Task<bool> SendGuestInviteAsync(string projectName, string projectCode, string guestEmail, string @from)
         {
             try
             {
@@ -116,7 +116,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendResetPasswordEmail(string email, string name, string link)
+        public async Task<bool> SendResetPasswordEmailAsync(string email, string name, string link)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendVerifyAccountEmail(string firstName, string email, string accessCode, string emailVerificationId)
+        public async Task<bool> SendVerifyAccountEmailAsync(string firstName, string email, string accessCode, string emailVerificationId)
         {
             try
             {
@@ -161,7 +161,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendHostEmail(string email, string userFullName, string userFirstName, string userEmail, string projectName)
+        public async Task<bool> SendHostEmailAsync(string email, string userFullName, string userFirstName, string userEmail, string projectName)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendContent(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName)
+        public async Task<bool> SendContentAsync(IEnumerable<string> emailAddresses, IEnumerable<Attachment> attachments, string fromFullName)
         {
             try
             {
@@ -215,7 +215,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendUserInvite(List<UserInviteResponse> newInvitedUsers)
+        public async Task<bool> SendUserInviteAsync(List<UserInviteResponse> newInvitedUsers)
         {
             if (newInvitedUsers == null)
             {
@@ -247,7 +247,7 @@ namespace Synthesis.PrincipalService.Utilities
             return true;
         }
 
-        public async Task<bool> SendWelcomeEmail(string email, string firstname)
+        public async Task<bool> SendWelcomeEmailAsync(string email, string firstname)
         {
             try
             {
@@ -269,7 +269,7 @@ namespace Synthesis.PrincipalService.Utilities
 
         }
 
-        public async Task<bool> SendUserLockedMail(List<User> orgAdmins, string userfullname, string useremail)
+        public async Task<bool> SendUserLockedMailAsync(List<User> orgAdmins, string userfullname, string useremail)
         {
             try
             {

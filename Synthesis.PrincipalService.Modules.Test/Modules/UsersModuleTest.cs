@@ -720,7 +720,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                                       with.HttpRequest();
                                                                                       with.Header("Accept", "application/json");
                                                                                       with.Header("Content-Type", "application/json");
-                                                                                      with.JsonBody(new BasicUserResponse());
+                                                                                      with.JsonBody(new ResendEmailRequest());
                                                                                   });
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -735,7 +735,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                                        with.HttpRequest();
                                                                                        with.Header("Accept", "application/json");
                                                                                        with.Header("Content-Type", "application/json");
-                                                                                       with.JsonBody(new BasicUserResponse());
+                                                                                       with.JsonBody(new ResendEmailRequest());
                                                                                    });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
