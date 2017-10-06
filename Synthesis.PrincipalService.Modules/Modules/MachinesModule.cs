@@ -17,8 +17,7 @@ namespace Synthesis.PrincipalService.Modules
 {
     public sealed class MachinesModule : NancyModule
     {
-        //private const string TenantIdClaim = "TenantId";
-        //private const string UserIdClaim = "UserId";
+        private const string TenantIdClaim = "TenantId";
         private readonly IMachineController _machineController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
@@ -74,7 +73,8 @@ namespace Synthesis.PrincipalService.Modules
             }
             try
             {
-                var result = await _machineController.CreateMachineAsync(newMachine);
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                var result = await _machineController.CreateMachineAsync(newMachine, tenantId);
 
                 return Negotiate
                     .WithModel(result)
