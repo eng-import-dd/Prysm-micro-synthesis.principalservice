@@ -18,7 +18,7 @@ namespace Synthesis.PrincipalService.Requests
          
         public bool IsSelected { get; set; }
          
-        public Guid AccountId { get; set; }
+        public Guid TenantId { get; set; }
          
         public DateTime DateCreated { get; set; }
          

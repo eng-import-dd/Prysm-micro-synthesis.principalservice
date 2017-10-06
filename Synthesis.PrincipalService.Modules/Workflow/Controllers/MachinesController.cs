@@ -56,7 +56,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _mapper = mapper;
         }
 
-        public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model)
+        public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId)
         {
             var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
 
@@ -67,6 +67,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             var machine = _mapper.Map<CreateMachineRequest, Machine>(model);
+            machine.TenantId = tenantId;
+            machine.DateCreated = DateTime.UtcNow;
+            machine.DateModified = DateTime.UtcNow;
+            machine.Id = Guid.NewGuid();
 
             var result = await CreateMachineInDB(machine);
 
@@ -95,9 +99,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 throw new ValidationFailedException(validationErrors);
             }
-
-            machine.DateCreated = DateTime.UtcNow;
-            machine.DateModified = DateTime.UtcNow;
 
             var result = await _machineRepository.CreateItemAsync(machine);
 
