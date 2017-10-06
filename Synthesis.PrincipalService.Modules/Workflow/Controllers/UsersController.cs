@@ -374,7 +374,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
-                _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
+                await _emailUtility.SendWelcomeEmailAsync(model.EmailId, model.FirstName);
             }
             if (model.Groups != null)
             {

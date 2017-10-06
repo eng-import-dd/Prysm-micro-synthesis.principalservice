@@ -523,6 +523,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.IsType<UserResponse>(result);
         }
+
+        [Fact]
+        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+        }
+
+        #region Autoprovision Refresh group Test cases
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
         {
@@ -621,18 +633,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             };
             await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
+        #endregion
 
-        [Fact]
-        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
-        {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(default(User));
-
-            var userId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
-        }
-
-        #region Update User test cases
+        #region Update user tests
         [Fact]
         public async Task UpdateUserSuccess()
         {
@@ -678,6 +681,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
+        #endregion
 
         #region GetGuestUsers Tests
         [Fact]
@@ -736,7 +740,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
             await Assert.ThrowsAsync<Exception>(() => _controller.ResendUserWelcomeEmailAsync("ch@gg.com", "charan"));
-        } 
+        }
         #endregion
     }
 }
