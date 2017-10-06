@@ -38,13 +38,12 @@ namespace Synthesis.PrincipalService.Modules
 
             // Initialize documentation
             SetupRouteMetadata();
+            SetupRoute_GetMachineById();
 
             // Routes
             // CRUD routes
             Post("/v1/machines", CreateMachineAsync, null, "CreateMachine");
             Post("/api/v1/machines", CreateMachineAsync, null, "CreateMachineLegacy");
-
-            SetupRoute_GetMachineById();
 
             OnError += (ctx, ex) =>
             {
@@ -68,7 +67,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_GetMachineById()
         {
-            const string path = "/v1/users/machine/{id:guid}";
+            const string path = "/v1/machines/{id:guid}";
             Get(path, GetMachineByIdAsync, null, "GetMachineById");
             Get("/api/" + path, GetMachineByIdAsync, null, "GetMachineByIdLegacy");
 
