@@ -81,6 +81,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
+        public async Task<MachineResponse> GetMachineByIdAsync(Guid id)
+        {
+            var result = await _machineRepository.GetItemAsync(id);
+
+            if (result == null)
+            {
+                _logger.Warning($"A Machine resource could not be found for id {id}");
+                throw new NotFoundException($"A Machine resource could not be found for id {id}");
+            }
+            return _mapper.Map<Machine, MachineResponse>(result);
+        }
+
         private async Task<Machine> CreateMachineInDB(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();

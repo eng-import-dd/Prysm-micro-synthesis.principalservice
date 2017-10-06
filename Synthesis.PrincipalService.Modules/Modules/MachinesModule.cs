@@ -11,7 +11,7 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
-
+using System.Web.Script.Serialization;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -21,6 +21,8 @@ namespace Synthesis.PrincipalService.Modules
         private readonly IMachineController _machineController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
+        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
+        private const string DeprecationWarning = "DEPRECATED";
 
         public MachinesModule(
             IMetadataRegistry metadataRegistry,
@@ -42,6 +44,8 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/machines", CreateMachineAsync, null, "CreateMachine");
             Post("/api/v1/machines", CreateMachineAsync, null, "CreateMachineLegacy");
 
+            SetupRoute_GetMachineById();
+
             OnError += (ctx, ex) =>
             {
                 _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
@@ -51,11 +55,40 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRouteMetadata()
         {
+
             _metadataRegistry.SetRouteMetadata("CreateMachine", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Create a new machine",
                 Description = "Create a new machine resource."
+            });
+
+           
+        }
+
+        private void SetupRoute_GetMachineById()
+        {
+            const string path = "/v1/users/machine/{id:guid}";
+            Get(path, GetMachineByIdAsync, null, "GetMachineById");
+            Get("/api/" + path, GetMachineByIdAsync, null, "GetMachineByIdLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataDescription = "Retrieves a user by User Id";
+
+            _metadataRegistry.SetRouteMetadata("GetMachineById", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetMachineByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
 
@@ -88,6 +121,28 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to create machine resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateMachine); ;
+            }
+        }
+
+        private async Task<object> GetMachineByIdAsync(dynamic input)
+        {
+            var machineId = input.id;
+            try
+            {
+                return await _machineController.GetMachineByIdAsync(machineId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
     }
