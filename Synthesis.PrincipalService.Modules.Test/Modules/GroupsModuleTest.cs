@@ -23,6 +23,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
+
 using Xunit;
 using ClaimTypes = System.Security.Claims.ClaimTypes;
 using Synthesis.Nancy.MicroService;
