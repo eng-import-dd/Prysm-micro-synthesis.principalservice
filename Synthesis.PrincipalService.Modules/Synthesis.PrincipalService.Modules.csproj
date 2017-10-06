@@ -306,14 +306,20 @@
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Dao\Models\Group.cs" />
+    <Compile Include="Dao\Models\Machine.cs" />
     <Compile Include="Dao\Models\User.cs" />
     <Compile Include="Dao\Models\UserInvite.cs" />
+    <Compile Include="Entity\PagingMetadata.cs" />
+    <Compile Include="Mapper\MachineProfile.cs" />
+    <Compile Include="Requests\GetUserParams.cs" />
+    <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
-    <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
+    <Compile Include="Requests\UpdateUserRequest.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
+    <Compile Include="Modules\MachinesModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
     <Compile Include="Modules\UserInviteModule.cs" />
     <Compile Include="Modules\UsersModule.cs" />
@@ -321,23 +327,24 @@
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
+    <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\PromoteGuestRequest.cs" />
+    <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
-    <Compile Include="Requests\GetUserParams.cs" />
-    <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
-    <Compile Include="Dao\Models\InvitedUser.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
+    <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
@@ -347,6 +354,8 @@
     <Compile Include="Workflow\Controllers\UserInvitesController.cs" />
     <Compile Include="Workflow\Controllers\GroupsController.cs" />
     <Compile Include="Workflow\Controllers\IGroupsController.cs" />
+    <Compile Include="Workflow\Controllers\IMachineController.cs" />
+    <Compile Include="Workflow\Controllers\MachinesController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
     <Compile Include="Workflow\Exceptions\IdpUserProvisioningException.cs" />
@@ -377,6 +386,7 @@
       <Name>Synthesis.License.Manager</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

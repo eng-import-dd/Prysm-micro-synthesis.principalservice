@@ -10,7 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
-using Synthesis.PrincipalService.Requests;
+using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -47,6 +47,7 @@ namespace Synthesis.PrincipalService.Modules
 
             SetupRouteMetadata();
             SetupRoute_CreateGroup();
+            SetupRoute_GetGroupById();
         }
 
         /// <summary>
@@ -98,6 +99,32 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_GetGroupById()
+        {
+            const string path = "/v1/groups/{id}";
+            Get(path, GetGroupByIdAsync, null, "GetGroupByIdAsync");
+            Get(LegacyBaseRoute + path, GetGroupByIdAsync, null, "GetGroupByIdAsync");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataDescription = "Get Group By Id";
+
+            _metadataRegistry.SetRouteMetadata("GetGroupById", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetGroupByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
         /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
@@ -133,6 +160,34 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to create group resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> GetGroupByIdAsync(dynamic input)
+        {
+            Guid groupId = input.id;
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+
+                return await _groupsController.GetGroupByIdAsync(groupId, tenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid account level access to groups!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetGroupByIdAsync threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
     }

@@ -6,21 +6,13 @@ using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
-using Synthesis.Nancy.MicroService;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
-using AutoMapper;
-using Synthesis.License.Manager.Interfaces;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Mapper;
-using Synthesis.PrincipalService.Requests;
-using System.Linq.Expressions;
-using System.Collections.Generic;
-using System.Linq;
-using Synthesis.License.Manager.Models;
-using Synthesis.PrincipalService.Utilities;
+using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -69,5 +61,45 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId,userId);
             Assert.IsType<Group>(result);
         }
+
+        [Fact]
+        public async Task GetGroupByIdReturnsGroupIfExists()
+        {
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new Group()
+                                {
+                                    TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3")
+                                });
+
+            var groupId = Guid.NewGuid();
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+            var result = await _controller.GetGroupByIdAsync(groupId, tenantId);
+
+            Assert.IsType<Group>(result);
+        }
+
+        [Fact]
+        public async Task GetGroupByIdThrowsNotFoundExceptionIfGroupDoesNotExist()
+        {
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(Group));
+
+            var groupId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
+        }
+
+        [Fact]
+        public async Task GetGroupByIdThrowsValidationException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Throws(new ValidationFailedException(errors));
+
+            var groupId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
+        }
+
     }
 }

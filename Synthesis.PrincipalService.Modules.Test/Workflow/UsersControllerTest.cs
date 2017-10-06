@@ -273,6 +273,63 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
 
+        #region Lock User Test Cases
+        [Fact]
+        public async Task LockUserAsyncIfUserExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
+            Assert.Equal(result, true);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfAssigningLicenseFails()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfReleaseLicenseFails()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.ReleaseUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
+            var userId = Guid.NewGuid();
+            var isLocked = true;
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        }
+        [Fact]
+        public async Task LockUserAsyncIfUserNotFound()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+            var userId = Guid.NewGuid();
+            var isLocked = false;
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+            var result = await _controller.LockOrUnlockUserAsync(userId, isLocked);
+            Assert.Equal(result, false);
+
+        } 
+        #endregion
+
         #region PromoteGuest Tests
 
         [Fact]
@@ -413,7 +470,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 {
                                     userList.Add(new User());
                                 }
-
                                 List<User> items = userList;
                                 return (Task.FromResult(items.AsEnumerable()));
                                 
@@ -467,7 +523,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.IsType<UserResponse>(result);
         }
-
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
         {
@@ -571,10 +626,92 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                           .ReturnsAsync(default(User));
+                               .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
+
+        [Fact]
+        public async Task UpdateUserSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest()
+            {
+               FirstName = "FirstName",
+               LastName = "LastName",
+               Email = "cmalyala@prysm.com",
+               PasswordAttempts = 3,
+               IsLocked = false,
+               IsIdpUser = false
+            };
+
+            var result = await _controller.UpdateUserAsync(userId,user);
+            Assert.IsType<UserResponse>(result);
+        }
+
+        [Fact]
+        public async Task UpdateUserValidationException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User());
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            _validatorMock.Setup(m => m.ValidateAsync(userId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.ValidateAsync(user, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
+            Assert.Equal(ex.Errors.ToList().Count,3);
+        }
+
+        [Fact]
+        public async Task UpdateUserNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+            var userId = Guid.NewGuid();
+            var user = new UpdateUserRequest();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
+        }
+
+        #region GetGuestUsers Tests
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+
+            Assert.Equal(3, result.List.Count);
+            Assert.Equal(3, result.CurrentCount);
+            Assert.Equal("test", result.ContinuationToken);
+            Assert.Equal(false, result.IsLastChunk);
+        }
+
+        
+        [Fact]
+        public async Task GetGuestUserForTenantReturnsEmptyResult()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User>{ContinuationToken = "", Items = new List<User>()});
+
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+            Assert.Empty(result.List);
+            Assert.Equal(0, result.CurrentCount);
+            Assert.Equal(true, result.IsLastChunk);
+            Assert.Null(result.SearchValue);
+            Assert.Null(result.SortColumn);
+        }
+        #endregion
     }
 }
