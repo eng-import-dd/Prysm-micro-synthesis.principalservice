@@ -190,6 +190,9 @@
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="SimpleCrypto, Version=26.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleCrypto.0.3.30.26\lib\SimpleCrypto.dll</HintPath>
+    </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.4.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.4\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
@@ -326,6 +329,7 @@
     <Compile Include="PrincipalServiceStatelessAuthorization.cs" />
     <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
+    <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\PromoteGuestRequest.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
@@ -354,10 +358,13 @@
     <Compile Include="Workflow\Controllers\MachinesController.cs" />
     <Compile Include="Workflow\Controllers\UsersController.cs" />
     <Compile Include="Workflow\Controllers\IUsersController.cs" />
+    <Compile Include="Workflow\Exceptions\IdpUserProvisioningException.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="x64\librdkafka.lib" />
     <None Include="x64\librdkafkacpp.lib" />
     <None Include="x86\librdkafka.lib" />

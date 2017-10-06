@@ -39,6 +39,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
+        private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
 
         public UsersControllerTest()
         {
@@ -522,6 +523,105 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.IsType<UserResponse>(result);
         }
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+            var userResponse = await _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+            Assert.NotNull(userResponse);
+
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult
+                          {
+                              Errors =
+                              {
+                                  new ValidationFailure("", "")
+                              }
+                          });
+
+            var tenantId = Guid.Empty;
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+
+            _validatorMock.Setup(m => m.ValidateAsync(tenantId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsPromotionFailedException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            _userApiMock.Setup(u => u.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                           .Throws(new PromotionFailedException(""));
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                UserId = Guid.NewGuid(),
+                FirstName = "TestUser",
+                LastName = "TestUser",
+                IsGuestUser = true
+            };
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .Throws<Exception>();
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+            await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
+
         [Fact]
         public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
         {
