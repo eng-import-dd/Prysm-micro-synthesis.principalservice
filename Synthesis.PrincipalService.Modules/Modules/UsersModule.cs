@@ -68,6 +68,9 @@ namespace Synthesis.PrincipalService.Modules
             Post("/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuest");
             Post("/api/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuestLegacy");
 
+            Post("/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync, null, "AutoProvisionRefreshGroupsAsync");
+            Post("/api/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync, null, "AutoProvisionRefreshGroupsAsyncLegacy");
+
             OnError += (ctx, ex) =>
             {
                 _logger.Error($"Unhandled exception while executing route {ctx.Request.Path}", ex);
@@ -158,6 +161,13 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new []{HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError},
                 Response = "Get Guest User",
                 Description = "Retrive all the guest users resource for a tenant."
+            });
+
+            _metadataRegistry.SetRouteMetadata("AutoProvisionRefreshGroups", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "AutoProvision and Refresh Groups",
+                Description = "AutoProvisions and Refreshes Groups."
             });
         }
 
@@ -645,6 +655,51 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error($"Failed to get guest users due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestUser);
+            }
+        }
+
+        private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input)
+        {
+            IdpUserRequest idpUserRequest;
+            try
+            {
+                idpUserRequest = this.Bind<IdpUserRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to auto provision and refresh groups.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
+
+                var result = await _userController.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (IdpUserProvisioningException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.IdpUserAutoProvisionError);
+            }
+            catch (PromotionFailedException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.PromotionFailed);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
 

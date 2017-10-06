@@ -25,5 +25,8 @@ namespace Synthesis.PrincipalService.Constants
         public const string PromotionFailed = "Failed to promote the user";
         public static string LicenseAssignmentFailed = "Failed to assign the license";
 
+        //Idp User errors
+        public const string IdpUserAutoProvisionError = "An error occurred during auto provision of Idp user.";
+
     }
 }
