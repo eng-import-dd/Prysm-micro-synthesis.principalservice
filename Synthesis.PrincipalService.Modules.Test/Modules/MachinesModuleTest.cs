@@ -143,7 +143,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<CreateMachineRequest>())).Throws(new Exception());
+            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>())).Throws(new Exception());
             var actual = await _browserAuth.Post("v1/machines", with =>
             {
                 with.Header("Accept", "application/json");
@@ -173,7 +173,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<CreateMachineRequest>()))
+            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>()))
                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var actual = await _browserAuth.Post("v1/machines", with =>

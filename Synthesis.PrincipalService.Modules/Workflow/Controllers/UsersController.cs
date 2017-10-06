@@ -18,10 +18,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Remoting.Contexts;
+using System.Text;
 using System.Threading.Tasks;
 using Nancy;
 using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
+using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
@@ -350,6 +352,133 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             };
         }
 
+        public async Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the tenant id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            if (model.UserId == null || model.UserId == Guid.Empty)
+            {
+                return await AutoProvisionUserAsync(model, tenantId, createddBy);
+            }
+
+            var userId = model.UserId.Value;
+            if (model.IsGuestUser)
+            {
+                var promoteGuestResponse = await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
+                if (promoteGuestResponse?.ResultCode == PromoteGuestResultCode.Failed)
+                {
+                    throw new PromotionFailedException($"Failed to promote user {userId}");
+                }
+                _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
+            }
+            if (model.Groups != null)
+            {
+                await UpdateIdpUserGroupsAsync(model.UserId.Value, model);
+            }
+            var result = await _userRepository.GetItemAsync(model.UserId.Value);
+            return _mapper.Map<User, UserResponse>(result);
+        }
+
+        private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        {
+            //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
+            var tempPassword = GenerateRandomPassword(64);
+            var hash = HashAndSalt(tempPassword, out var salt);
+
+            var user = new CreateUserRequest()
+            {
+                Email = model.EmailId,
+                UserName = model.EmailId,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                LicenseType = LicenseType.UserLicense,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                IsIdpUser = true
+            };
+
+            var result = await CreateUserAsync(user, tenantId, createddBy);
+            if (result != null && model.Groups !=null)
+            {
+                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
+                if (groupResult == null)
+                {
+                   throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<User> UpdateIdpUserGroupsAsync(Guid userId, IdpUserRequest model)
+        {
+            var currentGroupsResult = await _userRepository.GetItemAsync(userId);
+            
+            //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class
+            var accountGroupsResult = await _groupRepository.GetItemsAsync(g => g.TenantId == model.TenantId);
+
+            var accountGroups = accountGroupsResult as IList<Group> ?? accountGroupsResult.ToList();
+            foreach (var accountGroup in accountGroups)
+            {
+                if (model.IdpMappedGroups?.Contains(accountGroup.Name) == false)
+                {
+                    //in case IdpMappedGroups is specified, skip updating group memebership if this group is not mapped
+                    continue;
+                }
+
+                if (model.Groups.Contains(accountGroup.Name))
+                {
+                    //Add the user to the group
+                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.Value))
+                    {
+                        continue; //Nothing to do if the user is already a member of the group
+                    }
+
+                    currentGroupsResult.Groups.Add(accountGroup.Id.Value);
+                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
+                    return result;
+                }
+                else
+                {
+                    //remove the user from the group
+                    currentGroupsResult.Groups.Remove(accountGroup.Id.Value);
+                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
+                    return result;
+                }
+            }
+
+            return currentGroupsResult;
+        }
+
+        private static string GenerateRandomPassword(int length)
+        {
+            const string valid = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+-={}|:<>?[]\;',./'";
+            StringBuilder res = new StringBuilder();
+            Random rnd = new Random();
+            while (0 < length--)
+            {
+                res.Append(valid[rnd.Next(valid.Length)]);
+            }
+            return res.ToString();
+        }
+
+        private static string HashAndSalt(string pass, out string salt)
+        {
+            //hashing parameters
+            const int saltSize = 64;
+            const int hashIterations = 10000;
+
+            ICryptoService cryptoService = new SimpleCrypto.PBKDF2();
+            var hash = cryptoService.Compute(pass, saltSize, hashIterations);
+            salt = cryptoService.Salt;
+            return hash;
+        }
+        
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);

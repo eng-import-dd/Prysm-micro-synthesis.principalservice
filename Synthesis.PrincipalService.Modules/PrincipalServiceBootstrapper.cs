@@ -237,8 +237,8 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
 
-            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
-            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
+            //builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            //builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
 
             // Controllers
@@ -247,7 +247,7 @@ namespace Synthesis.PrincipalService
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
-            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
+            //builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
 
 

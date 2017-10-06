@@ -752,5 +752,57 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                   });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnUser()
+        {
+            var actual = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups",
+                with =>
+                {
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.HttpRequest();
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new UserResponse()));
+
+            const string invalidIdpRequest = "{]";
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(invalidIdpRequest);
+                });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
     }
 }

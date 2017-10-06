@@ -72,7 +72,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _machineRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Machine>())).Returns(Task.FromResult(new Machine()));
 
             var newMachine = new CreateMachineRequest();
-            var result = await _controller.CreateMachineAsync(newMachine);
+            var tenantId = Guid.NewGuid();
+            var result = await _controller.CreateMachineAsync(newMachine, tenantId);
             Assert.NotNull(result);
         }
 
@@ -81,7 +82,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
             var newMachineRequest = new CreateMachineRequest { MachineKey = "machinekey" };
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
+            var tenantId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
         }
 
@@ -89,8 +91,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         public async Task CreateMachineAsyncThrowsValidationExceptionIfLocationIsDuplicate()
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
-            var newMachineRequest = new CreateMachineRequest { AccountId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
+            var newMachineRequest = new CreateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
+            var tenantId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
         }
     }
