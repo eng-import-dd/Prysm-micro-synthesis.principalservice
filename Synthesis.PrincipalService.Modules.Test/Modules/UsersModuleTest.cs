@@ -706,7 +706,78 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new User());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
-        } 
+        }
+        #endregion
+
+        #region User Groups Test Cases
+
+        [Fact]
+        public async Task CreateUserGroupReturnsCreated()
+        {
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+           _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<CreateUserGroupRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var invalidBody = "{]";
+
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(invalidBody);
+                                        });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<CreateUserGroupRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+        
         #endregion
 
         [Fact]

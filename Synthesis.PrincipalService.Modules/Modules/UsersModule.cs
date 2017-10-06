@@ -11,10 +11,8 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
-using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
@@ -49,6 +47,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersForAccount();
             SetupRoute_UpdateUser();
             SetupRouteMetadata_LockUser();
+            SetupRoute_CreateUserGroup();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -78,6 +77,8 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ex.Message);
             };
         }
+
+        #region Route Setup
 
         private void SetupRoute_GetUsersForAccount()
         {
@@ -124,6 +125,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
+
         private void SetupRouteMetadata()
         {
             _metadataRegistry.SetRouteMetadata("CreateUser", new SynthesisRouteMetadata
@@ -252,7 +254,6 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
-
         
         private void SetupRouteMetadata_LockUser()
         {
@@ -276,6 +277,34 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
+
+        private void SetupRoute_CreateUserGroup()
+        {
+            const string path = "/v1/usergroups";
+            Post(path, CreateUserGroup, null, "CreateUserGroup");
+            Post("/api/" + path, CreateUserGroup, null, "CreateUserGroupLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Creates User Group";
+
+            _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        #endregion
 
         private async Task<object> LockUserAsync(dynamic input)
         {
@@ -383,8 +412,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
-
-       
+        
         private async Task<object> GetUsersBasic(dynamic input)
         {
             try
@@ -674,5 +702,48 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
+
+        #region User Group Methods
+
+        private async Task<object> CreateUserGroup(dynamic input)
+        {
+            CreateUserGroupRequest newUserGroupRequest;
+
+            try
+            {
+                newUserGroupRequest = this.Bind<CreateUserGroupRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a User Group resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid account level or user level access to groups!");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to create user group resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        #endregion
     }
 }
