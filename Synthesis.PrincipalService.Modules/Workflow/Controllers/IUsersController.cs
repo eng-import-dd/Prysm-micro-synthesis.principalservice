@@ -25,5 +25,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, bool isLocked);
+
+        Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
+       
+
+        Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
     }
 }
