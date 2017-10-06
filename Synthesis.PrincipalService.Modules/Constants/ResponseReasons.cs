@@ -17,9 +17,11 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerLockUser = "An error occurred Locking/Unlocking the User";
         public const string InternalServerErrorCreateMachine = "An error occurred while creating the Machine";
         public const string InternalServerErrorGetGuestUser = "An error occurred retriving the Guest Users";
+        public const string InternalServerErrorGetMachine = "An error occurred retrieving the Machine";
 
         // Not found
         public const string NotFoundUser = "User Not Found";
+        public const string NotFoundMachine = "Machine Not Found";
 
         //Promote Guest
         public const string PromotionFailed = "Failed to promote the user";

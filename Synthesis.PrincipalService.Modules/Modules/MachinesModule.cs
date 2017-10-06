@@ -74,7 +74,7 @@ namespace Synthesis.PrincipalService.Modules
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
             var metadataResponse = _serializer.Serialize(new Machine());
-            var metadataDescription = "Retrieves a user by User Id";
+            var metadataDescription = "Retrieves a machine by Machine Id";
 
             _metadataRegistry.SetRouteMetadata("GetMachineById", new SynthesisRouteMetadata
             {
@@ -132,7 +132,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundUser);
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
             }
             catch (ValidationFailedException ex)
             {
@@ -141,7 +141,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
     }
