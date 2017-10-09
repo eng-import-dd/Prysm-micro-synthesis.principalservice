@@ -254,38 +254,31 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             try
             {
-                var existingUser = await _userRepository.GetItemAsync(u => u.Email.Equals(email));
+                var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+                var existingUser = userList.ToList().FirstOrDefault();
                 if (existingUser==null)
                 {
                     _logger.Error("User not found with that email.");
                     return new CanPromoteUserResponse
                     {
                         ResultCode = CanPromoteUserResultCode.UserDoesNotExist,
-                    }; 
-                }
-                if (existingUser.TenantId != Guid.Empty)
-                {
-                    _logger.Warning("User already in an account");
-                    return new CanPromoteUserResponse
-                    {
-                        ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
-                    };
-                }
-                var domain = existingUser.Email.Substring(existingUser.Email.IndexOf('@') + 1);
-                var hasMatchingTenantDomains = GeTenantEmailDomains(existingUser.TenantId).Contains(domain);
-                if (hasMatchingTenantDomains)
-                {
-                    _logger.Warning("User already in an account");
-                    return new CanPromoteUserResponse
-                    {
-                        ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
                     };
                 }
 
+                var isValidForPromotion = IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+                if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
+                {
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
+                        UserId = existingUser.Id
+                    };
+                }
+
+                _logger.Warning("User already in an account");
                 return new CanPromoteUserResponse
                 {
-                    ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
-                    UserId = existingUser.Id
+                    ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
                 };
             }
             catch (Exception ex)

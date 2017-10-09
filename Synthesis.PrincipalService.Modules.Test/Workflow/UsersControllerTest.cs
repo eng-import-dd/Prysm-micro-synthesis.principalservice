@@ -579,23 +579,50 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
 
+        #region Can Promote User Test Cases
         [Fact]
-        public async Task CanPromoteUserIfUserExists()
+        public async Task CanPromoteUserSuccess()
         {
-            
-            var email = "ch@gmm.com";
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new User());
+
+            var email = "ch@prysm.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(() =>
+                                        {
+                                            var userList = new List<User>();
+
+                                            userList.Add(new User() { Email = email });
+                                            var items = userList;
+                                            return (Task.FromResult(items.AsEnumerable()));
+
+                                        });
             var result = await _controller.CanPromoteUserAsync(email);
             var response = CanPromoteUserResultCode.UserCanBePromoted;
             Assert.Equal(response, result.ResultCode);
         }
 
         [Fact]
+        public async Task CanPromoteUserIfUserExistsInAnAccount()
+        {
+
+            var email = "ch@asd.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(() =>
+                                        {
+                                            var userList = new List<User>();
+
+                                            userList.Add(new User() { Email = email });
+                                            var items = userList;
+                                            return (Task.FromResult(items.AsEnumerable()));
+
+                                        });
+            var result = await _controller.CanPromoteUserAsync(email);
+            var response = CanPromoteUserResultCode.UserAccountAlreadyExists;
+            Assert.Equal(response, result.ResultCode);
+        }
+
+        [Fact]
         public async Task CanPromoteUserIfEmailIsEmpty()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(new User());
             var email = "";
             await Assert.ThrowsAsync<ValidationException>(() => _controller.CanPromoteUserAsync(email));
         }
@@ -608,6 +635,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.CanPromoteUserAsync(email);
             var response = CanPromoteUserResultCode.UserDoesNotExist;
             Assert.Equal(response, result.ResultCode);
-        }
+        } 
+        #endregion
     }
 }
