@@ -733,7 +733,7 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            catch (UnauthorizedAccessException)
+            catch (InvalidOperationException)
             {
                 return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid Tenant level or User level access to groups!");
             }
