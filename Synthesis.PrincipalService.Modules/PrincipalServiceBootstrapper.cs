@@ -228,18 +228,16 @@ namespace Synthesis.PrincipalService
 
             // Validation
             builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
+            
             // Individual validators must be registered here (as they are below)
             builder.RegisterType<CreateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UpdateUserRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<TenantIdValidator>().AsSelf().As<IValidator>();
-
-            builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
-            builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
-
             builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<CreateUserGroupRequestValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
@@ -247,7 +245,7 @@ namespace Synthesis.PrincipalService
                                                         (p, c) => p.Name == "deploymentType",
                                                         (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
-            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
+            //builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
 
 

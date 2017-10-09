@@ -311,6 +311,7 @@
     <Compile Include="Dao\Models\UserInvite.cs" />
     <Compile Include="Entity\PagingMetadata.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
+    <Compile Include="Requests\CreateUserGroupRequest.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Requests\ResendEmailRequest.cs" />
@@ -341,6 +342,7 @@
     <Compile Include="Utilities\EmailUtility.cs" />
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
+    <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />

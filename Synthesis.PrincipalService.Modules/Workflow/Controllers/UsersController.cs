@@ -20,8 +20,6 @@ using System.Linq.Expressions;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
-using Nancy;
-using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
@@ -41,6 +39,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _userIdValidator;
         private readonly IValidator _tenantIdValidator;
         private readonly IValidator _updateUserRequestValidator;
+        private readonly IValidator _createUserGroupValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -77,6 +76,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
+            _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -118,7 +118,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        /// <inheritdoc />
         public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -199,6 +198,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
         }
+
         public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
             
@@ -244,7 +244,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             
         }
-
         
         public async Task DeleteUserAsync(Guid id)
         {
@@ -780,6 +779,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
             return groups.FirstOrDefault()?.Id;
         }
+
         private async Task<User> LockUser(Guid userId, bool locked)
         {
             var user = await _userRepository.GetItemAsync(userId);
@@ -788,6 +788,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await _userRepository.UpdateItemAsync(userId, user);
             return user;
         }
+
         public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
@@ -830,6 +831,98 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw;
             }
         }
+
+        #region User Group Methods
+
+        public async Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId)
+        {
+            var validationErrors = new List<ValidationFailure>();
+
+            var validationResult = await _createUserGroupValidator.ValidateAsync(model);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to create a User group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            // We need to verify that the group they want to add a user to is a group within their account
+            // and we also need to verify that the user they want to add to a group is also within their account.
+            var existingUser = await _userRepository.GetItemAsync(model.UserId);
+
+            if (existingUser == null)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(existingUser), $"Unable to find the user with the id {model.UserId}"));
+                throw new ValidationFailedException(validationErrors);
+            }
+
+            var userTenantId = existingUser.TenantId;
+
+            if (userTenantId == Guid.Empty || userTenantId != tenantId)
+            {
+                throw new InvalidOperationException();
+            }
+
+            //TODO: User Permission check here - Yusuf
+            #region Legacy code - Will be removed after implementation 
+            /*
+            * if (UserId == accessedUserId)
+                return ResultCode.Success;
+
+            if (accessedUserId == Guid.Empty || CollaborationService.GetUserById(accessedUserId).Payload == null)
+                return ResultCode.RecordNotFound;
+
+            * var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
+
+               if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
+                return ResultCode.Success;
+
+               return ResultCode.Unauthorized;
+            */
+
+
+            #endregion
+
+            //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf
+            #region Legacy code - Will be removed after implementation
+            /*
+             * 
+             *  if (userGroupDto.GroupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
+                {
+                    return new ServiceResult<UserGroupDTO>
+                    {
+                        Payload = null,
+                        Message = "CreateUserGroup",
+                        ResultCode = ResultCode.RecordNotFound // Don't send unauth because we don't want to expose that the superadmin group exists, send NotFound instead
+                    };
+                }
+             */
+            #endregion
+
+            if (existingUser.Groups.Contains(model.GroupId))
+            {
+                validationErrors.Add(new ValidationFailure(nameof(existingUser), $"User group {model.GroupId} already exists for User id {model.UserId}"));
+                throw new ValidationFailedException(validationErrors);
+            }
+
+            return await CreateUserGroupInDb(model, existingUser);
+        }
+
+        private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
+        {
+            try
+            {
+               existingUser.Groups.Add(createUserGroupRequest.GroupId);
+               await _userRepository.UpdateItemAsync(createUserGroupRequest.UserId, existingUser);
+               return existingUser;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "", ex);
+                throw;
+            }
+        }
+
+        #endregion 
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {
