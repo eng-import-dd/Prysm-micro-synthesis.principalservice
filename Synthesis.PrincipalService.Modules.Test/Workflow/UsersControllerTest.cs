@@ -39,6 +39,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
+        private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
+        private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
 
         public UsersControllerTest()
         {
@@ -522,12 +524,110 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.IsType<UserResponse>(result);
         }
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+            var userResponse = await _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+            Assert.NotNull(userResponse);
+
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .ReturnsAsync((User u) =>
+                                             {
+                                                 u.Id = Guid.NewGuid();
+                                                 return u;
+                                             });
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                           .ReturnsAsync(new LicenseResponse() { ResultCode = LicenseResponseResultCode.Success });
+
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult
+                          {
+                              Errors =
+                              {
+                                  new ValidationFailure("", "")
+                              }
+                          });
+
+            var tenantId = Guid.Empty;
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+
+            _validatorMock.Setup(m => m.ValidateAsync(tenantId, CancellationToken.None))
+                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsPromotionFailedException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
+
+            _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new List<LicenseSummaryDto>());
+
+            _userApiMock.Setup(u => u.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
+                           .Throws(new PromotionFailedException(""));
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                UserId = Guid.NewGuid(),
+                FirstName = "TestUser",
+                LastName = "TestUser",
+                IsGuestUser = true
+            };
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .Throws<Exception>();
+
+            var tenantId = Guid.NewGuid();
+            var createdBy = Guid.NewGuid();
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+            await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+        }
 
         [Fact]
         public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                           .ReturnsAsync(default(User));
+                               .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
@@ -636,6 +736,133 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var response = CanPromoteUserResultCode.UserDoesNotExist;
             Assert.Equal(response, result.ResultCode);
         } 
+        #endregion
+
+        #region User Groups Test Cases
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsUserIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()
+                               {
+                                   TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                                   Groups = new List<Guid>() { Guid.NewGuid() }
+                               }));
+
+            var newUserGroupRequest = new CreateUserGroupRequest
+            {
+                UserId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30"),
+                GroupId = Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115")
+            };
+
+            var userId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId))
+                               .Returns(Task.FromResult(new User()));
+            
+            var result = await _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+            Assert.IsType<User>(result);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsValidationException()
+        {
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+            Assert.Equal(ex.Errors.ToList().Count, 1); 
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
+        {
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult<User>(null));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupAsyncReturnsDuplicateUserGroupValidationException()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .Returns(Task.FromResult(new User()));
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()
+                               {
+                                   TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                                   Groups = new List<Guid>() { Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115") }
+                               }));
+
+            var newUserGroupRequest = new CreateUserGroupRequest
+            {
+                UserId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30"),
+                GroupId = Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115")
+            };
+
+            var userId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new User()));
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
+            Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        #endregion
+
+        #region GetGuestUsers Tests
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+
+            Assert.Equal(3, result.List.Count);
+            Assert.Equal(3, result.CurrentCount);
+            Assert.Equal("test", result.ContinuationToken);
+            Assert.Equal(false, result.IsLastChunk);
+        }
+
+        
+        [Fact]
+        public async Task GetGuestUserForTenantReturnsEmptyResult()
+        {
+            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
+                               .ReturnsAsync(new PaginatedResponse<User>{ContinuationToken = "", Items = new List<User>()});
+
+            var tenantId = Guid.NewGuid();
+            var getGuestUserParams = new GetUsersParams();
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
+            Assert.Empty(result.List);
+            Assert.Equal(0, result.CurrentCount);
+            Assert.Equal(true, result.IsLastChunk);
+            Assert.Null(result.SearchValue);
+            Assert.Null(result.SortColumn);
+        }
         #endregion
     }
 }

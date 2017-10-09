@@ -84,5 +84,11 @@ namespace Synthesis.PrincipalService.Dao.Models
 
         [DataMember]
         public List<Guid> Groups { get; set; }
+
+        // The EmailDomain property is a calculated value that we want ot be persisted in the documentdb.
+        // We use JsonProperty attribute instead of DataMember attribute as Avro has trouble deserialzing
+        // read only properties marked with DataMember attribute when the object is sent to Kafka.
+        [JsonProperty]
+        public string EmailDomain => Email?.Substring((int)Email?.IndexOf("@") + 1).ToLower();
     }
 }

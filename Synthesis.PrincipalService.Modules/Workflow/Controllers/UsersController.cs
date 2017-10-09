@@ -18,10 +18,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Remoting.Contexts;
+using System.Text;
 using System.Threading.Tasks;
-using Nancy;
-using Synthesis.Nancy.MicroService.Security;
 using Synthesis.PrincipalService.Entity;
+using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
@@ -39,6 +39,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _userIdValidator;
         private readonly IValidator _tenantIdValidator;
         private readonly IValidator _updateUserRequestValidator;
+        private readonly IValidator _createUserGroupValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -75,6 +76,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
+            _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -116,7 +118,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        /// <inheritdoc />
         public async Task<UserResponse> GetUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -197,6 +198,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
         }
+
         public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
             
@@ -394,6 +396,133 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             };
         }
 
+        public async Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the tenant id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            if (model.UserId == null || model.UserId == Guid.Empty)
+            {
+                return await AutoProvisionUserAsync(model, tenantId, createddBy);
+            }
+
+            var userId = model.UserId.Value;
+            if (model.IsGuestUser)
+            {
+                var promoteGuestResponse = await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
+                if (promoteGuestResponse?.ResultCode == PromoteGuestResultCode.Failed)
+                {
+                    throw new PromotionFailedException($"Failed to promote user {userId}");
+                }
+                _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
+            }
+            if (model.Groups != null)
+            {
+                await UpdateIdpUserGroupsAsync(model.UserId.Value, model);
+            }
+            var result = await _userRepository.GetItemAsync(model.UserId.Value);
+            return _mapper.Map<User, UserResponse>(result);
+        }
+
+        private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        {
+            //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
+            var tempPassword = GenerateRandomPassword(64);
+            var hash = HashAndSalt(tempPassword, out var salt);
+
+            var user = new CreateUserRequest()
+            {
+                Email = model.EmailId,
+                UserName = model.EmailId,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                LicenseType = LicenseType.UserLicense,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                IsIdpUser = true
+            };
+
+            var result = await CreateUserAsync(user, tenantId, createddBy);
+            if (result != null && model.Groups !=null)
+            {
+                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
+                if (groupResult == null)
+                {
+                   throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<User> UpdateIdpUserGroupsAsync(Guid userId, IdpUserRequest model)
+        {
+            var currentGroupsResult = await _userRepository.GetItemAsync(userId);
+            
+            //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class
+            var accountGroupsResult = await _groupRepository.GetItemsAsync(g => g.TenantId == model.TenantId);
+
+            var accountGroups = accountGroupsResult as IList<Group> ?? accountGroupsResult.ToList();
+            foreach (var accountGroup in accountGroups)
+            {
+                if (model.IdpMappedGroups?.Contains(accountGroup.Name) == false)
+                {
+                    //in case IdpMappedGroups is specified, skip updating group memebership if this group is not mapped
+                    continue;
+                }
+
+                if (model.Groups.Contains(accountGroup.Name))
+                {
+                    //Add the user to the group
+                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.Value))
+                    {
+                        continue; //Nothing to do if the user is already a member of the group
+                    }
+
+                    currentGroupsResult.Groups.Add(accountGroup.Id.Value);
+                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
+                    return result;
+                }
+                else
+                {
+                    //remove the user from the group
+                    currentGroupsResult.Groups.Remove(accountGroup.Id.Value);
+                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
+                    return result;
+                }
+            }
+
+            return currentGroupsResult;
+        }
+
+        private static string GenerateRandomPassword(int length)
+        {
+            const string valid = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+-={}|:<>?[]\;',./'";
+            StringBuilder res = new StringBuilder();
+            Random rnd = new Random();
+            while (0 < length--)
+            {
+                res.Append(valid[rnd.Next(valid.Length)]);
+            }
+            return res.ToString();
+        }
+
+        private static string HashAndSalt(string pass, out string salt)
+        {
+            //hashing parameters
+            const int saltSize = 64;
+            const int hashIterations = 10000;
+
+            ICryptoService cryptoService = new SimpleCrypto.PBKDF2();
+            var hash = cryptoService.Compute(pass, saltSize, hashIterations);
+            salt = cryptoService.Salt;
+            return hash;
+        }
+        
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -434,12 +563,94 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return PromoteGuestResultCode.Success;
         }
 
-
         private List<string> GeTenantEmailDomains(Guid tenantId)
         {
             //Todo Get Tenant domains from tenant Micro service
             return new List<string> { "test.com", "prysm.com" };
         }
+
+        public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the tenant id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var criteria = new List<Expression<Func<User, bool>>>();
+            Expression<Func<User, string>> orderBy;
+            criteria.Add(u => u.TenantId == Guid.Empty);
+
+            //TODO get the tenantDomains from tenant matching tenantId
+            var tenantemailDomain = new List<string>{"yopmail.com", "dispostable.com"};
+
+
+            criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
+
+            if (!string.IsNullOrEmpty(getGuestUsersParams.SearchValue))
+            {
+                criteria.Add(x =>
+                                    x != null &&
+                                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                                getGuestUsersParams.SearchValue.ToLower()) ||
+                                    x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
+                                    x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+            }
+            if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
+            {
+                orderBy = u => u.FirstName;
+            }
+            else
+            {
+                switch (getGuestUsersParams.SortColumn.ToLower())
+                {
+                    case "firstname":
+                        orderBy = u => u.FirstName;
+                        break;
+
+                    case "lastname":
+                        orderBy = u => u.LastName;
+                        break;
+
+                    case "email":
+                        orderBy = u => u.Email;
+                        break;
+
+                    case "username":
+                        orderBy = u => u.UserName;
+                        break;
+
+                    default:
+                        orderBy = u => u.FirstName;
+                        break;
+                }
+            }
+
+            var queryparams = new OrderedQueryParameters<User, string>()
+            {
+                Criteria = criteria,
+                OrderBy = orderBy,
+                SortDescending = getGuestUsersParams.SortDescending,
+                ContinuationToken = getGuestUsersParams.ContinuationToken,
+                ChunkSize = getGuestUsersParams.PageSize
+            };
+
+            var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+            var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
+            var filteredUserCount = guestUsersInTenant.Count;
+            var returnMetaData = new PagingMetadata<UserResponse>
+            {
+                CurrentCount = filteredUserCount,
+                List = _mapper.Map<List<User>, List<UserResponse>>(guestUsersInTenant),
+                SearchValue = getGuestUsersParams.SearchValue,
+                ContinuationToken = guestUsersInTenantResult.ContinuationToken,
+                IsLastChunk = guestUsersInTenantResult.IsLastChunk
+            };
+
+            return returnMetaData;
+        }
+
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
@@ -592,6 +803,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
             return groups.FirstOrDefault()?.Id;
         }
+
         private async Task<User> LockUser(Guid userId, bool locked)
         {
             var user = await _userRepository.GetItemAsync(userId);
@@ -600,6 +812,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await _userRepository.UpdateItemAsync(userId, user);
             return user;
         }
+
         public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
@@ -642,6 +855,98 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw;
             }
         }
+
+        #region User Group Methods
+
+        public async Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId)
+        {
+            var validationErrors = new List<ValidationFailure>();
+
+            var validationResult = await _createUserGroupValidator.ValidateAsync(model);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to create a User group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            // We need to verify that the group they want to add a user to is a group within their account
+            // and we also need to verify that the user they want to add to a group is also within their account.
+            var existingUser = await _userRepository.GetItemAsync(model.UserId);
+
+            if (existingUser == null)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(existingUser), $"Unable to find the user with the id {model.UserId}"));
+                throw new ValidationFailedException(validationErrors);
+            }
+
+            var userTenantId = existingUser.TenantId;
+
+            if (userTenantId == Guid.Empty || userTenantId != tenantId)
+            {
+                throw new InvalidOperationException();
+            }
+
+            //TODO: User Permission check here - Yusuf
+            #region Legacy code - Will be removed after implementation 
+            /*
+            * if (UserId == accessedUserId)
+                return ResultCode.Success;
+
+            if (accessedUserId == Guid.Empty || CollaborationService.GetUserById(accessedUserId).Payload == null)
+                return ResultCode.RecordNotFound;
+
+            * var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
+
+               if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
+                return ResultCode.Success;
+
+               return ResultCode.Unauthorized;
+            */
+
+
+            #endregion
+
+            //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf
+            #region Legacy code - Will be removed after implementation
+            /*
+             * 
+             *  if (userGroupDto.GroupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
+                {
+                    return new ServiceResult<UserGroupDTO>
+                    {
+                        Payload = null,
+                        Message = "CreateUserGroup",
+                        ResultCode = ResultCode.RecordNotFound // Don't send unauth because we don't want to expose that the superadmin group exists, send NotFound instead
+                    };
+                }
+             */
+            #endregion
+
+            if (existingUser.Groups.Contains(model.GroupId))
+            {
+                validationErrors.Add(new ValidationFailure(nameof(existingUser), $"User group {model.GroupId} already exists for User id {model.UserId}"));
+                throw new ValidationFailedException(validationErrors);
+            }
+
+            return await CreateUserGroupInDb(model, existingUser);
+        }
+
+        private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
+        {
+            try
+            {
+               existingUser.Groups.Add(createUserGroupRequest.GroupId);
+               await _userRepository.UpdateItemAsync(createUserGroupRequest.UserId, existingUser);
+               return existingUser;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "", ex);
+                throw;
+            }
+        }
+
+        #endregion 
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {

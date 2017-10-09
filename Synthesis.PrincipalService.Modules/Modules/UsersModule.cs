@@ -50,6 +50,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersForAccount();
             SetupRoute_UpdateUser();
             SetupRouteMetadata_LockUser();
+            SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
@@ -59,11 +60,20 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
 
+            Get("/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenant");
+            Get("api/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenantLegacy");
+
+            Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
+            Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
+
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
 
             Post("/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuest");
             Post("/api/v1/users/{userId}/promote", PromoteGuestAsync, null, "PromoteGuestLegacy");
+
+            Post("/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync, null, "AutoProvisionRefreshGroupsAsync");
+            Post("/api/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync, null, "AutoProvisionRefreshGroupsAsyncLegacy");
 
             OnError += (ctx, ex) =>
             {
@@ -71,6 +81,8 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ex.Message);
             };
         }
+
+        #region Route Setup
 
         private void SetupRoute_GetUsersForAccount()
         {
@@ -172,6 +184,20 @@ namespace Synthesis.PrincipalService.Modules
                 Response = "Promote Guest",
                 Description = "Promote a guest to licensed User."
             });
+
+            _metadataRegistry.SetRouteMetadata("GetGuestUsersForTenant", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new []{HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError},
+                Response = "Get Guest User",
+                Description = "Retrive all the guest users resource for a tenant."
+            });
+
+            _metadataRegistry.SetRouteMetadata("AutoProvisionRefreshGroups", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
+                Response = "AutoProvision and Refresh Groups",
+                Description = "AutoProvisions and Refreshes Groups."
+            });
         }
 
         /// <summary>
@@ -257,7 +283,6 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
-
         
         private void SetupRouteMetadata_LockUser()
         {
@@ -281,6 +306,34 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
+
+        private void SetupRoute_CreateUserGroup()
+        {
+            const string path = "/v1/usergroups";
+            Post(path, CreateUserGroup, null, "CreateUserGroup");
+            Post("/api/" + path, CreateUserGroup, null, "CreateUserGroupLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Creates User Group";
+
+            _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        #endregion
 
         private async Task<object> LockUserAsync(dynamic input)
         {
@@ -388,8 +441,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
-
-       
+        
         private async Task<object> GetUsersBasic(dynamic input)
         {
             try
@@ -621,5 +673,126 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
+
+        private async Task<object> GetGuestUsersForTenant(dynamic input)
+        {
+            GetUsersParams getGuestUsersParams;
+            try
+            {
+                getGuestUsersParams = this.Bind<GetUsersParams>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to get geust users", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _userController.GetGuestUsersForTenantAsync(tenantId, getGuestUsersParams);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to get guest users due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetGuestUser);
+            }
+        }
+
+        private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input)
+        {
+            IdpUserRequest idpUserRequest;
+            try
+            {
+                idpUserRequest = this.Bind<IdpUserRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to auto provision and refresh groups.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
+
+                var result = await _userController.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (IdpUserProvisioningException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.IdpUserAutoProvisionError);
+            }
+            catch (PromotionFailedException ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.Forbidden(ResponseReasons.PromotionFailed);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to auto provision and refresh groups", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        #region User Group Methods
+
+        private async Task<object> CreateUserGroup(dynamic input)
+        {
+            CreateUserGroupRequest newUserGroupRequest;
+
+            try
+            {
+                newUserGroupRequest = this.Bind<CreateUserGroupRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a User Group resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid Tenant level or User level access to groups!");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to create User Group resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        #endregion
     }
 }
