@@ -735,11 +735,11 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (UnauthorizedAccessException)
             {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid account level or user level access to groups!");
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid Tenant level or User level access to groups!");
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to create user group resource due to an error", ex);
+                _logger.Error("Failed to create User Group resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
