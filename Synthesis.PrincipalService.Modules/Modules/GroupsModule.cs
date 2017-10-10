@@ -10,6 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Modules
@@ -225,11 +226,24 @@ namespace Synthesis.PrincipalService.Modules
                 Guid groupId = Guid.Parse(input.groupId);
                 var result = await _groupsController.DeleteGroupAsync(groupId);
 
-                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.NoContent);
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Resource has been deleted"
+                };
             }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.Warning("Group is either deleted or doesn't exist", ex);
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Group is either deleted or doesn't exist"
+                };
             }
             catch (Exception ex)
             {

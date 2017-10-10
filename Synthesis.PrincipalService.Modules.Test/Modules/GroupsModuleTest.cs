@@ -310,8 +310,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteGroupReturnsNoContent()
         {
+            var groupId = Guid.NewGuid();
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830", with =>
+                                                   $"/v1/groups/{groupId}", with =>
                                                                {
                                                                    with.Header("Accept", "application/json");
                                                                    with.Header("Content-Type", "application/json");
@@ -326,9 +327,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
                            .Throws(new Exception());
-
+            var groupId = Guid.NewGuid();
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830",
+                                                   $"/v1/groups/{groupId}",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
@@ -344,8 +345,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var groupId = Guid.NewGuid();
             var actual = await _browserAuth.Delete(
-                                                 "/v1/groups/7b629edf-ebce-49c3-9760-8a1856da2830",
+                                                 $"/v1/groups/{groupId}",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
