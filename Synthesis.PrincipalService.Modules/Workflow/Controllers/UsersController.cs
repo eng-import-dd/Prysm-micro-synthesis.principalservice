@@ -838,7 +838,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (userTenantId == Guid.Empty || userTenantId != tenantId)
             {
-                throw new UnauthorizedAccessException();
+                throw new InvalidOperationException();
             }
 
             //TODO: User Permission check here - Yusuf
