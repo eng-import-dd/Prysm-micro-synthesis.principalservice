@@ -585,7 +585,7 @@ namespace Synthesis.PrincipalService.Modules
             string email = input.email;
             try
             {
-                var result= await _userController.CanPromoteUserAsync(email);
+                var result = await _userController.CanPromoteUserAsync(email);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -593,6 +593,11 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.Error("User not found", ex);
+                return HttpStatusCode.NotFound;
             }
             catch (Exception ex)
             {

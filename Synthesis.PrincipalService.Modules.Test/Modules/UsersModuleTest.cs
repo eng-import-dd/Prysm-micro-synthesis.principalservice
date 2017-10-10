@@ -750,7 +750,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                                       with.Header("Content-Type", "application/json");
                                                                                   });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        } 
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsUserNotFound()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new NotFoundException("User Doesn't Exist"));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
         #endregion
 
         #region User Groups Test Cases

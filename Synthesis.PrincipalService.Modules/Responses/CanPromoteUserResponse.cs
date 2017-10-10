@@ -14,7 +14,6 @@ namespace Synthesis.PrincipalService.Responses
 
     public enum CanPromoteUserResultCode
     {
-        UserDoesNotExist = 0,
         UserAccountAlreadyExists = 1,
         UserCanBePromoted = 2
     }

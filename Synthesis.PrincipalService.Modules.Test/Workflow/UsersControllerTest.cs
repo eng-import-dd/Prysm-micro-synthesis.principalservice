@@ -21,6 +21,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Nancy;
 using Xunit;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
@@ -732,10 +733,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                                .ReturnsAsync(default(User));
             var email = "ch@gmm.com";
-            var result = await _controller.CanPromoteUserAsync(email);
-            var response = CanPromoteUserResultCode.UserDoesNotExist;
-            Assert.Equal(response, result.ResultCode);
-        } 
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email));
+        }
         #endregion
 
         #region User Groups Test Cases

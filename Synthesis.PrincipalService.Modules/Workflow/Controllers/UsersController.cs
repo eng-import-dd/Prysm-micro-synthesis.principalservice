@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
+using Nancy;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
@@ -261,10 +262,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (existingUser==null)
                 {
                     _logger.Error("User not found with that email.");
-                    return new CanPromoteUserResponse
-                    {
-                        ResultCode = CanPromoteUserResultCode.UserDoesNotExist,
-                    };
+                    throw new NotFoundException("User not found with that email.");
                 }
 
                 var isValidForPromotion = IsValidPromotionForTenant(existingUser, existingUser.TenantId);
