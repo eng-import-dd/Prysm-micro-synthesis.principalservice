@@ -18,6 +18,7 @@ namespace Synthesis.PrincipalService.Modules
     public sealed class MachinesModule : NancyModule
     {
         private const string TenantIdClaim = "TenantId";
+        private const string UserIdClaim = "UserId";
         private readonly IMachineController _machineController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
@@ -54,15 +55,12 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRouteMetadata()
         {
-
             _metadataRegistry.SetRouteMetadata("CreateMachine", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Create a new machine",
                 Description = "Create a new machine resource."
             });
-
-           
         }
 
         private void SetupRoute_GetMachineById()
@@ -128,7 +126,8 @@ namespace Synthesis.PrincipalService.Modules
             var machineId = input.id;
             try
             {
-                return await _machineController.GetMachineByIdAsync(machineId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _machineController.GetMachineByIdAsync(machineId, tenantId);
             }
             catch (NotFoundException)
             {
@@ -137,6 +136,10 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineById: No access to get machines!");
             }
             catch (Exception ex)
             {
