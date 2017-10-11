@@ -21,6 +21,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Nancy;
 using Xunit;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
@@ -681,6 +682,63 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
+        }
+        #endregion
+
+        #region Can Promote User Test Cases
+        [Fact]
+        public async Task CanPromoteUserSuccess()
+        {
+
+            var email = "ch@prysm.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(() =>
+                                        {
+                                            var userList = new List<User>();
+
+                                            userList.Add(new User() { Email = email });
+                                            var items = userList;
+                                            return (Task.FromResult(items.AsEnumerable()));
+
+                                        });
+            var result = await _controller.CanPromoteUserAsync(email);
+            var response = CanPromoteUserResultCode.UserCanBePromoted;
+            Assert.Equal(response, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteUserIfUserExistsInAnAccount()
+        {
+
+            var email = "ch@asd.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(() =>
+                                        {
+                                            var userList = new List<User>();
+
+                                            userList.Add(new User() { Email = email });
+                                            var items = userList;
+                                            return (Task.FromResult(items.AsEnumerable()));
+
+                                        });
+            var result = await _controller.CanPromoteUserAsync(email);
+            var response = CanPromoteUserResultCode.UserAccountAlreadyExists;
+            Assert.Equal(response, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteUserIfEmailIsEmpty()
+        {
+            var email = "";
+            await Assert.ThrowsAsync<ValidationException>(() => _controller.CanPromoteUserAsync(email));
+        }
+        [Fact]
+        public async Task CanPromoteUserNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+            var email = "ch@gmm.com";
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email));
         }
         #endregion
 

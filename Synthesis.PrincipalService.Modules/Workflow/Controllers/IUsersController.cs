@@ -33,6 +33,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
+        Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
+
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
     }
 }
