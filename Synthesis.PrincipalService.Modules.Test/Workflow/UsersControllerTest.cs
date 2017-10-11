@@ -697,6 +697,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
+        #endregion
 
         #region Can Promote User Test Cases
         [Fact]
