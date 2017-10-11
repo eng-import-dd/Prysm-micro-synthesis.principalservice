@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     /// <summary>
@@ -101,9 +100,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var assignedTenantId = result.TenantId;
             if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
             {
-                throw new UnauthorizedAccessException();
+                throw new InvalidOperationException();
             }
-
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
