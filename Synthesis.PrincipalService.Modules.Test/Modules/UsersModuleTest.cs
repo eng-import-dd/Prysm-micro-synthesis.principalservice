@@ -893,6 +893,122 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #endregion
 
+        #region Get UserGroups For User
+        [Fact]
+        public async Task GetUserGroupsForUserReturnsFound()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
+            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<UserGroup>()));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse(){Id = currentUserId});
+            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+                                                                                   {
+                                                                                       with.HttpRequest();
+                                                                                       with.Header("Accept", "application/json");
+                                                                                       with.Header("Content-Type", "application/json");
+                                                                                   });
+            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserGroupsForUserReturnsBadRequestDueToValidationException()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
+            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+                           .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
+            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+                                                                                          {
+                                                                                              with.HttpRequest();
+                                                                                              with.Header("Accept", "application/json");
+                                                                                              with.Header("Content-Type", "application/json");
+                                                                                          });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserGroupsForUserReturnsInternalServerError()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
+            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+                           .ThrowsAsync(new Exception());
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
+            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+                                                                                          {
+                                                                                              with.HttpRequest();
+                                                                                              with.Header("Accept", "application/json");
+                                                                                              with.Header("Content-Type", "application/json");
+                                                                                          });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserGroupsForUserReturnsUnauthorizedValidUserLevelAccess()
+        {
+            var currentUserId = Guid.NewGuid();
+            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<UserGroup>()));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
+            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+                                                                                          {
+                                                                                              with.HttpRequest();
+                                                                                              with.Header("Accept", "application/json");
+                                                                                              with.Header("Content-Type", "application/json");
+                                                                                          });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserGroupsForUserReturnsUnauthorized()
+        {
+            var userId = Guid.NewGuid();
+            var response = await _browserNoAuth.Get($"/v1/usergroups/{userId}/user", with =>
+                                                                                          {
+                                                                                              with.HttpRequest();
+                                                                                              with.Header("Accept", "application/json");
+                                                                                              with.Header("Content-Type", "application/json");
+                                                                                          });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        [Fact]
+        public async Task GetUserGroupsForUserReturnNotFound()
+        {
+            var userId = Guid.NewGuid();
+
+            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+                           .Throws(new NotFoundException("Record not found"));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == userId))
+                               .Throws(new Exception());
+
+
+            var response = await _browserAuth.Get($"/v1/usergroups/{userId}/user", with =>
+                                                                                    {
+                                                                                        with.HttpRequest();
+                                                                                        with.Header("Accept", "application/json");
+                                                                                        with.Header("Content-Type", "application/json");
+                                                                                    });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        #endregion
+
         #region Get Guest Users For Tenant Test Cases
 
         [Fact]

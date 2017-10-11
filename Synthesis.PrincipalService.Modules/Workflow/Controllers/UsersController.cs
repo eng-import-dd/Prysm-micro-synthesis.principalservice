@@ -919,6 +919,31 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
          
         }
 
+        public async Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId)
+        {
+            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _userRepository.GetItemAsync(u => u.Id == userId);
+
+            if (result != null)
+            {
+                return (from groupId in result.Groups
+                        select new UserGroup
+                        {
+                            UserId = userId,
+                            GroupId = groupId
+                        }).ToList();
+            }
+
+            _logger.Warning($"A User group resource could not be found for id {userId}");
+            throw new NotFoundException($"A User group resource could not be found for id {userId}");
+        }
+
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
         {
             try
