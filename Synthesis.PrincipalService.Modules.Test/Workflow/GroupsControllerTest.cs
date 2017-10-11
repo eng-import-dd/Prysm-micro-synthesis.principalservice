@@ -116,8 +116,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 .Returns(Task.FromResult(new Group()));
             _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
                                 .Returns(Task.FromResult(Guid.NewGuid()));
-            _userRepositoryMock.Setup(m => m.DeleteItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                               .Returns(Task.FromResult(Guid.NewGuid()));
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .ReturnsAsync(new User());
             var groupId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var result = await _controller.DeleteGroupAsync(groupId, userId);

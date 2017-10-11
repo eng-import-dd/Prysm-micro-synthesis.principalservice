@@ -126,8 +126,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     return false;
                 }
 
+                var usersWithGroupToBeDeleted= await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+                foreach (var user in usersWithGroupToBeDeleted)
+                {
+                    user.Groups.Remove(groupId);
+                    await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty,user);
+                }
+
                 await _groupRepository.DeleteItemAsync(groupId);
-                await _userRepository.DeleteItemsAsync(u => u.Groups.Remove(groupId));
+
                 _eventService.Publish(new ServiceBusEvent<Guid>
                 {
                     Name = EventNames.GroupDeleted,
