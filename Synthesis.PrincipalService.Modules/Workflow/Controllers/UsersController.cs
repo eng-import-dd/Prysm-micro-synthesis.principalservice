@@ -974,8 +974,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return (from groupId in result.Groups
                         select new UserGroup
                         {
-                            UserId = userId,
-                            GroupId = groupId
+                            UserId = userId
                         }).ToList();
             }
 
