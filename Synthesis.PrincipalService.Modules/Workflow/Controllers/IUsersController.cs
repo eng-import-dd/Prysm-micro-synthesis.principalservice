@@ -34,5 +34,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
+
+        Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
     }
 }
