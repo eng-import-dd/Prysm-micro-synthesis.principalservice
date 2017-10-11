@@ -706,7 +706,232 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                      with.JsonBody(new User());
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
-        } 
+        }
         #endregion
+
+        #region Can Promote user Test cases
+        [Fact]
+        public async Task CanPromoteuserReturnsSuccess()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Returns(Task.FromResult(new CanPromoteUserResponse()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                     {
+                                                                         with.HttpRequest();
+                                                                         with.Header("Accept", "application/json");
+                                                                         with.Header("Content-Type", "application/json");
+                                                                     });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsBadrequest()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new ValidationException(new List<ValidationFailure>()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsUserNotFound()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new NotFoundException("User Doesn't Exist"));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        #endregion
+
+        #region User Groups Test Cases
+
+        [Fact]
+        public async Task CreateUserGroupReturnsCreated()
+        {
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+            Assert.Equal(HttpStatusCode.Created, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+           _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<CreateUserGroupRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var invalidBody = "{]";
+
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(invalidBody);
+                                        });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateUserGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<CreateUserGroupRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Post("/v1/usergroups",
+                                        with =>
+                                        {
+                                            with.Header("Accept", "application/json");
+                                            with.Header("Content-Type", "application/json");
+                                            with.HttpRequest();
+                                            with.JsonBody(new CreateUserGroupRequest());
+                                        });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+        
+        #endregion
+
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            var actual = await _browserAuth.Get(
+                                                "/v1/users/guests",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantReturnsUnauthorized()
+        {
+            var actual = await _browserNoAuth.Get(
+                                                "/v1/users/guests",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<GetUsersParams>()))
+                           .ThrowsAsync(new Exception());
+            var actual = await _browserAuth.Get(
+                                                  "/v1/users/guests",
+                                                  with =>
+                                                  {
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                      with.HttpRequest();
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnUser()
+        {
+            var actual = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups",
+                with =>
+                {
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.HttpRequest();
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(new IdpUserRequest());
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new UserResponse()));
+
+            const string invalidIdpRequest = "{]";
+
+            var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.JsonBody(invalidIdpRequest);
+                });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
     }
 }

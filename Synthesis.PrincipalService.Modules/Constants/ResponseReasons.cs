@@ -16,6 +16,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerErrorUpdateUser = "An error occurred updating the User";
         public const string InternalServerLockUser = "An error occurred Locking/Unlocking the User";
         public const string InternalServerErrorCreateMachine = "An error occurred while creating the Machine";
+        public const string InternalServerErrorGetGuestUser = "An error occurred retriving the Guest Users";
 
         // Not found
         public const string NotFoundUser = "User Not Found";
@@ -23,6 +24,9 @@ namespace Synthesis.PrincipalService.Constants
         //Promote Guest
         public const string PromotionFailed = "Failed to promote the user";
         public static string LicenseAssignmentFailed = "Failed to assign the license";
+
+        //Idp User errors
+        public const string IdpUserAutoProvisionError = "An error occurred during auto provision of Idp user.";
 
     }
 }

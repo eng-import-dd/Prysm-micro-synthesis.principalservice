@@ -2,6 +2,8 @@
 using Synthesis.License.Manager.Models;
 using System;
 using System.Linq;
+using Nancy;
+using Newtonsoft.Json.Converters;
 
 namespace Synthesis.PrincipalService.Responses
 {

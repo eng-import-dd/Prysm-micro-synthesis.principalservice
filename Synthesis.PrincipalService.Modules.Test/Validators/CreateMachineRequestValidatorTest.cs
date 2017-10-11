@@ -14,7 +14,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         {
             var request = new CreateMachineRequest
             {
-                AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsSelected = false,
@@ -33,34 +33,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         }           
 
         [Fact]
-        public void ShouldFailIfModifiedByIsNotSet()
-        {
-            var request = new CreateMachineRequest
-            {
-                AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
-                DateCreated = DateTime.UtcNow,
-                DateModified = DateTime.UtcNow,
-                IsSelected = false,
-                LastOnline = DateTime.UtcNow,
-                Location = "location",
-                Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
-                MachineKey = "mac_key",
-                SettingProfileId = Guid.Parse("5c0cff7b-bbf6-41a4-a3f1-dba3b01f16d5"),
-                SettingProfileName = "name",
-                SynthesisVersion = "2.10"
-            };
-
-            var result = _validator.Validate(request);
-
-            Assert.False(result.IsValid);
-        }
-
-        [Fact]
         public void ShouldPassIfModifiedByAndMachineKeyIsSet()
         {
             var request = new CreateMachineRequest
             {
-                AccountId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
                 DateCreated = DateTime.UtcNow,
                 DateModified = DateTime.UtcNow,
                 IsSelected = false,
