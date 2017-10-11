@@ -939,7 +939,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && u.TenantId == tenantId);
 
             if (result == null)
             {
@@ -951,7 +951,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
             return (from user in result
-                    where user.TenantId == tenantId //checking for account level access
                     select new UserGroup
                     {
                         UserId = user.Id.Value
