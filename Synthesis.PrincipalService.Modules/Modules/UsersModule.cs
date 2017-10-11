@@ -48,7 +48,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_UpdateUser();
             SetupRouteMetadata_LockUser();
             SetupRoute_CreateUserGroup();
-            SetupRoute_GetUserGroupsForGroup();
+            SetupRoute_GetUsersForGroup();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -305,14 +305,14 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private void SetupRoute_GetUserGroupsForGroup()
+        private void SetupRoute_GetUsersForGroup()
         {
             const string path = "/v1/usergroups/{groupId:guid}";
-            Get(path, GetUserGroupsForGroup, null, "GetUserGroupsForGroup");
-            Get("/api/" + path, GetUserGroupsForGroup, null, "GetUserGroupsForGroupLegacy");
+            Get(path, GetUsersForGroup, null, "GetUserGroupsForGroup");
+            Get("/api" + path, GetUsersForGroup, null, "GetUserGroupsForGroupLegacy");
 
             // register metadata
-            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataStatusCodes = new[] { HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves user groups by group Id";
 
@@ -771,7 +771,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUserGroupsForGroup(dynamic input)
+        private async Task<object> GetUsersForGroup(dynamic input)
         {
             Guid groupId = input.groupId;
 
@@ -780,7 +780,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
-                var result = await _userController.GetUserGroupsForGroup(groupId, tenantId, userId);
+                var result = await _userController.GetUsersForGroup(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Found);

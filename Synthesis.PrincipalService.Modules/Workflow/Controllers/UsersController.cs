@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
@@ -888,7 +887,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<UserGroup>> GetUserGroupsForGroup(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<UserGroup>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId)
         {
             var validationResult = await _groupIdValidator.ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -910,11 +909,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return (from user in result
                     where user.TenantId == tenantId //checking for account level access
-                    where user.Id != null
                     select new UserGroup
                     {
-                        UserId = user.Id.Value,
-                        GroupId = groupId
+                        UserId = user.Id.Value
                     }).ToList();
          
         }

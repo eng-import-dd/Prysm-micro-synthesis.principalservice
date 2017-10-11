@@ -794,34 +794,34 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
-        public async Task GetUserGroupsForGroupReturnsUsersIfExists()
+        public async Task GetUsersForGroupReturnsUsersIfExists()
         {
             var validGroupId = Guid.NewGuid();
 
-            _mockUserController.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _mockUserController.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<UserGroup>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
-            var result = await _controller.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
             Assert.IsType<List<UserGroup>>(result);
         }
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
-        public async Task GetUserGroupsForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
+        public async Task GetUsersForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
         {
             var validGroupId = Guid.NewGuid();
 
-            _mockUserController.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _mockUserController.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                                .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Throws(new NotFoundException(string.Empty));
 
-            var result = await _controller.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
             Assert.Equal(0, result.Count);
         }

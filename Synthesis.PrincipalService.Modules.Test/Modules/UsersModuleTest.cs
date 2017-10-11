@@ -783,11 +783,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group","User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnFound()
+        public async Task GetUsersForGroupReturnFound()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<UserGroup>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -805,11 +805,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnNotFoundException()
+        public async Task GetUsersForGroupReturnNotFoundException()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -827,11 +827,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnValidationException()
+        public async Task GetUsersForGroupReturnValidationException()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -849,11 +849,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnUnAuthorized()
+        public async Task GetUsersForGroupReturnUnAuthorized()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<UserGroup>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -871,11 +871,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnInternalServerError()
+        public async Task GetUsersForGroupReturnInternalServerError()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
