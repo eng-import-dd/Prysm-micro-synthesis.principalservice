@@ -29,12 +29,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
 
-        Task<List<UserGroup>> GetUserGroupsForGroup(Guid groupId, Guid tenantId, Guid userId);
+        Task<List<UserGroup>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId);
 
         Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId);
 
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
+
+        Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
     }
 }

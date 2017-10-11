@@ -712,6 +712,64 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
+        #region Can Promote user Test cases
+        [Fact]
+        public async Task CanPromoteuserReturnsSuccess()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Returns(Task.FromResult(new CanPromoteUserResponse()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                     {
+                                                                         with.HttpRequest();
+                                                                         with.Header("Accept", "application/json");
+                                                                         with.Header("Content-Type", "application/json");
+                                                                     });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsBadrequest()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new ValidationException(new List<ValidationFailure>()));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanPromoteuserReturnsUserNotFound()
+        {
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+                           .Throws(new NotFoundException("User Doesn't Exist"));
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        #endregion
+
         #region User Groups Test Cases
 
         [Fact]
@@ -783,11 +841,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group","User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnFound()
+        public async Task GetUsersForGroupReturnFound()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<UserGroup>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -800,16 +858,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.Header("Accept", "application/json");
                                                     with.Header("Content-Type", "application/json");
                                                 });
-            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnNotFoundException()
+        public async Task GetUsersForGroupReturnNotFoundException()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -827,11 +885,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnValidationException()
+        public async Task GetUsersForGroupReturnValidationException()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -849,11 +907,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnUnAuthorized()
+        public async Task GetUsersForGroupReturnUnAuthorized()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<UserGroup>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -871,11 +929,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Fact]
         [Trait("User Group", "User Group Tests")]
-        public async Task GetUserGroupsForGroupReturnInternalServerError()
+        public async Task GetUsersForGroupReturnInternalServerError()
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))

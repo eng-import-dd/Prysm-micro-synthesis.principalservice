@@ -17,9 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
+using Nancy;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
@@ -246,7 +246,49 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             
         }
-        
+
+        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
+        {
+            var isValidEmail = EmailValidator.IsValid(email);
+            if (!isValidEmail)
+            {
+                _logger.Warning("Email is either empty or invalid.");
+                throw new ValidationException("Email is either empty or invalid");
+            }
+
+            try
+            {
+                var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+                var existingUser = userList.ToList().FirstOrDefault();
+                if (existingUser==null)
+                {
+                    _logger.Error("User not found with that email.");
+                    throw new NotFoundException("User not found with that email.");
+                }
+
+                var isValidForPromotion = IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+                if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
+                {
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
+                        UserId = existingUser.Id
+                    };
+                }
+
+                _logger.Warning("User already in an account");
+                return new CanPromoteUserResponse
+                {
+                    ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("User not found with that email.", ex);
+                throw;
+            }
+        }
+
         public async Task DeleteUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -888,7 +930,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<UserGroup>> GetUserGroupsForGroup(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<UserGroup>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId)
         {
             var validationResult = await _groupIdValidator.ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -897,7 +939,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && u.TenantId == tenantId);
 
             if (result == null)
             {
@@ -909,12 +951,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
             return (from user in result
-                    where user.TenantId == tenantId //checking for account level access
-                    where user.Id != null
                     select new UserGroup
                     {
-                        UserId = user.Id.Value,
-                        GroupId = groupId
+                        UserId = user.Id.Value
                     }).ToList();
          
         }

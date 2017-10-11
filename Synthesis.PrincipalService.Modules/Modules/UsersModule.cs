@@ -11,8 +11,11 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using FluentValidation;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
+using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
@@ -48,7 +51,8 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_UpdateUser();
             SetupRouteMetadata_LockUser();
             SetupRoute_CreateUserGroup();
-            SetupRoute_GetUserGroupsForGroup();
+            SetupRoute_CanPromoteUser();
+            SetupRoute_GetUsersForGroup();
             SetupRoute_GetUserGroupsForUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
@@ -128,6 +132,31 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_CanPromoteUser()
+        {
+            const string path = "/v1/users/canpromoteuser";
+            Get(path, CanPromoteUser, null, "CanPromoteUser");
+            Get(LegacyBaseRoute + path, CanPromoteUser, null, "CanPromoteUserLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "States whether a user can be promoted";
+
+            _metadataRegistry.SetRouteMetadata("CanPromoteUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("CanPromoteUserLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
         private void SetupRouteMetadata()
         {
             _metadataRegistry.SetRouteMetadata("CreateUser", new SynthesisRouteMetadata
@@ -306,14 +335,14 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private void SetupRoute_GetUserGroupsForGroup()
+        private void SetupRoute_GetUsersForGroup()
         {
             const string path = "/v1/usergroups/{groupId:guid}";
-            Get(path, GetUserGroupsForGroup, null, "GetUserGroupsForGroup");
-            Get("/api/" + path, GetUserGroupsForGroup, null, "GetUserGroupsForGroupLegacy");
+            Get(path, GetUsersForGroup, null, "GetUserGroupsForGroup");
+            Get("/api" + path, GetUsersForGroup, null, "GetUserGroupsForGroupLegacy");
 
             // register metadata
-            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves user groups by group Id";
 
@@ -604,6 +633,31 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> CanPromoteUser(dynamic input)
+        {
+            string email = input.email;
+            try
+            {
+                var result = await _userController.CanPromoteUserAsync(email);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.Error("User not found", ex);
+                return HttpStatusCode.NotFound;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while determining a User can be promoted", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+        }
         private async Task<HttpStatusCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
@@ -797,7 +851,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUserGroupsForGroup(dynamic input)
+        private async Task<object> GetUsersForGroup(dynamic input)
         {
             Guid groupId = input.groupId;
 
@@ -806,10 +860,10 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
-                var result = await _userController.GetUserGroupsForGroup(groupId, tenantId, userId);
+                var result = await _userController.GetUsersForGroup(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.Found);
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (NotFoundException)
             {
