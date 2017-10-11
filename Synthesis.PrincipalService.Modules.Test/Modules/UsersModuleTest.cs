@@ -858,7 +858,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.Header("Accept", "application/json");
                                                     with.Header("Content-Type", "application/json");
                                                 });
-            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]

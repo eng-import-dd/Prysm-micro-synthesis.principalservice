@@ -341,7 +341,7 @@ namespace Synthesis.PrincipalService.Modules
             Get("/api" + path, GetUsersForGroup, null, "GetUserGroupsForGroupLegacy");
 
             // register metadata
-            var metadataStatusCodes = new[] { HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves user groups by group Id";
 
@@ -837,7 +837,7 @@ namespace Synthesis.PrincipalService.Modules
                 var result = await _userController.GetUsersForGroup(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.Found);
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (NotFoundException)
             {
