@@ -7,7 +7,9 @@ using Synthesis.Logging;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
 using System.Threading;
@@ -23,6 +25,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
+        private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly IGroupsController _controller;
 
@@ -31,6 +34,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())
                                   .Returns(_groupRepositoryMock.Object);
+
+            _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
+                                  .Returns(_userRepositoryMock.Object);
 
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<Group>>()));
@@ -106,11 +112,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task DeleteGroupAsyncReturnsTrueIfSuccessful()
         {
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Returns(Task.FromResult(new Group()));
             _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
                                 .Returns(Task.FromResult(Guid.NewGuid()));
-
+            _userRepositoryMock.Setup(m => m.DeleteItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(Task.FromResult(Guid.NewGuid()));
             var groupId = Guid.NewGuid();
-            var result = await _controller.DeleteGroupAsync(groupId);
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(groupId, userId);
             Assert.Equal(true, result);
         }
 
@@ -119,20 +129,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
                                 .Throws(new DocumentNotFoundException());
-
-            var result = await _controller.DeleteGroupAsync(Guid.Empty);
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
             Assert.Equal(true, result);
         }
 
         [Fact]
-        public async Task DeleteGroupAsyncReturnsFalse()
+        public async Task DeleteGroupAsyncReturnsFalseDueToException()
         {
             _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
                                 .Throws(new Exception());
-
-            var result = await _controller.DeleteGroupAsync(Guid.Empty);
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
             Assert.Equal(false, result);
-        } 
+        }
         #endregion
     }
 }

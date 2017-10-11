@@ -325,7 +325,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
             var groupId = Guid.NewGuid();
             var actual = await _browserAuth.Delete(
@@ -343,7 +343,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
             var groupId = Guid.NewGuid();
             var actual = await _browserAuth.Delete(

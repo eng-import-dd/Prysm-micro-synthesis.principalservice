@@ -224,7 +224,8 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 Guid groupId = Guid.Parse(input.groupId);
-                var result = await _groupsController.DeleteGroupAsync(groupId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+                await _groupsController.DeleteGroupAsync(groupId, userId);
 
                 return new Response
                 {

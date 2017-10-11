@@ -23,6 +23,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class GroupsController : IGroupsController
     {
         private readonly IRepository<Group> _groupRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IValidator _createGroupValidator;
         private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
@@ -41,6 +42,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                 ILogger logger)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
+            _userRepository = repositoryFactory.CreateRepository<User>();
             _createGroupValidator = validatorLocator.GetValidator(typeof(CreateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
@@ -106,7 +108,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
-        public async Task<bool> DeleteGroupAsync(Guid groupId)
+        public async Task<bool> DeleteGroupAsync(Guid groupId, Guid userId)
         {
             var validationResult = await _groupValidatorId.ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -117,8 +119,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             try
             {
-                await _groupRepository.DeleteItemAsync(groupId);
+                var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
+                if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
+                {
+                    _logger.Error("Cannot delete a locked group since user is not SuperAdmin.");
+                    return false;
+                }
 
+                await _groupRepository.DeleteItemAsync(groupId);
+                await _userRepository.DeleteItemsAsync(u => u.Groups.Remove(groupId));
                 _eventService.Publish(new ServiceBusEvent<Guid>
                 {
                     Name = EventNames.GroupDeleted,
