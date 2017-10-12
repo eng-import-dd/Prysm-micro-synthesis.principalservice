@@ -187,5 +187,120 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
+
+
+        #region MyRegion
+        [Fact]
+        public async Task UpdateMachineReturnsOK()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                        {
+                                                            MachineKey = "12345678901234567890",
+                                                            Location = "TestLocation",
+                                                            ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                            SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                            DateModified = DateTime.UtcNow
+                                                        }
+                                                    
+                                                    );
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateMachineReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.UpdateMachineAsync(It.IsAny<UpdateMachineRequest>(), It.IsAny<Guid>())).Throws(new Exception());
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    }
+
+                                                    );
+                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateMachineReturnsNotFound()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/notavalidmachine",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    }
+
+                                                    );
+                                                });
+            Assert.Equal(HttpStatusCode.NotFound, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateMachineReturnsUnauthorized()
+        {
+            var actual = await _browserNoAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    }
+
+                                                    );
+                                                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+        [Fact]
+        public async Task UpdateMachineReturnsBadRequest()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(";)[");
+                                                });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+        }
+        #endregion
+
     }
 }
