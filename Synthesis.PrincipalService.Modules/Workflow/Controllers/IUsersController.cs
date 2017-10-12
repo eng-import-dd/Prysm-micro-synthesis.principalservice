@@ -31,7 +31,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<List<Guid>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId);
 
-        Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId);
+        Task<List<Guid>> GetGroupsForUserAsync(Guid userId);
 
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        

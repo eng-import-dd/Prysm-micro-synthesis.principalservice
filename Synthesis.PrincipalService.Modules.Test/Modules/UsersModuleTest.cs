@@ -953,11 +953,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #region Get UserGroups For User
         [Fact]
-        public async Task GetUserGroupsForUserReturnsFound()
+        public async Task GetGroupsForUserReturnsFound()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
-            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new List<UserGroup>()));
+            _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
@@ -973,10 +973,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUserGroupsForUserReturnsBadRequestDueToValidationException()
+        public async Task GetGroupsForUserReturnsBadRequestDueToValidationException()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
-            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
@@ -993,10 +993,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUserGroupsForUserReturnsInternalServerError()
+        public async Task GetGroupsForUserReturnsInternalServerError()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
-            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
                            .ThrowsAsync(new Exception());
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
@@ -1013,11 +1013,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUserGroupsForUserReturnsUnauthorizedValidUserLevelAccess()
+        public async Task GetGroupsForUserReturnsUnauthorizedValidUserLevelAccess()
         {
             var currentUserId = Guid.NewGuid();
-            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new List<UserGroup>()));
+            _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == currentUserId))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
@@ -1033,7 +1033,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUserGroupsForUserReturnsUnauthorized()
+        public async Task GetGroupsForUserReturnsUnauthorized()
         {
             var userId = Guid.NewGuid();
             var response = await _browserNoAuth.Get($"/v1/usergroups/{userId}/user", with =>
@@ -1045,11 +1045,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
         [Fact]
-        public async Task GetUserGroupsForUserReturnNotFound()
+        public async Task GetGroupsForUserReturnNotFound()
         {
             var userId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUserGroupsForUserAsync(It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
                            .Throws(new NotFoundException("Record not found"));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == userId))

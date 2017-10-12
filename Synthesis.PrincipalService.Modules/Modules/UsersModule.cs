@@ -53,7 +53,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
             SetupRoute_GetUsersForGroup();
-            SetupRoute_GetUserGroupsForUser();
+            SetupRoute_GetGroupsForUser();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -361,25 +361,25 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private void SetupRoute_GetUserGroupsForUser()
+        private void SetupRoute_GetGroupsForUser()
         {
-            const string path = "/v1/usergroups/{userId:guid}/user";
-            Get(path, GetUserGroupsForUserAsync, null, "GetUserGroupsForUser");
-            Get(LegacyBaseRoute + path, GetUserGroupsForUserAsync, null, "GetUserGroupsForUserLegacy");
+            const string path = "/v1/usergroups/{userid:guid}/user";
+            Get(path, GetUserGroupsForUserAsync, null, "GetGroupsForUser");
+            Get(LegacyBaseRoute + path, GetUserGroupsForUserAsync, null, "GetGroupsForUserLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves user groups by user Id";
 
-            _metadataRegistry.SetRouteMetadata("GetUserGroupsForUser", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetGroupsForUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
 
-            _metadataRegistry.SetRouteMetadata("GetUserGroupsForUserLegacy", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetGroupsForUserLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -891,7 +891,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.GetUserGroupsForUserAsync(userId);
+                var result = await _userController.GetGroupsForUserAsync(userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Found);

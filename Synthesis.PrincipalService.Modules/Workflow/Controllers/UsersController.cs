@@ -953,7 +953,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result.Select(user => user.Id.Value).ToList();
         }
 
-        public async Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId)
+        public async Task<List<Guid>> GetGroupsForUserAsync(Guid userId)
         {
             var validationResult = await _userIdValidator.ValidateAsync(userId);
             if (!validationResult.IsValid)
@@ -962,15 +962,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemAsync(u => u.Id == userId);
-
-            if (result != null)
+            var result = await _userRepository.GetItemsAsync(u => u.Id == userId);
+            var userWithGivenUserId = result.ToList().FirstOrDefault();
+            if (userWithGivenUserId != null)
             {
-                return (from groupId in result.Groups
-                        select new UserGroup
-                        {
-                            UserId = userId
-                        }).ToList();
+                return userWithGivenUserId.Groups;
             }
 
             _logger.Warning($"A User group resource could not be found for id {userId}");
