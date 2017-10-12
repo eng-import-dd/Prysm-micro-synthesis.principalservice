@@ -363,7 +363,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_GetGroupsForUser()
         {
-            const string path = "/v1/usergroups/{userid:guid}/user";
+            const string path = "/v1/usergroups/{userid}/user";
             Get(path, GetUserGroupsForUserAsync, null, "GetGroupsForUser");
             Get(LegacyBaseRoute + path, GetUserGroupsForUserAsync, null, "GetGroupsForUserLegacy");
 
