@@ -81,6 +81,32 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
+        public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId)
+        {
+            var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to update a Machine resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+            try
+            {
+                var machine = _mapper.Map<UpdateMachineRequest, Machine>(model);
+                return await UpdateMachineInDb(machine);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not find the Machine to update.", ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not Update the Machine.", ex);
+                throw;
+            }
+        }
+
         private async Task<Machine> CreateMachineInDB(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
@@ -104,6 +130,33 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return result;
         }
+
+        private async Task<MachineResponse> UpdateMachineInDb(Machine machine)
+        {
+            var existingMachine = await _machineRepository.GetItemAsync(machine.Id);
+            if (existingMachine == null)
+            {
+                throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
+            }
+
+            existingMachine.DateModified = machine.DateModified;
+            existingMachine.MachineKey = machine.MachineKey;
+            existingMachine.Location = machine.Location;
+            existingMachine.ModifiedBy = machine.ModifiedBy;
+            existingMachine.SettingProfileId = machine.SettingProfileId;
+
+            try
+            {
+                await _machineRepository.UpdateItemAsync(machine.Id, existingMachine);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Machine Update failed.", ex);
+                throw;
+            }
+            return _mapper.Map<Machine, MachineResponse>(existingMachine);
+        }
+       
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
