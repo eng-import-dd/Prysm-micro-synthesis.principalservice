@@ -385,7 +385,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
             }
 
-            _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+            await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
 
             return new PromoteGuestResponse
             {
@@ -417,7 +417,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
-                _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
+                await _emailUtility.SendWelcomeEmailAsync(model.EmailId, model.FirstName);
             }
             if (model.Groups != null)
             {
@@ -522,6 +522,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return hash;
         }
         
+        public async Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName)
+        {
+            var isValidEmail = EmailValidator.IsValid(email);
+            if (!isValidEmail)
+            {
+                _logger.Warning("Email is either empty or invalid.");
+                throw new ValidationException("Email is either empty or invalid");
+            }
+
+            try
+            {
+                var userMailed =  await _emailUtility.SendWelcomeEmailAsync(email, firstName);
+
+                return userMailed;
+            }
+            catch(Exception ex)
+            {
+                _logger.Error("Problem occured while trying to send email", ex);
+                throw;
+            }
+        }
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -764,7 +785,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
                     /* If the user is created and a license successfully assigned, mail and return the user. */
-                    _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+                    await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
                     return;
                 }
             }
@@ -781,7 +802,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (orgAdmins.Count > 0)
             {
-                _emailUtility.SendUserLockedMail(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
+                await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
             }
         }
 
