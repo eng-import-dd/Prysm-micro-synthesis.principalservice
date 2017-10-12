@@ -29,6 +29,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<Machine> _machineRepository;
         private readonly IValidator _createMachineRequestValidator;
+        private readonly IValidator _updateMachineRequestValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
@@ -51,6 +52,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _machineRepository = repositoryFactory.CreateRepository<Machine>();
 
             _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
+            _updateMachineRequestValidator = validatorLocator.GetValidator(typeof(UpdateMachineRequestValidator));
             _eventService = eventService;
             _logger = logger;
             _mapper = mapper;
@@ -83,7 +85,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId)
         {
-            var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
+            var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
 
             if (!validationResult.IsValid)
             {
