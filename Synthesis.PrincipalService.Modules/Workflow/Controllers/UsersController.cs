@@ -930,7 +930,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<Guid>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId)
         {
             var validationResult = await _groupIdValidator.ValidateAsync(groupId);
             if (!validationResult.IsValid)

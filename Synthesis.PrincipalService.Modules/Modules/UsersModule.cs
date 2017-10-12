@@ -52,7 +52,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata_LockUser();
             SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
-            SetupRoute_GetUsersForGroup();
+            SetupRoute_GetGroupUsers();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -334,11 +334,11 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private void SetupRoute_GetUsersForGroup()
+        private void SetupRoute_GetGroupUsers()
         {
-            const string path = "/v1/usergroups/{groupId:guid}";
-            Get(path, GetUsersForGroup, null, "GetUserGroupsForGroup");
-            Get("/api" + path, GetUsersForGroup, null, "GetUserGroupsForGroupLegacy");
+            const string path = "/v1/groups/{id}/users";
+            Get(path, GetGroupUsers, null, "GetGroupUsers");
+            Get("/api" + path, GetGroupUsers, null, "GetGroupUsersLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
@@ -825,16 +825,16 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUsersForGroup(dynamic input)
+        private async Task<object> GetGroupUsers(dynamic input)
         {
-            Guid groupId = input.groupId;
+            Guid groupId = input.id;
 
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
-                var result = await _userController.GetUsersForGroup(groupId, tenantId, userId);
+                var result = await _userController.GetGroupUsers(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
