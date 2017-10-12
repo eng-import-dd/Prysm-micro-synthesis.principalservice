@@ -125,7 +125,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                });
         }
 
-        #region Create Group Test cases
+        #region Create Group Response Test  Cases
+
         [Fact]
         public async Task CreateGroupReturnsOk()
         {
@@ -359,6 +360,61 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
+        #endregion
+
+        #region Get Groups For Tenant Test Cases
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(Enumerable.Empty<Group>()));
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
         #endregion
     }
 }

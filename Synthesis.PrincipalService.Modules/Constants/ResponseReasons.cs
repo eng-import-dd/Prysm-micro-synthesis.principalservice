@@ -21,6 +21,8 @@ namespace Synthesis.PrincipalService.Constants
         // Not found
         public const string NotFoundUser = "User Not Found";
 
+        public const string UserGroupNotFound = "User Group Not Found";
+
         //Promote Guest
         public const string PromotionFailed = "Failed to promote the user";
         public static string LicenseAssignmentFailed = "Failed to assign the license";

@@ -107,6 +107,56 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
         }
 
+        #region Get Groups For Tenant Test Cases
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsGroupsIfExists()
+        {
+            const int count = 5;
+            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+                                .Returns(() =>
+                                {
+                                    var itemsList = new List<Group>();
+                                    for (var i = 0; i < count; i++)
+                                    {
+                                        itemsList.Add(new Group());
+                                    }
+
+                                    IEnumerable<Group> items = itemsList;
+                                    return (Task.FromResult(items));
+                                });
+
+            var result = await _controller.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.Equal(count, result.Count());
+        }
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsNoMatchingRecords()
+        {
+            const int count = 0;
+            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+                                .Returns(() =>
+                                         {
+                                             var itemsList = new List<Group>();
+                                             for (var i = 0; i < count; i++)
+                                             {
+                                                 itemsList.Add(new Group());
+                                             }
+
+                                             IEnumerable<Group> items = itemsList;
+                                             return (Task.FromResult(items));
+                                         });
+
+            var result = await _controller.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.Equal(0, result.Count());
+        }
+
+        #endregion
+
 
         #region Delete Group Test Cases
         [Fact]

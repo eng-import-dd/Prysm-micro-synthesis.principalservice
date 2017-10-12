@@ -52,6 +52,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata_LockUser();
             SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
+            SetupRoute_GetGroupUsers();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -66,6 +67,7 @@ namespace Synthesis.PrincipalService.Modules
             Put("/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUser");
             Put("/api/v1/users/{id:guid}", UpdateUserAsync, null, "UpdateUserLegacy");
 
+            SetupRoute_ResendUserWelcomeEmailAsync();
             Delete("/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUser");
             Delete("/api/v1/users/{id:guid}", DeleteUserAsync, null, "DeleteUserLegacy");
 
@@ -100,6 +102,29 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("GetUsersLegacy", new SynthesisRouteMetadata()
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_ResendUserWelcomeEmailAsync()
+        {
+            const string path = "/v1/users/resendwelcomemail";
+            Post(path, ResendUserWelcomeEmailAsync, null, "ResendUserWelcomeEmail");
+            Post(LegacyBaseRoute + path, ResendUserWelcomeEmailAsync, null, "ResendUserWelcomeEmailLegacy");
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
+            var metadataResponse = "Resend Welcome Email";
+            var metadataDescription = "Resend Welcome Email to the User.";
+            _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmail", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+            _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmailLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -333,6 +358,32 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_GetGroupUsers()
+        {
+            const string path = "/v1/groups/{id}/users";
+            Get(path, GetGroupUsers, null, "GetGroupUsers");
+            Get("/api" + path, GetGroupUsers, null, "GetGroupUsersLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Retrieves user groups by group Id";
+
+            _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
         #endregion
 
         private async Task<object> LockUserAsync(dynamic input)
@@ -515,6 +566,44 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+
+        private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
+        {
+            ResendEmailRequest basicUser;
+            try
+            {
+                basicUser = this.Bind<ResendEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to update a User resource.", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            try
+            {
+                var result = await _userController.ResendUserWelcomeEmailAsync(basicUser.Email, basicUser.FirstName);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                _logger.Error("Error occured", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.BadRequest);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to send email due to an error", ex);
+                return Negotiate
+                    .WithModel(false)
+                    .WithStatusCode(HttpStatusCode.InternalServerError);
+            }
+
+        }
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;
@@ -795,6 +884,35 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to create User Group resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> GetGroupUsers(dynamic input)
+        {
+            Guid groupId = input.id;
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _userController.GetGroupUsers(groupId, tenantId, userId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.UserGroupNotFound);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetUserGroupsForGroup threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 

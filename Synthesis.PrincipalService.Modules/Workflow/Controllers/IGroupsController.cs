@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -22,6 +22,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId);
 
         Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
+
+        Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId);
 
         Task<bool> DeleteGroupAsync(Guid groupId, Guid userId);
     }

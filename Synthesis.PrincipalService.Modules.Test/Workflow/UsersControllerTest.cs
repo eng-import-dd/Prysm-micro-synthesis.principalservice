@@ -79,6 +79,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               deploymentType);
         }
 
+        #region Get User By Id Test Cases
+        
         /// <summary>
         /// Gets the user by identifier asynchronous returns user if exists.
         /// </summary>
@@ -109,7 +111,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
 
+        #endregion
 
+        #region Create User Test Cases
+        
         [Fact]
         public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicateAsync()
         {
@@ -157,7 +162,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmail("a@b.com", "first"));
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync("a@b.com", "first"));
             _eventServiceMock.Verify(m=>m.PublishAsync("UserCreated", It.IsAny<User>()));
 
             Assert.NotNull(user);
@@ -200,7 +205,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendUserLockedMail(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
+            _emailUtilityMock.Verify(m => m.SendUserLockedMailAsync(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
 
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
@@ -233,7 +238,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(user.IsLocked, true);
         }
 
-        [Fact]
+       [Fact]
         public async Task InOnPremDeploymentUserCreationOnPrysmAccountShouldFailAsync()
         {
             string deploymentType = "OnPrem";
@@ -274,6 +279,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
+
+        #endregion
 
         #region Lock User Test Cases
         [Fact]
@@ -348,7 +355,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId,LicenseType.UserLicense, false);
 
             _userRepositoryMock.Verify(m=>m.UpdateItemAsync(It.IsAny<Guid>(),It.IsAny<User>()), Times.Once);
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmail(It.IsAny<string>(), It.IsAny<string>()));
+            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()));
 
 
             Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Success);
@@ -460,6 +467,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
         #endregion
 
+        #region Get User Test Cases
+
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
         {
@@ -525,6 +534,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.IsType<UserResponse>(result);
         }
+
+        [Fact]
+        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(User));
+
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
+        }
+
+        #endregion
+
+        #region Auto Provision Refresh Group Test Cases
+
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
         {
@@ -623,17 +647,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             };
             await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
+        #endregion
 
-        [Fact]
-        public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
-        {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .ReturnsAsync(default(User));
-
-            var userId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
-        }
-
+        #region Update user tests
         [Fact]
         public async Task UpdateUserSuccess()
         {
@@ -643,12 +659,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest()
             {
-               FirstName = "FirstName",
-               LastName = "LastName",
-               Email = "cmalyala@prysm.com",
-               PasswordAttempts = 3,
-               IsLocked = false,
-               IsIdpUser = false
+                FirstName = "FirstName",
+                LastName = "LastName",
+                Email = "cmalyala@prysm.com",
+                PasswordAttempts = 3,
+                IsLocked = false,
+                IsIdpUser = false
             };
 
             var result = await _controller.UpdateUserAsync(userId,user);
@@ -679,6 +695,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var user = new UpdateUserRequest();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user));
         }
+        #endregion
 
         #region Can Promote User Test Cases
         [Fact]
@@ -739,6 +756,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         #region User Groups Test Cases
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsUserIfSuccessful()
         {
@@ -771,6 +789,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.IsType<User>(result);
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsValidationException()
         {
@@ -781,6 +800,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1); 
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
         {
@@ -794,6 +814,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsDuplicateUserGroupValidationException()
         {
@@ -824,6 +845,40 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
             Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Trait("User Group", "User Group Tests")]
+        [Fact]
+        public async Task GetUsersForGroupReturnsUsersIfExists()
+        {
+            var validGroupId = Guid.NewGuid();
+
+            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<Guid>()));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+
+            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.IsType<List<Guid>>(result);
+        }
+
+        [Trait("User Group", "User Group Tests")]
+        [Fact]
+        public async Task GetUsersForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
+        {
+            var validGroupId = Guid.NewGuid();
+
+            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Throws(new NotFoundException(string.Empty));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
+                               .Throws(new NotFoundException(string.Empty));
+
+            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.Equal(0, result.Count);
         }
 
         #endregion
@@ -861,6 +916,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(true, result.IsLastChunk);
             Assert.Null(result.SearchValue);
             Assert.Null(result.SortColumn);
+        }
+        #endregion
+
+        #region Resend Welcom Email test Cases
+        [Fact]
+        public async Task ResendWelcomeEmailSuccess()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
+            Assert.Equal(true, result);
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailIfEmailIsEmpty()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new ValidationException(new List<ValidationFailure>()));
+            await Assert.ThrowsAsync<ValidationException>(() => _controller.ResendUserWelcomeEmailAsync("", "charan"));
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailFailed()
+        {
+            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            await Assert.ThrowsAsync<Exception>(() => _controller.ResendUserWelcomeEmailAsync("ch@gg.com", "charan"));
         }
         #endregion
     }
