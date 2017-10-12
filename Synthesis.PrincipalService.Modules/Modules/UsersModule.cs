@@ -134,7 +134,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_CanPromoteUser()
         {
-            const string path = "/v1/users/canpromoteuser";
+            const string path = "/v1/users/canpromoteuser/{0}";
             Get(path, CanPromoteUser, null, "CanPromoteUser");
             Get(LegacyBaseRoute + path, CanPromoteUser, null, "CanPromoteUserLegacy");
 

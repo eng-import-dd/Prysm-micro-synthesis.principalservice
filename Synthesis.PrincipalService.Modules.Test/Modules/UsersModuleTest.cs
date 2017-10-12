@@ -718,7 +718,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
                            .Returns(Task.FromResult(new CanPromoteUserResponse()));
-            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+            var email = "asd@hmm.com";
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser/{email}", with =>
                                                                      {
                                                                          with.HttpRequest();
                                                                          with.Header("Accept", "application/json");
@@ -732,7 +733,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
-            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+            var email = "asd@hmm.com";
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser/{email}", with =>
                                                                                   {
                                                                                       with.HttpRequest();
                                                                                       with.Header("Accept", "application/json");
@@ -746,7 +748,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
                            .Throws(new Exception());
-            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+            var email = "asd@hmm.com";
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser/{email}", with =>
                                                                                   {
                                                                                       with.HttpRequest();
                                                                                       with.Header("Accept", "application/json");
@@ -760,7 +763,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
                            .Throws(new NotFoundException("User Doesn't Exist"));
-            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser", with =>
+            var email = "";
+            var response = await _browserAuth.Get($"api/v1/users/canpromoteuser/{email}", with =>
                                                                                   {
                                                                                       with.HttpRequest();
                                                                                       with.Header("Accept", "application/json");
