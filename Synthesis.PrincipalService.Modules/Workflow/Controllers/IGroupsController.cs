@@ -24,5 +24,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
 
         Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId);
+
+        Task<bool> DeleteGroupAsync(Guid groupId, Guid userId);
     }
 }

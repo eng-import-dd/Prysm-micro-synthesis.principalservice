@@ -307,6 +307,61 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #endregion
 
+        #region Delete Group Test cases
+        [Fact]
+        public async Task DeleteGroupReturnsNoContent()
+        {
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/groups/{groupId}", with =>
+                                                               {
+                                                                   with.Header("Accept", "application/json");
+                                                                   with.Header("Content-Type", "application/json");
+                                                                   with.HttpRequest();
+                                                                   
+                                                               });
+            Assert.Equal(HttpStatusCode.NoContent, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/groups/{groupId}",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                 $"/v1/groups/{groupId}",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+        #endregion
+
         #region Get Groups For Tenant Test Cases
 
         [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]

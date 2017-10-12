@@ -25,6 +25,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
+        private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly IGroupsController _controller;
 
@@ -33,6 +34,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())
                                   .Returns(_groupRepositoryMock.Object);
+
+            _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
+                                  .Returns(_userRepositoryMock.Object);
 
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<Group>>()));
@@ -153,5 +157,42 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         #endregion
 
+
+        #region Delete Group Test Cases
+        [Fact]
+        public async Task DeleteGroupAsyncReturnsTrueIfSuccessful()
+        {
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Returns(Task.FromResult(new Group()));
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Returns(Task.FromResult(Guid.NewGuid()));
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                               .ReturnsAsync(new User());
+            var groupId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(groupId, userId);
+            Assert.Equal(true, result);
+        }
+
+        [Fact]
+        public async Task DeleteGroupAsyncReturnstrueIfDocumentNotFound()
+        {
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Throws(new DocumentNotFoundException());
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
+            Assert.Equal(true, result);
+        }
+
+        [Fact]
+        public async Task DeleteGroupAsyncReturnsFalseDueToException()
+        {
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+                                .Throws(new Exception());
+            var userId = Guid.NewGuid();
+            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
+            Assert.Equal(false, result);
+        }
+        #endregion
     }
 }

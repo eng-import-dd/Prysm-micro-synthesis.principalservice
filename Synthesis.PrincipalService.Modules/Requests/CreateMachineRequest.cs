@@ -29,6 +29,5 @@ namespace Synthesis.PrincipalService.Requests
         public string SynthesisVersion { get; set; }
          
         public DateTime? LastOnline { get; set; }
-       
     }
 }
