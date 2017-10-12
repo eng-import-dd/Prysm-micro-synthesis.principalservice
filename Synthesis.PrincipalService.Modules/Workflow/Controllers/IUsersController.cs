@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
 
-        Task<List<UserGroup>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId);
+        Task<List<Guid>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId);
 
         Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId);
 

@@ -856,14 +856,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var validGroupId = Guid.NewGuid();
 
             _mockUserController.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new List<UserGroup>()));
+                           .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
             var result = await _controller.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
-            Assert.IsType<List<UserGroup>>(result);
+            Assert.IsType<List<Guid>>(result);
         }
 
         [Trait("User Group", "User Group Tests")]

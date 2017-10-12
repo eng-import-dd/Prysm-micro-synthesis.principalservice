@@ -930,7 +930,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<UserGroup>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<Guid>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId)
         {
             var validationResult = await _groupIdValidator.ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -950,12 +950,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //TODO: Access Checks - Yusuf
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
-            return (from user in result
-                    select new UserGroup
-                    {
-                        UserId = user.Id.Value
-                    }).ToList();
-         
+            return result.Select(user => user.Id.Value).ToList();
         }
 
         public async Task<List<UserGroup>> GetUserGroupsForUserAsync(Guid userId)

@@ -846,7 +846,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var validGroupId = Guid.NewGuid();
 
             _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new List<UserGroup>()));
+                           .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
@@ -912,7 +912,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var validGroupId = Guid.NewGuid();
 
             _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new List<UserGroup>()));
+                           .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
