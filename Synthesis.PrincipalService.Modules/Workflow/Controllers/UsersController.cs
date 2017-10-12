@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using Nancy;
@@ -39,6 +38,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IValidator _tenantIdValidator;
+        private readonly IValidator _groupIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IValidator _createUserGroupValidator;
         private readonly IEventService _eventService;
@@ -77,6 +77,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
+            _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
             _eventService = eventService;
             _logger = logger;
@@ -927,6 +928,29 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             return await CreateUserGroupInDb(model, existingUser);
+        }
+
+        public async Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId)
+        {
+            var validationResult = await _groupIdValidator.ValidateAsync(groupId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && u.TenantId == tenantId);
+
+            if (result == null)
+            {
+                _logger.Warning($"A User group resource could not be found for id {groupId}");
+                throw new NotFoundException($"A User group resource could not be found for id {groupId}");
+            }
+
+            //TODO: Access Checks - Yusuf
+            //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
+
+            return result.Select(user => user.Id.Value).ToList();
         }
 
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)

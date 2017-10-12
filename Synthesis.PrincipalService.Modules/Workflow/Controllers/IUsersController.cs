@@ -1,5 +1,6 @@
 using Synthesis.PrincipalService.Dao.Models;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.License.Manager.Models;
@@ -28,9 +29,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
 
+        Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId);
+
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        
-
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
