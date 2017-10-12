@@ -79,6 +79,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               deploymentType);
         }
 
+        #region Get User By Id Test Cases
+        
         /// <summary>
         /// Gets the user by identifier asynchronous returns user if exists.
         /// </summary>
@@ -109,7 +111,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
 
+        #endregion
 
+        #region Create User Test Cases
+        
         [Fact]
         public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicateAsync()
         {
@@ -233,7 +238,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(user.IsLocked, true);
         }
 
-        [Fact]
+       [Fact]
         public async Task InOnPremDeploymentUserCreationOnPrysmAccountShouldFailAsync()
         {
             string deploymentType = "OnPrem";
@@ -274,6 +279,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
+
+        #endregion
 
         #region Lock User Test Cases
         [Fact]
@@ -460,6 +467,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
         #endregion
 
+        #region Get User Test Cases
+
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
         {
@@ -536,7 +545,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
         }
 
-        #region Autoprovision Refresh group Test cases
+        #endregion
+
+        #region Auto Provision Refresh Group Test Cases
+
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
         {
@@ -744,6 +756,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         #region User Groups Test Cases
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsUserIfSuccessful()
         {
@@ -776,6 +789,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.IsType<User>(result);
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsValidationException()
         {
@@ -786,6 +800,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1); 
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
         {
@@ -799,6 +814,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.Equal(ex.Errors.ToList().Count, 1);
         }
 
+        [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsDuplicateUserGroupValidationException()
         {
@@ -829,6 +845,40 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
             Assert.Equal(ex.Errors.ToList().Count, 1);
+        }
+
+        [Trait("User Group", "User Group Tests")]
+        [Fact]
+        public async Task GetUsersForGroupReturnsUsersIfExists()
+        {
+            var validGroupId = Guid.NewGuid();
+
+            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<Guid>()));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
+                               .Returns(Task.FromResult(Enumerable.Empty<User>()));
+
+            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.IsType<List<Guid>>(result);
+        }
+
+        [Trait("User Group", "User Group Tests")]
+        [Fact]
+        public async Task GetUsersForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
+        {
+            var validGroupId = Guid.NewGuid();
+
+            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                               .Throws(new NotFoundException(string.Empty));
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
+                               .Throws(new NotFoundException(string.Empty));
+
+            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            Assert.Equal(0, result.Count);
         }
 
         #endregion

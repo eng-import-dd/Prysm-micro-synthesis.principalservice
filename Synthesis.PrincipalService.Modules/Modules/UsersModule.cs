@@ -52,6 +52,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata_LockUser();
             SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
+            SetupRoute_GetGroupUsers();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -350,6 +351,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_GetGroupUsers()
+        {
+            const string path = "/v1/groups/{id}/users";
+            Get(path, GetGroupUsers, null, "GetGroupUsers");
+            Get("/api" + path, GetGroupUsers, null, "GetGroupUsersLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Retrieves user groups by group Id";
+
+            _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -857,6 +884,35 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to create User Group resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> GetGroupUsers(dynamic input)
+        {
+            Guid groupId = input.id;
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _userController.GetGroupUsers(groupId, tenantId, userId);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.UserGroupNotFound);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetUserGroupsForGroup threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
