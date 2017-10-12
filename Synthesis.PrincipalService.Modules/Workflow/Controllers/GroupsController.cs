@@ -106,6 +106,35 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
+        public async Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId)
+        {
+            //A list of the Groups which belong to the current user's tenant
+
+            //TODO: Checks here - Yusuf
+            // Legacy code - public List<GroupDTO> GetGroupsForAccount(Guid accountId) - In DatabaseService.cs
+            // In legacy cloud service there is usage of GroupPermissions and Permissions tables to determine the accessibility.
+
+            //Super Admin check
+            // Legacy code
+            /*
+             * var superAdminGroup = result.Payload.FirstOrDefault(x => x.GroupId == CollaborationService.SuperAdminGroupId);
+                if(superAdminGroup != null && !CollaborationService.IsSuperAdmin(UserId))
+                {
+                    result.Payload.Remove(superAdminGroup);
+                }
+             */
+
+            var result = await _groupRepository.GetItemsAsync(g => g.TenantId == tenantId);
+
+            if (result == null)
+            {
+                _logger.Warning($"A Group resource could not be found for tenant id {tenantId}");
+                throw new NotFoundException($"A Group resource could not be found for tenant id {tenantId}");
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Creates the group in database.
         /// </summary>
