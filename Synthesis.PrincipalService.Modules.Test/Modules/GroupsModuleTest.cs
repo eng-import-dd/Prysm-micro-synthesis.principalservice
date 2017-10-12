@@ -306,5 +306,115 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion
+
+        #region Delete Group Test cases
+        [Fact]
+        public async Task DeleteGroupReturnsNoContent()
+        {
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/groups/{groupId}", with =>
+                                                               {
+                                                                   with.Header("Accept", "application/json");
+                                                                   with.Header("Content-Type", "application/json");
+                                                                   with.HttpRequest();
+                                                                   
+                                                               });
+            Assert.Equal(HttpStatusCode.NoContent, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/groups/{groupId}",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var groupId = Guid.NewGuid();
+            var actual = await _browserAuth.Delete(
+                                                 $"/v1/groups/{groupId}",
+                                                 with =>
+                                                 {
+                                                     with.Header("Accept", "application/json");
+                                                     with.Header("Content-Type", "application/json");
+                                                     with.HttpRequest();
+                                                     
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+        #endregion
+
+        #region Get Groups For Tenant Test Cases
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(Enumerable.Empty<Group>()));
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]
+        [Fact]
+        public async Task GetGroupsForTenantReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await _browserAuth.Get("/v1/groups/tenant",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        #endregion
     }
 }

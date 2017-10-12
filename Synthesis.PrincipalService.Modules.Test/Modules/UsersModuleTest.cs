@@ -774,6 +774,53 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
+        #region Resend welcome Email Test Cases
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsOk()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Returns(Task.FromResult(true));
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                  {
+                                                                                      with.HttpRequest();
+                                                                                      with.Header("Accept", "application/json");
+                                                                                      with.Header("Content-Type", "application/json");
+                                                                                      with.JsonBody(new ResendEmailRequest());
+                                                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                   {
+                                                                                       with.HttpRequest();
+                                                                                       with.Header("Accept", "application/json");
+                                                                                       with.Header("Content-Type", "application/json");
+                                                                                       with.JsonBody(new ResendEmailRequest());
+                                                                                   });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task ResendWelcomeEmailReturnsBadRequestDuetoBinding()
+        {
+            _controllerMock.Setup(m => m.ResendUserWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+                           .Throws(new Exception());
+            var response = await _browserAuth.Post($"/v1/users/resendwelcomemail", with =>
+                                                                                   {
+                                                                                       with.HttpRequest();
+                                                                                       with.Header("Accept", "application/json");
+                                                                                       with.Header("Content-Type", "application/json");
+                                                                                       with.JsonBody("{]");
+                                                                                   });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        #endregion
+
         #region User Groups Test Cases
 
         [Fact]
@@ -849,14 +896,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
             
 
-            var response = await _browserAuth.Get($"/v1/usergroups/{validGroupId}", with =>
+            var response = await _browserAuth.Get($"/v1/groups/{validGroupId}/users", with =>
                                                 {
                                                     with.HttpRequest();
                                                     with.Header("Accept", "application/json");
@@ -871,7 +918,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -893,14 +940,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
 
-            var response = await _browserAuth.Get($"/v1/usergroups/{validGroupId}", with =>
+            var response = await _browserAuth.Get($"/v1/groups/{validGroupId}/users", with =>
                                                                                     {
                                                                                         with.HttpRequest();
                                                                                         with.Header("Accept", "application/json");
@@ -915,14 +962,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
 
-            var response = await _browserNoAuth.Get($"/v1/usergroups/{validGroupId}", with =>
+            var response = await _browserNoAuth.Get($"/v1/groups/{validGroupId}/users", with =>
                                                                                     {
                                                                                         with.HttpRequest();
                                                                                         with.Header("Accept", "application/json");
@@ -937,14 +984,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetUsersForGroup(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
 
-            var response = await _browserAuth.Get($"/v1/usergroups/{validGroupId}", with =>
+            var response = await _browserAuth.Get($"/v1/groups/{validGroupId}/users", with =>
                                                                                     {
                                                                                         with.HttpRequest();
                                                                                         with.Header("Accept", "application/json");

@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
 
-        Task<List<Guid>> GetUsersForGroup(Guid groupId, Guid tenantId, Guid userId);
+        Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId);
 
         Task<List<Guid>> GetGroupsForUserAsync(Guid userId);
 
@@ -38,5 +38,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
+
+        Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
     }
 }
