@@ -53,6 +53,8 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_CreateUserGroup();
             SetupRoute_CanPromoteUser();
             SetupRoute_GetGroupUsers();
+            SetupRoute_GetTenanatIdByUserEmail();
+
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -377,6 +379,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_GetTenanatIdByUserEmail()
+        {
+            const string path = "/v1/users/idpintegration/getaccountid/{email}";
+            Get(path, GetTenanatIdByUserEmail, null, "GetTenanatIdByUserEmail");
+            Get("/api" + path, GetTenanatIdByUserEmail, null, "GetTenanatIdByUserEmailLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Retrieves tenant id by user email";
+
+            _metadataRegistry.SetRouteMetadata("GetTenanatIdByUserEmail", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetTenanatIdByUserEmailLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -912,6 +940,32 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "GetUserGroupsForGroup threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetTenanatIdByUserEmail(dynamic input)
+        {
+            string email = input.email;
+
+            try
+            {
+                var result = await _userController.GetTenanatIdByUserEmailAsync(email);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.TenantNotFound);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetTenanatIdByUserEmail threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }

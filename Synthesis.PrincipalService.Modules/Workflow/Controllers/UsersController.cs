@@ -41,6 +41,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _groupIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IValidator _createUserGroupValidator;
+        private readonly IValidator _emailAddressValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -79,6 +80,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
+            _emailAddressValidator = validatorLocator.GetValidator(typeof(EmailAddressValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -427,6 +429,50 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
+        public async Task<Guid> GetTenanatIdByUserEmailAsync(string email)
+        {
+            var emailAddressValidationResult = await _emailAddressValidator.ValidateAsync(email);
+
+            if (!emailAddressValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the email address id while attempting to retrieve a tenant id.");
+                throw new ValidationFailedException(emailAddressValidationResult.Errors);
+            }
+
+           
+            var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+            var userWithEmail = result.ToList().FirstOrDefault();
+
+            if (userWithEmail == null)
+            {
+                _logger.Warning($"Users resource could not be found for input email {email}.");
+                throw new NotFoundException($"Users resource could not be found for input email {email}.");
+            }
+
+            if (userWithEmail.TenantId == Guid.Empty)
+            {
+                //TODO: Tenant Management Service Call here to get tenaant Id - Yusuf
+                //Legacy Code
+                /*
+                    * int lastIndexOfAtTheRate = email.LastIndexOf("@");
+
+                    if (lastIndexOfAtTheRate != -1)
+                    {
+                        string domain = email.Substring(lastIndexOfAtTheRate + 1);
+
+                        accountIdList = from ad in sdc.AccountDomains
+                                            where ad.Domain == domain
+                                            select ad.AccountID;
+
+                        accountId = await accountIdList.FirstOrDefaultAsync();
+                        if (accountId != Guid.Empty)
+                            return accountId;
+                    */
+            }
+
+            return userWithEmail.TenantId;
+        }
+
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
@@ -543,6 +589,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw;
             }
         }
+        
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);

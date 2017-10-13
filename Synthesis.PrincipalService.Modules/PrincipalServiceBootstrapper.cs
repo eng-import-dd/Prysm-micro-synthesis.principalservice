@@ -238,6 +238,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateUserGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<EmailAddressValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
