@@ -152,11 +152,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task UpdateMachineAsyncThrowsValidationExceptionIfLocationIsDuplicate()
         {
-            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine(){ TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
 
             var newMachineRequest = new UpdateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
-            var tenantId = Guid.NewGuid();
+            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
         }
@@ -164,11 +164,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task UpdateMachineAsyncThrowsValidationExceptionIfMachineKeyIsDuplicate()
         {
-            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine() { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
 
             var newMachineRequest = new UpdateMachineRequest { MachineKey = "machinekey" };
-            var tenantId = Guid.NewGuid();
+            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
         }
@@ -176,13 +176,24 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task UpdateMachineAsyncReturnsNewMachineIfSuccessful()
         {
-            _machineRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Machine>())).Returns(Task.FromResult(new Machine()));
-            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine() { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
 
             var newMachine = new UpdateMachineRequest();
-            var tenantId = Guid.NewGuid();
+            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var result = await _controller.UpdateMachineAsync(newMachine, tenantId);
             Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task UpdateMachineAsyncThrowsUnauthorizedException()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() { TenantId = Guid.Parse("d1532c34-09dd-4cf8-b893-894afde2adad") } });
+
+            var newMachineRequest = new UpdateMachineRequest { TenantId = Guid.Parse("cb37242e-af65-45b4-bcb4-bd259f0b4c76") };
+            var tenantId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
+            Assert.IsType<InvalidOperationException>(ex);
         }
     }
 }

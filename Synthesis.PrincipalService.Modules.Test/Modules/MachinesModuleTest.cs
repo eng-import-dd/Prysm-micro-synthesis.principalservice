@@ -298,7 +298,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
-
         #region UPDATE Tests
         [Fact]
         public async Task UpdateMachineReturnsOK()

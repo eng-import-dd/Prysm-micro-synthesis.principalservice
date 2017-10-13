@@ -204,7 +204,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
             }
-            catch(Exception ex)
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "UpdateMachine: Not authorized to edit this machine!");
+            }
+            catch (Exception ex)
             {
                 _logger.Error("Unhandled exception encountered while attempting to update a Machine resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);

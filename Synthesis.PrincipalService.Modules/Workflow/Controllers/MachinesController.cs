@@ -119,7 +119,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             try
             {
                 var machine = _mapper.Map<UpdateMachineRequest, Machine>(model);
-                return await UpdateMachineInDb(machine);
+                return await UpdateMachineInDb(machine, tenantId);
             }
             catch (DocumentNotFoundException ex)
             {
@@ -157,7 +157,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return result;
         }
 
-        private async Task<MachineResponse> UpdateMachineInDb(Machine machine)
+        private async Task<MachineResponse> UpdateMachineInDb(Machine machine, Guid tenantId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -171,6 +171,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             if (existingMachine == null)
             {
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
+            }
+
+            if(existingMachine.TenantId != tenantId)
+            {
+                throw new InvalidOperationException();
             }
 
             if (!await IsUniqueLocation(machine))
