@@ -883,6 +883,56 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         #endregion
 
+        #region Get Groups For User Test Cases
+
+        [Fact]
+        public async Task GetGroupsForUserSuccess()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new List<Guid>()));
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
+                               .ReturnsAsync(new List<User> { new User(){Id = userId,Groups = new List<Guid>()} });
+            var result = await _controller.GetGroupsForUserAsync(userId ?? Guid.Empty);
+            Assert.IsType<List<Guid>>(result);
+        }
+
+        [Fact]
+        public async Task GetGroupsForUserThrowsNotFoundException()
+        {
+            Guid? userId = Guid.NewGuid();
+            var exception = "Resource Not Found";
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new NotFoundException(exception));
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ThrowsAsync(new NotFoundException(exception));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
+        }
+
+        [Fact]
+        public async Task GetGroupsForUserThrowsException()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new Exception());
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ThrowsAsync(new Exception());
+            await Assert.ThrowsAsync<Exception>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
+        }
+
+        [Fact]
+        public async Task GetGroupsForUserThrowsValidationException()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
+        }
+
+        #endregion
+
         #region GetGuestUsers Tests
         [Fact]
         public async Task GetGuestUsersForTenantSuccess()

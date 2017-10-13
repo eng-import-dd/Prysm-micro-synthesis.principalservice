@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Synthesis.License.Manager.Models;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
@@ -95,6 +96,57 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsMachineIfExists()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(new Machine()
+                               {
+                                   TenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47")
+                               });
+
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
+            var result = await _controller.GetMachineByIdAsync(machineId, tenantId);
+
+            Assert.IsType<MachineResponse>(result);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdThrowsNotFoundExceptionIfMachineDoesNotExist()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ReturnsAsync(default(Machine));
+
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
+        }
+
+        [Fact]
+        public async Task GetMachineByIdThrowsValidationException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Throws(new ValidationFailedException(errors));
+
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
+        }
+
+        [Fact]
+        public async Task GetMachineByIdThrowsInvalidOperationException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Throws(new InvalidOperationException());
+
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
         }
     }
 }

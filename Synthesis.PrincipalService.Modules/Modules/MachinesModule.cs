@@ -11,16 +11,19 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
-
+using System.Web.Script.Serialization;
 
 namespace Synthesis.PrincipalService.Modules
 {
     public sealed class MachinesModule : NancyModule
     {
         private const string TenantIdClaim = "TenantId";
+        private const string UserIdClaim = "UserId";
         private readonly IMachineController _machineController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
+        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
+        private const string DeprecationWarning = "DEPRECATED";
 
         public MachinesModule(
             IMetadataRegistry metadataRegistry,
@@ -36,6 +39,7 @@ namespace Synthesis.PrincipalService.Modules
 
             // Initialize documentation
             SetupRouteMetadata();
+            SetupRoute_GetMachineById();
 
             // Routes
             // CRUD routes
@@ -56,6 +60,32 @@ namespace Synthesis.PrincipalService.Modules
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Create a new machine",
                 Description = "Create a new machine resource."
+            });
+        }
+
+        private void SetupRoute_GetMachineById()
+        {
+            const string path = "/v1/machines/{id:guid}";
+            Get(path, GetMachineByIdAsync, null, "GetMachineById");
+            Get("/api/" + path, GetMachineByIdAsync, null, "GetMachineByIdLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataDescription = "Retrieves a machine by Machine Id";
+
+            _metadataRegistry.SetRouteMetadata("GetMachineById", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetMachineByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
 
@@ -88,6 +118,33 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Failed to create machine resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateMachine); ;
+            }
+        }
+
+        private async Task<object> GetMachineByIdAsync(dynamic input)
+        {
+            var machineId = input.id;
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _machineController.GetMachineByIdAsync(machineId, tenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineById: No access to get machines!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
     }
