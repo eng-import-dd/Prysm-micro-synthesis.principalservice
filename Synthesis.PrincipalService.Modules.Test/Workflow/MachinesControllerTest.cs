@@ -136,5 +136,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var tenantId = Guid.NewGuid();
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
         }
+
+        [Fact]
+        public async Task GetMachineByIdThrowsInvalidOperationException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Throws(new InvalidOperationException());
+
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
+        }
     }
 }
