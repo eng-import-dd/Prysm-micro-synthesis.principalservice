@@ -23,6 +23,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     public class GroupsController : IGroupsController
     {
         private readonly IRepository<Group> _groupRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IValidator _createGroupValidator;
         private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
@@ -41,6 +42,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                 ILogger logger)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
+            _userRepository = repositoryFactory.CreateRepository<User>();
             _createGroupValidator = validatorLocator.GetValidator(typeof(CreateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
@@ -104,6 +106,53 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
            
             return result;
+        }
+
+        public async Task<bool> DeleteGroupAsync(Guid groupId, Guid userId)
+        {
+            var validationResult = await _groupValidatorId.ValidateAsync(groupId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to delete a Group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            try
+            {
+                var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
+                if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
+                {
+                    _logger.Error("Cannot delete a locked group since user is not SuperAdmin.");
+                    return false;
+                }
+
+                var usersWithGroupToBeDeleted= await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+                foreach (var user in usersWithGroupToBeDeleted)
+                {
+                    user.Groups.Remove(groupId);
+                    await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty,user);
+                }
+
+                await _groupRepository.DeleteItemAsync(groupId);
+
+                _eventService.Publish(new ServiceBusEvent<Guid>
+                {
+                    Name = EventNames.GroupDeleted,
+                    Payload = groupId
+                });
+                return true;
+            }
+            catch (DocumentNotFoundException)
+            {
+                // The resource not being there is what we wanted.
+                return true;
+            }
+
+            catch (Exception ex)
+            {
+                _logger.Warning("Problem occured while attempting to delete a Group resource.", ex);
+                return false;
+            }
         }
 
         public async Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId)
