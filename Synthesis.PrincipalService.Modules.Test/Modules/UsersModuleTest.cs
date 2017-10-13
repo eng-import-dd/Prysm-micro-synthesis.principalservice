@@ -1014,7 +1014,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new UserResponse(){Id = currentUserId});
-            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+            var response = await _browserAuth.Get($"/v1/users/{currentUserId}/groups", with =>
                                                                                    {
                                                                                        with.HttpRequest();
                                                                                        with.Header("Accept", "application/json");
@@ -1034,7 +1034,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new UserResponse() { Id = currentUserId });
-            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+            var response = await _browserAuth.Get($"/v1/users/{currentUserId}/groups", with =>
                                                                                           {
                                                                                               with.HttpRequest();
                                                                                               with.Header("Accept", "application/json");
@@ -1054,7 +1054,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new UserResponse() { Id = currentUserId });
-            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+            var response = await _browserAuth.Get($"/v1/users/{currentUserId}/groups", with =>
                                                                                           {
                                                                                               with.HttpRequest();
                                                                                               with.Header("Accept", "application/json");
@@ -1074,7 +1074,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new UserResponse() { Id = currentUserId });
-            var response = await _browserAuth.Get($"/v1/usergroups/{currentUserId}/user", with =>
+            var response = await _browserAuth.Get($"/v1/users/{currentUserId}/groups", with =>
                                                                                           {
                                                                                               with.HttpRequest();
                                                                                               with.Header("Accept", "application/json");
@@ -1087,7 +1087,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetGroupsForUserReturnsUnauthorized()
         {
             var userId = Guid.NewGuid();
-            var response = await _browserNoAuth.Get($"/v1/usergroups/{userId}/user", with =>
+            var response = await _browserNoAuth.Get($"/v1/users/{userId}/groups", with =>
                                                                                           {
                                                                                               with.HttpRequest();
                                                                                               with.Header("Accept", "application/json");
@@ -1107,7 +1107,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                .Throws(new Exception());
 
 
-            var response = await _browserAuth.Get($"/v1/usergroups/{userId}/user", with =>
+            var response = await _browserAuth.Get($"/v1/users/{userId}/groups", with =>
                                                                                     {
                                                                                         with.HttpRequest();
                                                                                         with.Header("Accept", "application/json");
