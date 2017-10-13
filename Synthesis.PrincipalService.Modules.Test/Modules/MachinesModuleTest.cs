@@ -189,7 +189,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
 
-        #region MyRegion
+        #region UPDATE Tests
         [Fact]
         public async Task UpdateMachineReturnsOK()
         {

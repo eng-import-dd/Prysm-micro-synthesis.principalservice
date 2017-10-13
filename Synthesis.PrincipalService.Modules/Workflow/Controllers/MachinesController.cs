@@ -135,13 +135,36 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<MachineResponse> UpdateMachineInDb(Machine machine)
         {
+            var validationErrors = new List<ValidationFailure>();
+
+            if(machine.Id == null)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Id was not provided."));
+            }
+
             var existingMachine = await _machineRepository.GetItemAsync(machine.Id);
+
             if (existingMachine == null)
             {
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
             }
 
-            existingMachine.DateModified = machine.DateModified;
+            if (!await IsUniqueLocation(machine))
+            {
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Location was not unique"));
+            }
+
+            if (!await IsUniqueMachineKey(machine))
+            {
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
+            }
+
+            if (validationErrors.Any())
+            {
+                throw new ValidationFailedException(validationErrors);
+            }
+
+            existingMachine.DateModified = DateTime.UtcNow;
             existingMachine.MachineKey = machine.MachineKey;
             existingMachine.Location = machine.Location;
             existingMachine.ModifiedBy = machine.ModifiedBy;
