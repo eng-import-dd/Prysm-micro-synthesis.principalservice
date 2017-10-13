@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -29,6 +28,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<Machine> _machineRepository;
         private readonly IValidator _createMachineRequestValidator;
+        private readonly IValidator _machineIdValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
@@ -49,8 +49,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IEventService eventService)
         {
             _machineRepository = repositoryFactory.CreateRepository<Machine>();
-
             _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
+            _machineIdValidator = validatorLocator.GetValidator(typeof(MachineIdValidator));
             _eventService = eventService;
             _logger = logger;
             _mapper = mapper;
@@ -78,6 +78,30 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             // TODO: Call to CopyMachineSettings. To be implemented as a service call to SettingsService.
 
+            return _mapper.Map<Machine, MachineResponse>(result);
+        }
+
+        public async Task<MachineResponse> GetMachineByIdAsync(Guid machineId, Guid tenantId)
+        {
+            var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
+            if (!machineIdValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a Machine resource.");
+                throw new ValidationFailedException(machineIdValidationResult.Errors);
+            }
+
+            var result = await _machineRepository.GetItemAsync(machineId);
+            if (result == null)
+            {
+                _logger.Warning($"A Machine resource could not be found for id {machineId}");
+                throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
+            }
+
+            var assignedTenantId = result.TenantId;
+            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
+            {
+                throw new InvalidOperationException();
+            }
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
