@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1220,6 +1222,82 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
         }
 
+        #endregion
+
+        #region Remove User from Permission Group
+        [Fact]
+        public async Task RemoveUserfromPermissionGroupReturnsSuccess()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(),It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(true));
+            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+                                                                                       {
+                                                                                           with.HttpRequest();
+                                                                                           with.Header("Accept", "application/json");
+                                                                                           with.Header("Content-Type", "application/json");
+                                                                                       });
+            Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveUserfromPermissionGroupReturnsNotFound()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new DocumentNotFoundException("Couldn't find the user"));
+            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+                                                                                        {
+                                                                                            with.HttpRequest();
+                                                                                            with.Header("Accept", "application/json");
+                                                                                            with.Header("Content-Type", "application/json");
+                                                                                        });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveUserfromPermissionGroupReturnsBadRequestDueToValidationFailure()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+                                                                                 {
+                                                                                     with.HttpRequest();
+                                                                                     with.Header("Accept", "application/json");
+                                                                                     with.Header("Content-Type", "application/json");
+                                                                                 });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveUserfromPermissionGroupReturnsBadRequestDueToBindFailure()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
+            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+                                                                                 {
+                                                                                     with.HttpRequest();
+                                                                                     with.Header("Accept", "application/json");
+                                                                                     with.Header("Content-Type", "application/json");
+                                                                                     with.JsonBody("{]");
+                                                                                 });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task RemoveUserfromPermissionGroupReturnsInternalServerError()
+        {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+                           .ThrowsAsync(new Exception());
+            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+                                                                                 {
+                                                                                     with.HttpRequest();
+                                                                                     with.Header("Accept", "application/json");
+                                                                                     with.Header("Content-Type", "application/json");
+                                                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
         #endregion
     }
 }

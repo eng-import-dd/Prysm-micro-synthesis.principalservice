@@ -40,5 +40,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
+
+        Task<bool> RemoveUserFromPermissionGroupAsync(UserGroupRequest userGroup, Guid currentUserId);
     }
 }

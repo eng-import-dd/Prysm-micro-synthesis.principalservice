@@ -994,6 +994,63 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             throw new NotFoundException($"A User group resource could not be found for id {userId}");
         }
 
+        public async Task<bool> RemoveUserFromPermissionGroupAsync(UserGroupRequest userGroup, Guid currentUserId)
+        {
+            var userIdValidationResult = await _userIdValidator.ValidateAsync(userGroup.UserId);
+            var groupIdValidationResult = await _groupIdValidator.ValidateAsync(userGroup.GroupId);
+            var countOfSuperAdmins=0;
+            if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to remove the User from group.");
+                throw new ValidationFailedException(userIdValidationResult.Errors);
+            }
+
+            try
+            {
+                if (!IsSuperAdmin(currentUserId))
+                {
+                    return false;
+                }
+
+                var user = await _userRepository.GetItemAsync(userGroup.UserId);
+                if (user == null)
+                {
+                    throw new DocumentNotFoundException("User doesn't exist with userId: " + userGroup.UserId);
+                }
+
+                var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(userGroup.GroupId));
+                countOfSuperAdmins += groupUsers.Count(u => IsSuperAdmin(u.Id ?? Guid.Empty) && !u.IsLocked);
+                if (countOfSuperAdmins <= 1)
+                {
+                    _logger.Warning("Cannot delete the last non locked super admin of this group.");
+                    return false;
+                }
+
+                user.Groups.Remove(userGroup.GroupId);
+                await _userRepository.UpdateItemAsync(userGroup.UserId, user);
+                return true;
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not find the user", ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+               _logger.Error("Error occured while removing a user from the group", ex);
+                throw;
+            }
+            
+
+        }
+
+        private bool IsSuperAdmin(Guid userId)
+        {
+            //var userGroups = GetUserGroupsForUser(userId).Payload;
+            //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
+            //TODO: Put code here to check User Group - Charan
+            return true;
+        }
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
         {
             try
@@ -1241,6 +1298,5 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 user.LastName = user.LastName.Trim();
             }
         }
-
     }
 }

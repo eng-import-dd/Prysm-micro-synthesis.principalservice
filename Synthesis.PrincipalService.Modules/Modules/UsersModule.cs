@@ -12,6 +12,7 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
 using FluentValidation;
+using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
@@ -54,6 +55,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_CanPromoteUser();
             SetupRoute_GetGroupUsers();
             SetupRoute_GetGroupsForUser();
+            SetupRoute_RemoveUserFromPermissionGroup();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -404,6 +406,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("GetGroupsForUserLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_RemoveUserFromPermissionGroup()
+        {
+            const string path = "/v1/users/{userId}/groups";
+            Post(path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroup");
+            Post(LegacyBaseRoute + path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroupLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Removes a specific user from the group";
+
+            _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -973,6 +1001,45 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
+        {
+            UserGroupRequest userGroup;
+            try
+            {
+                userGroup = this.Bind<UserGroupRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to remove the User from Group", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+                var result = await _userController.RemoveUserFromPermissionGroupAsync(userGroup, userId);
+                if (!result)
+                {
+                    return HttpStatusCode.BadRequest;
+                }
+
+                return HttpStatusCode.NoContent;
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "User could not be found", ex);
+                return HttpStatusCode.NotFound;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "RemoveUserFromGroup threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
         #endregion
     }
 }
