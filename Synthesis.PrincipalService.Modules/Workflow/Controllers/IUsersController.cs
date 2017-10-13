@@ -31,6 +31,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId);
 
+        Task<List<Guid>> GetGroupsForUserAsync(Guid userId);
+
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        
         Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
