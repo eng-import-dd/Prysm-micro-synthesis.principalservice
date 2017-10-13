@@ -314,6 +314,8 @@
     <Compile Include="Requests\CreateUserGroupRequest.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
+    <Compile Include="Responses\CanPromoteUserResponse.cs" />
+    <Compile Include="Requests\ResendEmailRequest.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />

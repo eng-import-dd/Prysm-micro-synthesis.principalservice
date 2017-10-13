@@ -17,9 +17,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
+using Nancy;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
 using Synthesis.PrincipalService.Utilities;
@@ -38,6 +38,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _createUserRequestValidator;
         private readonly IValidator _userIdValidator;
         private readonly IValidator _tenantIdValidator;
+        private readonly IValidator _groupIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IValidator _createUserGroupValidator;
         private readonly IEventService _eventService;
@@ -76,6 +77,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
             _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
+            _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
             _eventService = eventService;
             _logger = logger;
@@ -244,7 +246,49 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             
         }
-        
+
+        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
+        {
+            var isValidEmail = EmailValidator.IsValid(email);
+            if (!isValidEmail)
+            {
+                _logger.Warning("Email is either empty or invalid.");
+                throw new ValidationException("Email is either empty or invalid");
+            }
+
+            try
+            {
+                var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+                var existingUser = userList.ToList().FirstOrDefault();
+                if (existingUser==null)
+                {
+                    _logger.Error("User not found with that email.");
+                    throw new NotFoundException("User not found with that email.");
+                }
+
+                var isValidForPromotion = IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+                if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
+                {
+                    return new CanPromoteUserResponse
+                    {
+                        ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
+                        UserId = existingUser.Id
+                    };
+                }
+
+                _logger.Warning("User already in an account");
+                return new CanPromoteUserResponse
+                {
+                    ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("User not found with that email.", ex);
+                throw;
+            }
+        }
+
         public async Task DeleteUserAsync(Guid id)
         {
             var validationResult = await _userIdValidator.ValidateAsync(id);
@@ -341,7 +385,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
             }
 
-            _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+            await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
 
             return new PromoteGuestResponse
             {
@@ -373,7 +417,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
-                _emailUtility.SendWelcomeEmail(model.EmailId, model.FirstName);
+                await _emailUtility.SendWelcomeEmailAsync(model.EmailId, model.FirstName);
             }
             if (model.Groups != null)
             {
@@ -478,6 +522,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return hash;
         }
         
+        public async Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName)
+        {
+            var isValidEmail = EmailValidator.IsValid(email);
+            if (!isValidEmail)
+            {
+                _logger.Warning("Email is either empty or invalid.");
+                throw new ValidationException("Email is either empty or invalid");
+            }
+
+            try
+            {
+                var userMailed =  await _emailUtility.SendWelcomeEmailAsync(email, firstName);
+
+                return userMailed;
+            }
+            catch(Exception ex)
+            {
+                _logger.Error("Problem occured while trying to send email", ex);
+                throw;
+            }
+        }
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -720,7 +785,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
                     /* If the user is created and a license successfully assigned, mail and return the user. */
-                    _emailUtility.SendWelcomeEmail(user.Email, user.FirstName);
+                    await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
                     return;
                 }
             }
@@ -737,7 +802,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (orgAdmins.Count > 0)
             {
-                _emailUtility.SendUserLockedMail(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
+                await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
             }
         }
 
@@ -884,6 +949,29 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             return await CreateUserGroupInDb(model, existingUser);
+        }
+
+        public async Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId)
+        {
+            var validationResult = await _groupIdValidator.ValidateAsync(groupId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && u.TenantId == tenantId);
+
+            if (result == null)
+            {
+                _logger.Warning($"A User group resource could not be found for id {groupId}");
+                throw new NotFoundException($"A User group resource could not be found for id {groupId}");
+            }
+
+            //TODO: Access Checks - Yusuf
+            //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
+
+            return result.Select(user => user.Id.Value).ToList();
         }
 
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
