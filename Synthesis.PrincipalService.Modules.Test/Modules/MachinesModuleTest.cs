@@ -31,6 +31,8 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 using Xunit;
 using ClaimTypes = System.Security.Claims.ClaimTypes;
+using Synthesis.Nancy.MicroService;
+using System.Linq;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -41,6 +43,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private readonly Browser _browserNoAuth;
 
         private readonly Mock<IMachineController> _controllerMock = new Mock<IMachineController>();
+        private readonly Mock<IRepository<Machine>> _machineRepositoryMock = new Mock<IRepository<Machine>>();
 
         public MachinesModuleTest()
         {
@@ -127,6 +130,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             });
         }
 
+        #region POST tests
         [Fact]
         public async Task CreateMachineReturnStatusOK()
         {
@@ -187,6 +191,112 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
         }
+        #endregion
+
+        #region GET tests
+        [Fact]
+        public async Task GetMachineByIdReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new MachineResponse()));
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsUnauthorized()
+        {
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new MachineResponse()));
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserNoAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByIdReturnsValidationFailedException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(errors));
+
+            var validMachineId = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/{validMachineId}",
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        #endregion
 
 
         #region UPDATE Tests

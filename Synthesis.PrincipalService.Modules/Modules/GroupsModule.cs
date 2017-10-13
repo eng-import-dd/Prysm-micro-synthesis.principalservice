@@ -10,6 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Modules
@@ -48,6 +49,8 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata();
             SetupRoute_CreateGroup();
             SetupRoute_GetGroupById();
+            SetupRoute_GetGroupsForTenant();
+            SetupRoute_DeleteGroup();
         }
 
         /// <summary>
@@ -125,6 +128,58 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_GetGroupsForTenant()
+        {
+            const string path = "/v1/groups/tenant"; 
+            Get(path, GetGroupsForTenantAsync, null, "GetGroupsForAccountAsync");
+            Get(LegacyBaseRoute + path, GetGroupsForTenantAsync, null, "GetGroupsForAccountAsync");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataDescription = "Get Group for a tenant";
+
+            _metadataRegistry.SetRouteMetadata("GetGroupsForAccountAsync", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetGroupsForAccountAsyncLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_DeleteGroup()
+        {
+            const string path = "/v1/groups/{groupId}";
+            Delete(path, DeleteGroupAsync, null, "DeleteGroupAsync");
+            Delete(LegacyBaseRoute + path, DeleteGroupAsync, null, "DeleteGroupAsync");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataDescription = "Deletes a Group";
+
+            _metadataRegistry.SetRouteMetadata("DeleteGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("DeleteGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
         /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
@@ -188,6 +243,73 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.LogMessage(LogLevel.Error, "GetGroupByIdAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetGroupsForTenantAsync(dynamic input)
+        {
+            //A list of the Groups which belong to the current user's tenant
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _groupsController.GetGroupsForTenantAsync(tenantId, userId);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupsForTenantAsync: No valid tenant level access to groups!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetGroupsForTenantAsync threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> DeleteGroupAsync(dynamic input)
+        {
+            try
+            {
+                Guid groupId = Guid.Parse(input.groupId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+                await _groupsController.DeleteGroupAsync(groupId, userId);
+
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Resource has been deleted"
+                };
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.Warning("Group is either deleted or doesn't exist", ex);
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Group is either deleted or doesn't exist"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to create group resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
     }

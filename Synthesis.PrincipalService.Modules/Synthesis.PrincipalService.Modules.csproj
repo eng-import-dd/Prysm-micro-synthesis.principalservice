@@ -316,6 +316,7 @@
     <Compile Include="Requests\UpdateMachineRequest.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\CanPromoteUserResponse.cs" />
+    <Compile Include="Requests\ResendEmailRequest.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
@@ -344,6 +345,7 @@
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
+    <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />

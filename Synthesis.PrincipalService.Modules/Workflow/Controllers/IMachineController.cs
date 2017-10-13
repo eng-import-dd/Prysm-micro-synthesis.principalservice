@@ -10,8 +10,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 {
     public interface IMachineController
     {
-        Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid TenantId);
-
+        Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId);
+        Task<MachineResponse> GetMachineByIdAsync(Guid id, Guid tenantId);
         Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId);    
     }
 }
