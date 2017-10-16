@@ -554,8 +554,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsOk()
         {
+            _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
+                           .ReturnsAsync(new UserResponse());
+            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var tenantId);
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { TenantId = tenantId });
             var actual = await _browserAuth.Put(
-                                                 "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                 $"/v1/users/{Guid.NewGuid()}",
                                                  with =>
                                                  {
                                                      with.Header("Accept", "application/json");
@@ -572,7 +577,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task UpdateUserReturnsUnauthorized()
         {
             var actual = await _browserNoAuth.Put(
-                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                  $"/v1/users/{Guid.NewGuid()}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -587,8 +592,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsNotFound()
         {
+            _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
+                           .Throws(new DocumentNotFoundException());
             var actual = await _browserAuth.Put(
-                                                  "/v1/users/somestring",
+                                                $"/v1/users/{Guid.NewGuid()}",
                                                   with =>
                                                   {
                                                       with.Header("Accept", "application/json");
@@ -605,7 +612,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             
             var actual = await _browserAuth.Put(
-                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                $"/v1/users/{Guid.NewGuid()}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -622,8 +629,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
                            .Throws(new Exception());
+            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var tenantId);
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse(){TenantId = tenantId });
+
+            
             var actual = await _browserAuth.Put(
-                                                "/v1/users/5b5d1d1a-ecab-4074-b06a-adac80e4980b",
+                                                $"/v1/users/{Guid.NewGuid()}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -1229,9 +1241,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task RemoveUserfromPermissionGroupReturnsSuccess()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
-            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(),It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(),It.IsAny<Guid>(),It.IsAny<Guid>()))
                            .Returns(Task.FromResult(true));
-            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+            var response = await _browserAuth.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", with =>
                                                                                        {
                                                                                            with.HttpRequest();
                                                                                            with.Header("Accept", "application/json");
@@ -1244,9 +1256,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task RemoveUserfromPermissionGroupReturnsNotFound()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
-            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new DocumentNotFoundException("Couldn't find the user"));
-            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+            var response = await _browserAuth.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", with =>
                                                                                         {
                                                                                             with.HttpRequest();
                                                                                             with.Header("Accept", "application/json");
@@ -1259,9 +1271,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task RemoveUserfromPermissionGroupReturnsBadRequestDueToValidationFailure()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
-            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
-            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+            var response = await _browserAuth.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", with =>
                                                                                  {
                                                                                      with.HttpRequest();
                                                                                      with.Header("Accept", "application/json");
@@ -1274,7 +1286,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task RemoveUserfromPermissionGroupReturnsBadRequestDueToBindFailure()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
-            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+            var response = await _browserAuth.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", with =>
                                                                                  {
                                                                                      with.HttpRequest();
                                                                                      with.Header("Accept", "application/json");
@@ -1288,9 +1300,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task RemoveUserfromPermissionGroupReturnsInternalServerError()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
-            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<UserGroupRequest>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new Exception());
-            var response = await _browserAuth.Post($"/v1/users/{userId}/groups", with =>
+            var response = await _browserAuth.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", with =>
                                                                                  {
                                                                                      with.HttpRequest();
                                                                                      with.Header("Accept", "application/json");

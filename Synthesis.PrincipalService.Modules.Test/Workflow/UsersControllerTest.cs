@@ -998,7 +998,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task RemoveUserFromPermissionGroupSuccess()
         {
-            var userGroup = new UserGroupRequest { UserId = Guid.NewGuid(), GroupId = Guid.NewGuid() };
+            var UserId = Guid.NewGuid();
+            var GroupId = Guid.NewGuid() ;
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                                .Returns(() =>
                                         {
@@ -1012,18 +1013,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
                                         });
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .Returns(Task.FromResult(new User(){Groups=new List<Guid>(){userGroup.GroupId}}));
+                               .Returns(Task.FromResult(new User(){Groups=new List<Guid>(){GroupId}}));
             _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
                                .Returns(Task.FromResult(new User()));
 
-            var result = await _controller.RemoveUserFromPermissionGroupAsync(userGroup, userGroup.UserId);
+            var result = await _controller.RemoveUserFromPermissionGroupAsync(UserId, GroupId, UserId);
             Assert.Equal(true,result);
         }
 
         [Fact]
         public async Task RemoveUserFromPermissionGroupThrowsDocumentNotFound()
         {
-            var userGroup = new UserGroupRequest { UserId = Guid.NewGuid(), GroupId = Guid.NewGuid() };
+            var UserId = Guid.NewGuid();
+            var GroupId = Guid.NewGuid() ;
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                                .Returns(() =>
                                         {
@@ -1041,13 +1043,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
                                .Returns(Task.FromResult(new User()));
 
-            await Assert.ThrowsAsync<DocumentNotFoundException>(() => _controller.RemoveUserFromPermissionGroupAsync(userGroup, userGroup.UserId));
+            await Assert.ThrowsAsync<DocumentNotFoundException>(() => _controller.RemoveUserFromPermissionGroupAsync(UserId,GroupId, UserId));
         }
 
         [Fact]
         public async Task RemoveUserFromPermissionGroupThrowsException()
         {
-            var userGroup = new UserGroupRequest { UserId = Guid.NewGuid(), GroupId = Guid.NewGuid() };
+            var UserId = Guid.NewGuid();
+            var GroupId = Guid.NewGuid();
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                                .Returns(() =>
                                         {
@@ -1061,11 +1064,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
                                         });
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                               .Returns(Task.FromResult(new User() { Groups = new List<Guid>() { userGroup.GroupId } }));
+                               .Returns(Task.FromResult(new User() { Groups = new List<Guid>() { GroupId } }));
             _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
                                .ThrowsAsync(new Exception());
 
-            await Assert.ThrowsAsync<Exception>(() => _controller.RemoveUserFromPermissionGroupAsync(userGroup, userGroup.UserId));
+            await Assert.ThrowsAsync<Exception>(() => _controller.RemoveUserFromPermissionGroupAsync(UserId, GroupId,UserId));
         }
         #endregion
     }

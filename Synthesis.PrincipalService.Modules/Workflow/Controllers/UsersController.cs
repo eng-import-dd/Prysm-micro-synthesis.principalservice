@@ -994,10 +994,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             throw new NotFoundException($"A User group resource could not be found for id {userId}");
         }
 
-        public async Task<bool> RemoveUserFromPermissionGroupAsync(UserGroupRequest userGroup, Guid currentUserId)
+        public async Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId, Guid currentUserId)
         {
-            var userIdValidationResult = await _userIdValidator.ValidateAsync(userGroup.UserId);
-            var groupIdValidationResult = await _groupIdValidator.ValidateAsync(userGroup.GroupId);
+            var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
+            var groupIdValidationResult = await _groupIdValidator.ValidateAsync(groupId);
             var countOfSuperAdmins=0;
             if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
             {
@@ -1012,13 +1012,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     return false;
                 }
 
-                var user = await _userRepository.GetItemAsync(userGroup.UserId);
+                var user = await _userRepository.GetItemAsync(userId);
                 if (user == null)
                 {
-                    throw new DocumentNotFoundException("User doesn't exist with userId: " + userGroup.UserId);
+                    throw new DocumentNotFoundException("User doesn't exist with userId: " + userId);
                 }
 
-                var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(userGroup.GroupId));
+                var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
                 countOfSuperAdmins += groupUsers.Count(u => IsSuperAdmin(u.Id ?? Guid.Empty) && !u.IsLocked);
                 if (countOfSuperAdmins <= 1)
                 {
@@ -1026,8 +1026,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     return false;
                 }
 
-                user.Groups.Remove(userGroup.GroupId);
-                await _userRepository.UpdateItemAsync(userGroup.UserId, user);
+                user.Groups.Remove(groupId);
+                await _userRepository.UpdateItemAsync(userId, user);
                 return true;
             }
             catch (DocumentNotFoundException ex)

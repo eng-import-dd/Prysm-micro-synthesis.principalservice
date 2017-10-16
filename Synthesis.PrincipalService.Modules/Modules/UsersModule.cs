@@ -415,9 +415,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_RemoveUserFromPermissionGroup()
         {
-            const string path = "/v1/users/{userId}/groups";
-            Post(path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroup");
-            Post(LegacyBaseRoute + path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroupLegacy");
+            const string path = "v1/groups/{groupId}/users/{userId}";
+            Delete(path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroup");
+            Delete(LegacyBaseRoute + path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroupLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
@@ -756,16 +756,16 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return HttpStatusCode.OK;
             }
-
-            if (accessedUserId == Guid.Empty || await _userController.GetUserAsync(accessedUserId) == null)
+            try
+            {
+             var accessedUser = await _userController.GetUserAsync(accessedUserId);
+            if (accessedUserId == Guid.Empty || accessedUser == null)
             {
                 return HttpStatusCode.NotFound;
             }
             //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-            try
-            {
-                var accessedUser = await _userController.GetUserAsync(accessedUserId);
+           
                 if (tenantId == accessedUser.TenantId)
                 {
                     return HttpStatusCode.OK;
@@ -1003,21 +1003,12 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
         {
-            UserGroupRequest userGroup;
+                Guid userId = input.userId;
+                Guid groupId = input.groupId;
             try
             {
-                userGroup = this.Bind<UserGroupRequest>();
-            }
-            catch (Exception ex)
-            {
-                _logger.Warning("Binding failed while attempting to remove the User from Group", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            try
-            {
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-                var result = await _userController.RemoveUserFromPermissionGroupAsync(userGroup, userId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+                var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, currentUserId);
                 if (!result)
                 {
                     return HttpStatusCode.BadRequest;
