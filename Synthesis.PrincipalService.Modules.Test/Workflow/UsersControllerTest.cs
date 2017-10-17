@@ -997,7 +997,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailAsyncSuccess()
+        public async Task GetTenantIdByUserEmailAsyncSuccess()
         {
             var validEmail = "user@prysm.com";
             var userId = Guid.Parse("814CF57E-157B-4493-8007-691B5E316006");
@@ -1012,14 +1012,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                     }
                 });
             
-            var result = await _controller.GetTenanatIdByUserEmailAsync(validEmail);
+            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
 
             Assert.IsType<Guid>(result);
         }
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailAsynctReturnsNoMatchingRecords()
+        public async Task GetTenantIdByUserEmailAsynctReturnsNoMatchingRecords()
         {
             const int count = 3;
            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
@@ -1036,25 +1036,22 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                          });
 
             var validEmail = "user@prysm.com";
-            var result = await _controller.GetTenanatIdByUserEmailAsync(validEmail);
+            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
 
             Assert.Equal(Guid.Empty, result);
         }
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailAsyncThrowsNotFoundException()
+        public async Task GetTenantIdByUserEmailAsyncThrowsNotFoundException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                                .Throws(new NotFoundException(string.Empty));
 
             var validEmail = "user@prysm.com";
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenanatIdByUserEmailAsync(validEmail));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdByUserEmailAsync(validEmail));
         }
-
-
-
 
         #endregion
     }

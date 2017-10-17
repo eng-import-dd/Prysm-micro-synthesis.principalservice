@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_CanPromoteUser();
             SetupRoute_GetGroupUsers();
             SetupRoute_GetGroupsForUser();
-            SetupRoute_GetTenanatIdByUserEmail();
+            SetupRoute_GetTenantIdByUserEmail();
 
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
@@ -412,25 +412,25 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
-        private void SetupRoute_GetTenanatIdByUserEmail()
+        private void SetupRoute_GetTenantIdByUserEmail()
         {
             const string path = "/v1/users/idpintegration/getaccountid/{email}";
-            Get(path, GetTenanatIdByUserEmail, null, "GetTenanatIdByUserEmail");
-            Get("/api" + path, GetTenanatIdByUserEmail, null, "GetTenanatIdByUserEmailLegacy");
+            Get(path, GetTenantIdByUserEmail, null, "GetTenantIdByUserEmail");
+            Get("/api" + path, GetTenantIdByUserEmail, null, "GetTenantIdByUserEmailLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves tenant id by user email";
 
-            _metadataRegistry.SetRouteMetadata("GetTenanatIdByUserEmail", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetTenantIdByUserEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
 
-            _metadataRegistry.SetRouteMetadata("GetTenanatIdByUserEmailLegacy", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetTenantIdByUserEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -1001,13 +1001,13 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetTenanatIdByUserEmail(dynamic input)
+        private async Task<object> GetTenantIdByUserEmail(dynamic input)
         {
             string email = input.email;
 
             try
             {
-                var result = await _userController.GetTenanatIdByUserEmailAsync(email);
+                var result = await _userController.GetTenantIdByUserEmailAsync(email);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -1022,7 +1022,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetTenanatIdByUserEmail threw an unhandled exception", ex);
+                _logger.LogMessage(LogLevel.Error, "GetTenantIdByUserEmail threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }

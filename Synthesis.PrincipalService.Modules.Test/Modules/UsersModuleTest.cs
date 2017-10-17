@@ -1226,7 +1226,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailSuccess()
+        public async Task GetTenantIdByUserEmailSuccess()
         {
             var validEmail = "user@prysm.com";
             var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
@@ -1241,10 +1241,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailReturnsInternalServerError()
+        public async Task GetTenantIdByUserEmailReturnsInternalServerError()
         {
             var validEmail = "user@prysm.com";
-            _controllerMock.Setup(m => m.GetTenanatIdByUserEmailAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new Exception());
             var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
                                                 with =>
@@ -1258,10 +1258,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
-        public async Task GetTenanatIdByUserEmailReturnsBadRequestIfValidationFails()
+        public async Task GetTenantIdByUserEmailReturnsBadRequestIfValidationFails()
         {
             var validEmail = "user@prysm.com";
-            _controllerMock.Setup(m => m.GetTenanatIdByUserEmailAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
             var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
                                                 with =>

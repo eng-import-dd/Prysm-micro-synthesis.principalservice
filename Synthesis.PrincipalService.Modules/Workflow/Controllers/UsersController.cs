@@ -429,7 +429,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<Guid> GetTenanatIdByUserEmailAsync(string email)
+        public async Task<Guid> GetTenantIdByUserEmailAsync(string email)
         {
             var emailAddressValidationResult = await _emailAddressValidator.ValidateAsync(email);
 
@@ -445,8 +445,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (userWithEmail == null)
             {
-                _logger.Warning($"Users resource could not be found for input email {email}.");
-                throw new NotFoundException($"Users resource could not be found for input email {email}.");
+                _logger.Warning($"User resource could not be found for input email {email}.");
+                throw new NotFoundException($"User resource could not be found for input email {email}.");
             }
 
             if (userWithEmail.TenantId == Guid.Empty)

@@ -41,6 +41,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
 
-        Task<Guid> GetTenanatIdByUserEmailAsync(string email);
+        Task<Guid> GetTenantIdByUserEmailAsync(string email);
     }
 }
