@@ -117,8 +117,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            try
-            {
                 var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
                 if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
                 {
@@ -141,18 +139,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     Payload = groupId
                 });
                 return true;
-            }
-            catch (DocumentNotFoundException)
-            {
-                // The resource not being there is what we wanted.
-                return true;
-            }
-
-            catch (Exception ex)
-            {
-                _logger.Warning("Problem occured while attempting to delete a Group resource.", ex);
-                return false;
-            }
         }
 
         public async Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId)
