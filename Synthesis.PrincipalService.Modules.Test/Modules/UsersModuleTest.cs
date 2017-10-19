@@ -1229,7 +1229,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetTenantIdByUserEmailSuccess()
         {
             var validEmail = "user@prysm.com";
-            var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -1246,7 +1246,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var validEmail = "user@prysm.com";
             _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new Exception());
-            var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -1263,7 +1263,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var validEmail = "user@prysm.com";
             _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
-            var actual = await _browserAuth.Get($"/v1/users/idpintegration/getaccountid/{validEmail}",
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");

@@ -41,7 +41,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _groupIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IValidator _createUserGroupValidator;
-        private readonly IValidator _emailAddressValidator;
+        private readonly IValidator _userNameValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -80,7 +80,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
-            _emailAddressValidator = validatorLocator.GetValidator(typeof(EmailAddressValidator));
+            _userNameValidator = validatorLocator.GetValidator(typeof(UserNameValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -431,16 +431,16 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<Guid> GetTenantIdByUserEmailAsync(string email)
         {
-            var emailAddressValidationResult = await _emailAddressValidator.ValidateAsync(email);
+            var userNameValidationResult = await _userNameValidator.ValidateAsync(email);
 
-            if (!emailAddressValidationResult.IsValid)
+            if (!userNameValidationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the email address id while attempting to retrieve a tenant id.");
-                throw new ValidationFailedException(emailAddressValidationResult.Errors);
+                throw new ValidationFailedException(userNameValidationResult.Errors);
             }
 
            
-            var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+            var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email) || u.UserName.Equals(email));
             var userWithEmail = result.ToList().FirstOrDefault();
 
             if (userWithEmail == null)

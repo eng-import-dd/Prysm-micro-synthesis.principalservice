@@ -414,7 +414,7 @@ namespace Synthesis.PrincipalService.Modules
         }
         private void SetupRoute_GetTenantIdByUserEmail()
         {
-            const string path = "/v1/users/idpintegration/getaccountid/{email}";
+            const string path = "/v1/users/tenantid/{email}";
             Get(path, GetTenantIdByUserEmail, null, "GetTenantIdByUserEmail");
             Get("/api" + path, GetTenantIdByUserEmail, null, "GetTenantIdByUserEmailLegacy");
 

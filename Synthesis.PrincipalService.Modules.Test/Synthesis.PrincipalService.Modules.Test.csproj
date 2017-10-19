@@ -256,7 +256,7 @@
     <Compile Include="Validators\CreateMachineRequestValidatorTest.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidatorTest.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
-    <Compile Include="Validators\EmailAddressValidatorTest.cs" />
+    <Compile Include="Validators\UserNameValidatorTest.cs" />
     <Compile Include="Workflow\MachinesControllerTest.cs" />
     <Compile Include="Workflow\UserInvitesControllerTest.cs" />
     <Compile Include="Workflow\GroupsControllerTest.cs" />
