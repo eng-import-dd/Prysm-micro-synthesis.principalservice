@@ -1,3 +1,4 @@
+using FluentValidation;
 using Nancy;
 using Nancy.Json;
 using Nancy.ModelBinding;
@@ -5,18 +6,15 @@ using Nancy.Security;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Security;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Workflow.Controllers;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 using System;
 using System.Threading.Tasks;
-using FluentValidation;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.Nancy.MicroService.Security;
-using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -450,11 +448,10 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.BadRequest);
+                _logger.Warning("Binding failed while attempting to lock/unlock a User resource", ex);
+                return Response.BadRequestBindingException();
             }
+
             try
             {
                 var result =await _userController.LockOrUnlockUserAsync(id, newUser.IsLocked);
@@ -465,16 +462,16 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationFailedException ex)
             {
                 _logger.Error("Error occured", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.BadRequest);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to Lock/Unlock user resource due to an error", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.InternalServerError);
+                return Response.InternalServerError(ResponseReasons.InternalServerLockUser);
             }
         }
 
@@ -631,10 +628,9 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Warning("Binding failed while attempting to update a User resource.", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.BadRequest);
+                return Response.BadRequestBindingException();
             }
+
             try
             {
                 var result = await _userController.ResendUserWelcomeEmailAsync(basicUser.Email, basicUser.FirstName);
@@ -645,16 +641,12 @@ namespace Synthesis.PrincipalService.Modules
             catch (ValidationFailedException ex)
             {
                 _logger.Error("Error occured", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.BadRequest);
+                return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to send email due to an error", ex);
-                return Negotiate
-                    .WithModel(false)
-                    .WithStatusCode(HttpStatusCode.InternalServerError);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
             }
 
         }
