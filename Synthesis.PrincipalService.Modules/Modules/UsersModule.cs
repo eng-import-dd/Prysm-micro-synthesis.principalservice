@@ -419,7 +419,7 @@ namespace Synthesis.PrincipalService.Modules
             Get("/api" + path, GetTenantIdByUserEmail, null, "GetTenantIdByUserEmailLegacy");
 
             // register metadata
-            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound };
             var metadataResponse = _serializer.Serialize(new User());
             var metadataDescription = "Retrieves tenant id by user email";
 
