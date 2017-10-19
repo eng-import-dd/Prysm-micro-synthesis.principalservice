@@ -1005,8 +1005,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(userIdValidationResult.Errors);
             }
 
-            try
-            {
                 if (!IsSuperAdmin(currentUserId))
                 {
                     return false;
@@ -1029,19 +1027,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 user.Groups.Remove(groupId);
                 await _userRepository.UpdateItemAsync(userId, user);
                 return true;
-            }
-            catch (DocumentNotFoundException ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Could not find the user", ex);
-                throw;
-            }
-            catch (Exception ex)
-            {
-               _logger.Error("Error occured while removing a user from the group", ex);
-                throw;
-            }
-            
-
         }
 
         private bool IsSuperAdmin(Guid userId)

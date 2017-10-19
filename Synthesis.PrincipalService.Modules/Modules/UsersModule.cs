@@ -740,7 +740,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (NotFoundException ex)
             {
                 _logger.Error("User not found", ex);
-                return HttpStatusCode.NotFound;
+                return Response.NotFound();
             }
             catch (Exception ex)
             {
@@ -1011,10 +1011,14 @@ namespace Synthesis.PrincipalService.Modules
                 var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, currentUserId);
                 if (!result)
                 {
-                    return HttpStatusCode.BadRequest;
+                    return Response.BadRequest("Either you don't have permission or cannot delete the last non locked super admin of this group.");
                 }
 
-                return HttpStatusCode.NoContent;
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Resource has been deleted"
+                };
             }
             catch (ValidationFailedException ex)
             {
@@ -1023,7 +1027,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (DocumentNotFoundException ex)
             {
                 _logger.LogMessage(LogLevel.Error, "User could not be found", ex);
-                return HttpStatusCode.NotFound;
+                return Response.NotFound();
             }
             catch (Exception ex)
             {
