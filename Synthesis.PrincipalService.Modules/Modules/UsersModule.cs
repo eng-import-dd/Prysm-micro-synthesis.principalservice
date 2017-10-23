@@ -12,7 +12,6 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
-using FluentValidation;
 using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
