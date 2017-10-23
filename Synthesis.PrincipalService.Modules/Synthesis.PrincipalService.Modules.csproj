@@ -346,6 +346,7 @@
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
+    <Compile Include="Validators\UserNameValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />

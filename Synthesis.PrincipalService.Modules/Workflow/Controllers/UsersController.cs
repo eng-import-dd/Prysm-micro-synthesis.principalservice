@@ -41,6 +41,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IValidator _groupIdValidator;
         private readonly IValidator _updateUserRequestValidator;
         private readonly IValidator _createUserGroupValidator;
+        private readonly IValidator _userNameValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -79,6 +80,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
+            _userNameValidator = validatorLocator.GetValidator(typeof(UserNameValidator));
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -180,8 +182,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            try
-            {
                 var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
                 if (!usersInAccount.Any())
                 {
@@ -192,12 +192,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
                 var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
                 return userResponse;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, ex);
-                return null;
-            }
 
         }
 
@@ -229,22 +223,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
             //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
-            try
-            {
                 var user = _mapper.Map<UpdateUserRequest, User>(userModel);
                 return await UpdateUserInDb(user, userId);
-            }
-            catch (DocumentNotFoundException ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Could not find the user to update", ex);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Could not update the user", ex);
-                throw;
-            }
-            
         }
 
         public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
@@ -256,8 +236,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationException("Email is either empty or invalid");
             }
 
-            try
-            {
                 var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
                 var existingUser = userList.ToList().FirstOrDefault();
                 if (existingUser==null)
@@ -281,12 +259,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 {
                     ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
                 };
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("User not found with that email.", ex);
-                throw;
-            }
         }
 
         public async Task DeleteUserAsync(Guid id)
@@ -427,6 +399,50 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
+        public async Task<Guid> GetTenantIdByUserEmailAsync(string email)
+        {
+            var userNameValidationResult = await _userNameValidator.ValidateAsync(email);
+
+            if (!userNameValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the email address id while attempting to retrieve a tenant id.");
+                throw new ValidationFailedException(userNameValidationResult.Errors);
+            }
+
+           
+            var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email) || u.UserName.Equals(email));
+            var userWithEmail = result.ToList().FirstOrDefault();
+
+            if (userWithEmail == null)
+            {
+                _logger.Warning($"User resource could not be found for input email {email}.");
+                throw new NotFoundException($"User resource could not be found for input email {email}.");
+            }
+
+            if (userWithEmail.TenantId == Guid.Empty)
+            {
+                //TODO: Tenant Management Service Call here to get tenaant Id - Yusuf
+                //Legacy Code
+                /*
+                    * int lastIndexOfAtTheRate = email.LastIndexOf("@");
+
+                    if (lastIndexOfAtTheRate != -1)
+                    {
+                        string domain = email.Substring(lastIndexOfAtTheRate + 1);
+
+                        accountIdList = from ad in sdc.AccountDomains
+                                            where ad.Domain == domain
+                                            select ad.AccountID;
+
+                        accountId = await accountIdList.FirstOrDefaultAsync();
+                        if (accountId != Guid.Empty)
+                            return accountId;
+                    */
+            }
+
+            return userWithEmail.TenantId;
+        }
+
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
@@ -531,18 +547,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationException("Email is either empty or invalid");
             }
 
-            try
-            {
                 var userMailed =  await _emailUtility.SendWelcomeEmailAsync(email, firstName);
 
                 return userMailed;
-            }
-            catch(Exception ex)
-            {
-                _logger.Error("Problem occured while trying to send email", ex);
-                throw;
-            }
         }
+        
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -841,8 +850,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            try
-            {
                 //TODO: dependency on group implementation to get all the groupIds
                 #region  Get superadmin group ids
 
@@ -868,12 +875,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 #endregion
                 return await UpdateLockUserDetailsInDb(userId, locked);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Couldn't Lock the user: ", ex);
-                throw;
-            }
         }
 
         #region User Group Methods
@@ -990,7 +991,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return userWithGivenUserId.Groups;
             }
 
-            _logger.Warning($"A User group resource could not be found for id {userId}");
             throw new NotFoundException($"A User group resource could not be found for id {userId}");
         }
 
@@ -1014,8 +1014,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {
             var validationErrors = new List<ValidationFailure>();
-            try
-            {
                 var existingUser = await _userRepository.GetItemAsync(id);
                 if (existingUser == null)
                 {
@@ -1031,8 +1029,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                     if (isLocked)
                     {
-                        try
-                        {
                             /* If the user is being locked, remove the associated license. */
                             var removeUserLicenseResult = await _licenseApi.ReleaseUserLicenseAsync(licenseRequestDto);
 
@@ -1040,18 +1036,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                             {
                                 validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to remove license for the user"));
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogMessage(LogLevel.Error, "Erro removing license from user", ex);
-                            throw;
-                        }
                     }
                     else // unlock
                     {
-                        try
-                        {
-                            /* If not locked, request a license. */
+                        /* If not locked, request a license. */
                             var assignUserLicenseResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
 
                             if (assignUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
@@ -1059,15 +1047,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                                 validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to assign license to the user"));
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
-                            throw;
-
-                        }
-                    }
-                
+                       }
 
                 if (validationErrors.Any())
                 {
@@ -1078,12 +1058,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return true;
                 }
-            }
-        catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Erro occured while updating locked/unlocked field in the DB", ex);
-
-            }
 
             return false;
         }
@@ -1118,8 +1092,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         }
         public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
-            try
-            {
                 if (getUsersParams == null)
                 {
                     getUsersParams = new GetUsersParams
@@ -1222,12 +1194,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 };
 
                 return returnMetaData;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, ex+" Failed to get users for account");
-                throw;
-            }
         }
 
         private void TrimNameOfUser(UpdateUserRequest user)

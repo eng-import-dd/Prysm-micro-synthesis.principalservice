@@ -239,6 +239,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateUserGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<MachineIdValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<UserNameValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UpdateMachineRequestValidator>().AsSelf().As<IValidator>();
 
             // Controllers

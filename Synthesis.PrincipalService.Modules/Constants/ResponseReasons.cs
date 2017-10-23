@@ -19,12 +19,15 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerErrorGetGuestUser = "An error occurred retriving the Guest Users";
         public const string InternalServerErrorUpdateMachine = "An error occurred updating the Machine";
         public const string InternalServerErrorGetMachine = "An error occurred retrieving the Machine";
+        public const string InternalServerErrorResendWelcomeMail = "An error occurred while sending mail";
 
         // Not found
         public const string NotFoundUser = "User Not Found";
         public const string NotFoundMachine = "Machine Not Found";
 
         public const string UserGroupNotFound = "User Group Not Found";
+
+        public const string TenantNotFound = "Tenant Not Found";
 
         //Promote Guest
         public const string PromotionFailed = "Failed to promote the user";
