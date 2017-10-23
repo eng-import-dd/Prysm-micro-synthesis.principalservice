@@ -1311,5 +1311,59 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
         #endregion
+
+        #region Get Tenant Id by User Email Test Cases
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailSuccess()
+        {
+            var validEmail = "user@prysm.com";
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailReturnsInternalServerError()
+        {
+            var validEmail = "user@prysm.com";
+            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
+                           .ThrowsAsync(new Exception());
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailReturnsBadRequestIfValidationFails()
+        {
+            var validEmail = "user@prysm.com";
+            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
+                           .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Get($"/v1/users/tenantid/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+        #endregion
     }
 }

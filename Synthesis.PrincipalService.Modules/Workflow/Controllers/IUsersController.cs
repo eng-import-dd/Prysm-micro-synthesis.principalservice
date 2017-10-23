@@ -41,6 +41,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
 
+        Task<Guid> GetTenantIdByUserEmailAsync(string email);
+
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
     }
 }

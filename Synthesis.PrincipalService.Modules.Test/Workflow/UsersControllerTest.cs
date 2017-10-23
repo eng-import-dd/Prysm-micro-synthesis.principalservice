@@ -1071,5 +1071,67 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<Exception>(() => _controller.RemoveUserFromPermissionGroupAsync(UserId, GroupId,UserId));
         }
         #endregion
+
+        #region Get Tenant Id by User Email Test Cases
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailAsyncSuccess()
+        {
+            var validEmail = "user@prysm.com";
+            var userId = Guid.Parse("814CF57E-157B-4493-8007-691B5E316006");
+
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Id = userId,
+                        Email = validEmail
+                    }
+                });
+            
+            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
+
+            Assert.IsType<Guid>(result);
+        }
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailAsynctReturnsNoMatchingRecords()
+        {
+            const int count = 3;
+           _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                                .Returns(() =>
+                                         {
+                                             var itemsList = new List<User>();
+                                             for (var i = 0; i < count; i++)
+                                             {
+                                                 itemsList.Add(new User());
+                                             }
+
+                                             IEnumerable<User> items = itemsList;
+                                             return (Task.FromResult(items));
+                                         });
+
+            var validEmail = "user@prysm.com";
+            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
+
+            Assert.Equal(Guid.Empty, result);
+        }
+
+        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
+        [Fact]
+        public async Task GetTenantIdByUserEmailAsyncThrowsNotFoundException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Throws(new NotFoundException(string.Empty));
+
+            var validEmail = "user@prysm.com";
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdByUserEmailAsync(validEmail));
+        }
+
+        #endregion
     }
 }
