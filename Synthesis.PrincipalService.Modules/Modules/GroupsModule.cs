@@ -50,6 +50,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetGroupById();
             SetupRoute_GetGroupsForTenant();
             SetupRoute_DeleteGroup();
+            SetupRuoute_UpdateGroup();
         }
 
         /// <summary>
@@ -57,14 +58,7 @@ namespace Synthesis.PrincipalService.Modules
         /// </summary>
         private void SetupRouteMetadata()
         {
-            _metadataRegistry.SetRouteMetadata("UpdateGroup", new SynthesisRouteMetadata
-            {
-                ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Update Group",
-                Description = "Update a specific Group resource."
-            });
-
-            _metadataRegistry.SetRouteMetadata("DeleteGroup", new SynthesisRouteMetadata
+           _metadataRegistry.SetRouteMetadata("DeleteGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.NoContent, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
                 Response = "Delete Group",
@@ -172,6 +166,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("DeleteGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRuoute_UpdateGroup()
+        {
+            const string path = "/v1/groups";
+            Put(path, UpdateGroupAsync, null, "UpdateGroupAsync");
+            Put(LegacyBaseRoute + path, UpdateGroupAsync, null, "UpdateGroupLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataDescription = "Updates an existing Group";
+
+            _metadataRegistry.SetRouteMetadata("UpdateGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("UpdateGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -308,6 +328,43 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Error("Failed to create group resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> UpdateGroupAsync(dynamic input)
+        {
+            Group existingGroup;
+            try
+            {
+                existingGroup = this.Bind<Group>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to update a Group resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
+
+                var result = await _groupsController.UpdateGroupAsync(existingGroup, tenantId, userId);
+
+                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundGroup);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to update group resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
