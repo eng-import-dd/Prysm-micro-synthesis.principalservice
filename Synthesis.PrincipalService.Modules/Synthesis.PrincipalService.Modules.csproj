@@ -305,6 +305,8 @@
     <Compile Include="Configurations\HttpClientConfiguration.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
+    <Compile Include="Constants\RouteNames.cs" />
+    <Compile Include="Constants\Routing.cs" />
     <Compile Include="Dao\Models\Group.cs" />
     <Compile Include="Dao\Models\Machine.cs" />
     <Compile Include="Dao\Models\User.cs" />
@@ -344,6 +346,7 @@
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
+    <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\UserNameValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />

@@ -35,13 +35,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
     {
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Group> _groupRepository;
-        private readonly IValidator _createUserRequestValidator;
-        private readonly IValidator _userIdValidator;
-        private readonly IValidator _tenantIdValidator;
-        private readonly IValidator _groupIdValidator;
-        private readonly IValidator _updateUserRequestValidator;
-        private readonly IValidator _createUserGroupValidator;
-        private readonly IValidator _userNameValidator;
+        private readonly IValidatorLocator _validatorLocator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ILicenseApi _licenseApi;
@@ -74,13 +68,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
-            _createUserRequestValidator = validatorLocator.GetValidator(typeof(CreateUserRequestValidator));
-            _updateUserRequestValidator = validatorLocator.GetValidator(typeof(UpdateUserRequestValidator));
-            _userIdValidator = validatorLocator.GetValidator(typeof(UserIdValidator));
-            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
-            _groupIdValidator = validatorLocator.GetValidator(typeof(GroupIdValidator));
-            _createUserGroupValidator = validatorLocator.GetValidator(typeof(CreateUserGroupRequestValidator));
-            _userNameValidator = validatorLocator.GetValidator(typeof(UserNameValidator));
+            _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = logger;
             _licenseApi = licenseApi;
@@ -92,8 +80,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
-            
-            var validationResult = await _createUserRequestValidator.ValidateAsync(model);
+
+            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a User resource.");
@@ -124,13 +112,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<UserResponse> GetUserAsync(Guid id)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(id);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(id);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            
+
             var result = await _userRepository.GetItemAsync(id);
 
             if (result == null)
@@ -144,7 +132,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <inheritdoc />
         public async Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
@@ -164,8 +152,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
-            var userIdValidationResult = await _userIdValidator.ValidateAsync(currentUserId);
-            var tenantIdValidationresult = await _tenantIdValidator.ValidateAsync(tenantId);
+            var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(currentUserId);
+            var tenantIdValidationresult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             var errors = new List<ValidationFailure>();
 
             if (!userIdValidationResult.IsValid)
@@ -197,15 +185,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
-            
+
             TrimNameOfUser(userModel);
             var errors=new List<ValidationFailure>();
             if (!await IsUniqueUsername(userId, userModel.UserName))
             {
                 errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
             }
-            var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var userValidationResult = await _updateUserRequestValidator.ValidateAsync(userModel);
+            var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            var userValidationResult = _validatorLocator.Validate<UpdateUserRequestValidator>(userModel);
             if (!userIdValidationResult.IsValid)
             {
                 errors.AddRange(userIdValidationResult.Errors);
@@ -263,7 +251,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task DeleteUserAsync(Guid id)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(id);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(id);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
@@ -289,7 +277,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to promote guest.");
@@ -369,7 +358,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
-            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the tenant id.");
@@ -401,7 +390,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<Guid> GetTenantIdByUserEmailAsync(string email)
         {
-            var userNameValidationResult = await _userNameValidator.ValidateAsync(email);
+            var userNameValidationResult = _validatorLocator.Validate<UserNameValidator>(email);
 
             if (!userNameValidationResult.IsValid)
             {
@@ -409,7 +398,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(userNameValidationResult.Errors);
             }
 
-           
+
             var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email) || u.UserName.Equals(email));
             var userWithEmail = result.ToList().FirstOrDefault();
 
@@ -477,7 +466,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private async Task<User> UpdateIdpUserGroupsAsync(Guid userId, IdpUserRequest model)
         {
             var currentGroupsResult = await _userRepository.GetItemAsync(userId);
-            
+
             //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class
             var accountGroupsResult = await _groupRepository.GetItemsAsync(g => g.TenantId == model.TenantId);
 
@@ -537,7 +526,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             salt = cryptoService.Salt;
             return hash;
         }
-        
+
         public async Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName)
         {
             var isValidEmail = EmailValidator.IsValid(email);
@@ -551,7 +540,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 return userMailed;
         }
-        
+
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -600,7 +589,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
         {
-            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the tenant id.");
@@ -705,7 +694,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.Email), "A user with that email address already exists.") );
             }
-            
+
             if (!string.IsNullOrEmpty(user.LdapId) && !await IsUniqueLdapId(user.Id, user.LdapId))
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
@@ -731,9 +720,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 user.Groups.Add( basicUserGroupId.Value);
             }
-            
+
             var result = await _userRepository.CreateItemAsync(user);
-            
+
             return result;
         }
 
@@ -819,7 +808,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             var adminGroupId = await GetBuiltInGroupId(userTenantId, OrgAdminRoleName);
             if(adminGroupId != null)
-            { 
+            {
                 var admins = await _userRepository.GetItemsAsync(u => u.TenantId == userTenantId && u.Groups.Contains(adminGroupId.Value));
                 return admins.ToList();
             }
@@ -844,7 +833,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
@@ -883,7 +872,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            var validationResult = await _createUserGroupValidator.ValidateAsync(model);
+            var validationResult = _validatorLocator.Validate<CreateUserGroupRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Validation failed while attempting to create a User group resource.");
@@ -954,7 +943,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId)
         {
-            var validationResult = await _groupIdValidator.ValidateAsync(groupId);
+            var validationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
@@ -977,7 +966,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<List<Guid>> GetGroupsForUserAsync(Guid userId)
         {
-            var validationResult = await _userIdValidator.ValidateAsync(userId);
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
                 _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
@@ -996,8 +985,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public async Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId, Guid currentUserId)
         {
-            var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
-            var groupIdValidationResult = await _groupIdValidator.ValidateAsync(groupId);
+            var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            var groupIdValidationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             var countOfSuperAdmins=0;
             if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
             {
@@ -1029,6 +1018,37 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return true;
         }
 
+        /// <inheritdoc />
+        public async Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds)
+        {
+            try
+            {
+                var validationResult = _validatorLocator.Validate<GetUsersByIdValidator>(userIds);
+
+                if (!validationResult.IsValid)
+                {
+                    _logger.Error("GetUsersByIds threw a ValidationFailedException");
+                    throw new ValidationFailedException(validationResult.Errors);
+                }
+
+                var userIdList = userIds.ToList();
+                var userList = (await _userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty))).ToList();
+
+                if (userList.Any())
+                {
+                    return userList;
+                }
+
+                _logger.Error("GetUsersById threw a NotFoundException");
+                throw new NotFoundException("Could not find any users with the provided Ids");
+            }
+            catch (Exception e)
+            {
+                _logger.Error("An error occurred retrieving the users", e);
+                throw;
+            }
+        }
+
         private bool IsSuperAdmin(Guid userId)
         {
             //var userGroups = GetUserGroupsForUser(userId).Payload;
@@ -1051,7 +1071,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
         }
 
-        #endregion 
+        #endregion
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {
@@ -1104,8 +1124,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return false;
         }
 
-        
-        
+
+
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {
             var users = await _userRepository

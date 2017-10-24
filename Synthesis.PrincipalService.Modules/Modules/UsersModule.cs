@@ -11,7 +11,10 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Nancy.Responses;
 using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
@@ -62,6 +65,7 @@ namespace Synthesis.PrincipalService.Modules
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
 
             SetupRoute_GetUserById();
+            SetupRoute_GetUsersByIds();
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
 
@@ -465,6 +469,23 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
+
+        private void SetupRoute_GetUsersByIds()
+        {
+            Post(Routing.GetUsersByIds, GetUsersByIds, null, RouteNames.GetUsersByIds);
+            Post($"{LegacyBaseRoute}{Routing.GetUsersByIds}", GetUsersByIds, null, RouteNames.GetUsersByIdsLegacy);
+
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new List<User> { new User() });
+            var metadataDescription = "Returns matching users from a list of user ids";
+
+            _metadataRegistry.SetRouteMetadata(RouteNames.GetUsersByIds, new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+        }
         #endregion
 
         private async Task<object> LockUserAsync(dynamic input)
@@ -646,6 +667,36 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> GetUsersByIds(dynamic input)
+        {
+            IEnumerable<Guid> userIds = null;
+            try
+            {
+                userIds = this.Bind<IEnumerable<Guid>>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to fetch users", ex);
+            }
+
+            try
+            {
+                return await _userController.GetUsersByIds(userIds);
+            }
+            catch (NotFoundException ex)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUsers, ex.Message);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to get users due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUsers);
+            }
+        }
 
         private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
         {
