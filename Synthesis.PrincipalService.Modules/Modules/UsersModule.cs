@@ -669,14 +669,15 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUsersByIds(dynamic input)
         {
-            IEnumerable<Guid> userIds = null;
+            IEnumerable<Guid> userIds;
             try
             {
                 userIds = this.Bind<IEnumerable<Guid>>();
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to fetch users", ex);
+                _logger.Error("Binding failed while attempting to fetch users", ex);
+                return Response.BadRequestBindingException();
             }
 
             try
