@@ -61,8 +61,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
 
 
-            _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
-                          .ReturnsAsync(new ValidationResult());
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult());
 
             // validator mock
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
@@ -458,8 +458,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var tenantId = Guid.NewGuid();
             var userid = Guid.Empty;
 
-            _validatorMock.Setup(m => m.ValidateAsync(userid, CancellationToken.None))
-                          .ReturnsAsync(new ValidationResult( new List<ValidationFailure>(){new ValidationFailure("","" )} ));
+            _validatorMock.Setup(m => m.Validate(userid))
+                          .Returns(new ValidationResult( new List<ValidationFailure>(){new ValidationFailure("","" )} ));
 
             await Assert.ThrowsAsync<ValidationFailedException>( () => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, false));
 
@@ -602,8 +602,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 LastName = "TestUser"
             };
 
-            _validatorMock.Setup(m => m.ValidateAsync(tenantId, CancellationToken.None))
-                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.Validate(tenantId))
+                          .Returns(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
 
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
         }
@@ -678,10 +678,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .ReturnsAsync(new User());
             var userId = Guid.NewGuid();
             var user = new UpdateUserRequest();
-            _validatorMock.Setup(m => m.ValidateAsync(userId, CancellationToken.None))
-                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
-            _validatorMock.Setup(m => m.ValidateAsync(user, CancellationToken.None))
-                          .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.Validate(userId))
+                          .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+            _validatorMock.Setup(m => m.Validate(user))
+                          .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
             Assert.Equal(ex.Errors.ToList().Count,3);
         }
@@ -1131,6 +1131,48 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdByUserEmailAsync(validEmail));
         }
+
+        #endregion
+
+        #region Get Users by Ids Test Cases
+
+        [Fact]
+        public async Task GetUsersByIdsReturnsCollectionOfUsersIfSuccessful()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(Task.FromResult((IEnumerable<User>) new List<User>
+                               {
+                                   new User()
+                               }));
+
+            var result = await _controller.GetUsersByIds(new List<Guid>());
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetUserByIdsThrowsNotFoundExceptionIfNoUsersAreFound()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(Task.FromResult((IEnumerable<User>)new List<User>()));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUsersByIds(new List<Guid>()));
+        }
+
+        [Fact]
+        public async Task GetUserByIdsThrowsValidationFailedExceptionIfValidationFails()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .Returns(Task.FromResult((IEnumerable<User>)new List<User>()));
+
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                          .Returns(new ValidationResult
+                          {
+                              Errors = { new ValidationFailure(string.Empty, String.Empty, string.Empty)}
+                          });
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetUsersByIds(new List<Guid>()));
+        }
+
 
         #endregion
     }
