@@ -3,8 +3,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -17,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nancy;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -210,7 +209,59 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
-       
+
+        public async Task<object> DeleteMachineAsync(Guid machineId, Guid tenantId)
+        {
+            try
+            {
+                var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
+
+                if (!machineIdValidationResult.IsValid)
+                {
+                    _logger.Warning("Failed to validate the resource id while attempting to delete a Machine resource.");
+                    throw new ValidationFailedException(machineIdValidationResult.Errors);
+                }
+
+                if (!IsUserASuperAdmin(tenantId))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                await _machineRepository.DeleteItemAsync(machineId);
+
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Machine has been deleted"
+                };
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.Warning("Machine is either deleted or doesn't exist", ex);
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Machine is either deleted or doesn't exist"
+                };
+            }
+
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to delete Machine resource due to an error", ex);
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    ReasonPhrase = "Could not delete Machine."
+                };
+            }
+        }
+
+
+        private bool IsUserASuperAdmin(Guid id)
+        {
+            // To be replaced by a call to Settings Service(?) determining if the user is a superadmin user.
+            return true;
+        }
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {

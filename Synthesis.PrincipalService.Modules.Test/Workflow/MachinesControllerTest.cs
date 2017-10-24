@@ -19,6 +19,8 @@ using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Linq;
+using Nancy;
+using Nancy.Extensions;
 using Synthesis.License.Manager.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Responses;
@@ -195,5 +197,43 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
             Assert.IsType<InvalidOperationException>(ex);
         }
+
+
+        #region DELETE Machine Tests
+
+        [Fact]
+        public async Task DeleteMachineReturnsTrueIfSuccessful()
+        {
+            _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Returns(Task.FromResult(Guid.NewGuid()));
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            Response result = await _controller.DeleteMachineAsync(machineId, tenantId) as Response;
+            Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
+            Assert.Equal("Machine has been deleted", result.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task DeleteMachineReturnsTrueIfDocumentNotFound()
+        {
+            _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Throws(new NotFoundException("Not Found"));
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            Response result = await _controller.DeleteMachineAsync(machineId, tenantId) as Response;
+            Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
+            Assert.Equal("Machine is either deleted or doesn't exist", result.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task DeleteMachineReturnsTrueReturnsFalseIfException()
+        {
+            _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Throws(new Exception());
+            var machineId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            Response result = await _controller.DeleteMachineAsync(machineId, tenantId) as Response;
+            Assert.Equal(HttpStatusCode.InternalServerError, result.StatusCode);
+            Assert.Equal("Could not delete Machine.", result.ReasonPhrase);
+        }
+
+        #endregion
     }
 }

@@ -107,7 +107,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 validatorLocatorMock
                     .Setup(l => l.GetValidator(It.IsAny<Type>()))
                     .Returns(validatorMock.Object);
-                var mapper = new MapperConfiguration(cfg => {
+                var mapper = new MapperConfiguration(cfg =>
+                {
                     cfg.AddProfile<MachineProfile>();
                 }).CreateMapper();
 
@@ -310,14 +311,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                     with.Header("Conteny-Type", "application/json");
                                                     with.HttpRequest();
                                                     with.JsonBody(new Machine()
-                                                        {
-                                                            MachineKey = "12345678901234567890",
-                                                            Location = "TestLocation",
-                                                            ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
-                                                            SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
-                                                            DateModified = DateTime.UtcNow
-                                                        }
-                                                    
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    }
+
                                                     );
                                                 });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
@@ -409,6 +410,57 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                 });
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
         }
+        #endregion
+
+        #region DELETE Tests
+
+        [Fact]
+        public async Task DeleteMachineReturnsNoContent()
+        {
+            var machineId = new Guid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/machines/{machineId}", with =>
+                                                               {
+                                                                      with.Header("Accept", "application/json");
+                                                                      with.Header("Content-Type", "application/json");
+                                                                      with.HttpRequest();
+                                                                });
+            Assert.Equal(HttpStatusCode.NoContent, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task DeleteMachineReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var machineId = new Guid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/machines/{machineId}", with =>
+                                                                                {
+                                                                                    with.Header("Accept", "application/json");
+                                                                                    with.Header("Content-Type", "application/json");
+                                                                                    with.HttpRequest();
+                                                                                });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task DeleteMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+            var machineId = new Guid();
+            var actual = await _browserAuth.Delete(
+                                                   $"/v1/machines/{machineId}", with =>
+                                                                                {
+                                                                                    with.Header("Accept", "application/json");
+                                                                                    with.Header("Content-Type", "application/json");
+                                                                                    with.HttpRequest();
+                                                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
         #endregion
 
     }
