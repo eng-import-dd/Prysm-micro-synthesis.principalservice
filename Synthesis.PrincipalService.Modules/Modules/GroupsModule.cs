@@ -20,7 +20,7 @@ namespace Synthesis.PrincipalService.Modules
     /// Groups Module Class.
     /// </summary>
     /// <seealso cref="T:Nancy.NancyModule" />
-    public class GroupsModule : NancyModule
+    public class GroupsModule : AbstractModule
     {
         private const string TenantIdClaim = "TenantId";
         private const string UserIdClaim = "UserId";
@@ -203,12 +203,7 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        protected static string ToFormattedJson(object obj)
-        {
-            return JsonConvert.SerializeObject(obj, Formatting.Indented);
-        }
-
-        /// <summary>
+       /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
         /// <param name="input">The input.</param>
