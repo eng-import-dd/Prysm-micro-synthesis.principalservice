@@ -254,7 +254,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //var userGroups = GetUserGroupsForUser(userId).Payload;
             //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
             //TODO: Put code here to check User Group here - Yusuf
-            return false;
+            return true;
         }
     }
 }
