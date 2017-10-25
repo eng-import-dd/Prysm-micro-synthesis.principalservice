@@ -208,8 +208,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             var machineId = Guid.NewGuid();
             var tenantId = Guid.NewGuid();
-            var result = await _controller.DeleteMachineAsync(machineId, tenantId);
-            Assert.Equal(result, true);
+            await _controller.DeleteMachineAsync(machineId, tenantId);
         }
 
         [Fact]

@@ -210,7 +210,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
 
-        public async Task<bool> DeleteMachineAsync(Guid machineId, Guid tenantId)
+        public async Task DeleteMachineAsync(Guid machineId, Guid tenantId)
         {
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
 
@@ -233,7 +233,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             await _machineRepository.DeleteItemAsync(machineId);
-            return true;
         }
 
 
