@@ -146,7 +146,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
             }
 
-            if(validationErrors.Any())
+            if (validationErrors.Any())
             {
                 throw new ValidationFailedException(validationErrors);
             }
@@ -160,7 +160,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if(machine.Id == null)
+            if (machine.Id == null)
             {
                 validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Id was not provided."));
             }
@@ -172,7 +172,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
             }
 
-            if(existingMachine.TenantId != tenantId)
+            if (existingMachine.TenantId != tenantId)
             {
                 throw new InvalidOperationException();
             }
@@ -210,50 +210,30 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
 
-        public async Task<object> DeleteMachineAsync(Guid machineId, Guid tenantId)
+        public async Task<bool> DeleteMachineAsync(Guid machineId, Guid tenantId)
         {
-            try
+            var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
+
+            if (!machineIdValidationResult.IsValid)
             {
-                var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
-
-                if (!machineIdValidationResult.IsValid)
-                {
-                    _logger.Warning("Failed to validate the resource id while attempting to delete a Machine resource.");
-                    throw new ValidationFailedException(machineIdValidationResult.Errors);
-                }
-
-                if (!IsUserASuperAdmin(tenantId))
-                {
-                    throw new InvalidOperationException();
-                }
-
-                await _machineRepository.DeleteItemAsync(machineId);
-
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.NoContent,
-                    ReasonPhrase = "Machine has been deleted"
-                };
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.Warning("Machine is either deleted or doesn't exist", ex);
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.NoContent,
-                    ReasonPhrase = "Machine is either deleted or doesn't exist"
-                };
+                _logger.Warning("Failed to validate the resource id while attempting to delete a Machine resource.");
+                throw new ValidationFailedException(machineIdValidationResult.Errors);
             }
 
-            catch (Exception ex)
+            if (!IsUserASuperAdmin(tenantId))
             {
-                _logger.Error("Failed to delete Machine resource due to an error", ex);
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.InternalServerError,
-                    ReasonPhrase = "Could not delete Machine."
-                };
+                throw new InvalidOperationException();
             }
+
+            var result = await _machineRepository.GetItemAsync(machineId);
+            if (result == null)
+            {
+                _logger.Warning($"A Machine resource could not be found for id {machineId}");
+                throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
+            }
+
+            await _machineRepository.DeleteItemAsync(machineId);
+            return true;
         }
 
 
