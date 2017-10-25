@@ -152,16 +152,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (model.IsLocked)
-            {
-                throw new InvalidOperationException("You can not edit a locked group");
-            }
-
-            //Retrieve the data row from db
             var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.Value);
             if (existingGroupInDb.Result != null)
             {
-                if (existingGroupInDb.Result.IsLocked && !IsSuperAdmin(userId))
+                if (existingGroupInDb.Result.IsLocked != model.IsLocked && !IsSuperAdmin(userId))
                 {
                     throw new InvalidOperationException("You can not edit a locked group");
                 }
