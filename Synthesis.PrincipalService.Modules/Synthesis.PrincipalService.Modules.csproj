@@ -313,6 +313,7 @@
     <Compile Include="Dao\Models\UserInvite.cs" />
     <Compile Include="Entity\PagingMetadata.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
+    <Compile Include="Modules\AbstractModule.cs" />
     <Compile Include="Requests\CreateUserGroupRequest.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
@@ -348,6 +349,7 @@
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
+    <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
     <Compile Include="Validators\UserNameValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />

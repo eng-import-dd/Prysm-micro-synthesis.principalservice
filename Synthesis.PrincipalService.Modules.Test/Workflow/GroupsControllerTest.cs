@@ -68,6 +68,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.IsType<Group>(result);
         }
 
+        #region Get Group By Id Test Cases
+
         [Fact]
         public async Task GetGroupByIdReturnsGroupIfExists()
         {
@@ -106,6 +108,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var tenantId = Guid.NewGuid();
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
         }
+
+        #endregion
 
         #region Get Groups For Tenant Test Cases
 
@@ -156,8 +160,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         #endregion
-
-
+        
         #region Delete Group Test Cases
         [Fact]
         public async Task DeleteGroupAsyncReturnsTrueIfSuccessful()
@@ -193,6 +196,81 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
             Assert.Equal(false, result);
         }
+        #endregion
+
+        #region Update Group Test Cases
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupAsyncReturnsTrueIfSuccessful()
+        {
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+            var userId = Guid.NewGuid();
+
+            Group group = new Group()
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Name = "Prysm Group",
+                IsLocked = false
+            };
+
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Returns(Task.FromResult(group));
+
+            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>()))
+                .Returns(Task.FromResult(group));
+           
+
+            var result = await _controller.UpdateGroupAsync(group, tenantId, userId);
+            Assert.Equal(group, result);
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupAsyncReturnstrueIfDocumentNotFound()
+        {
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+            var userId = Guid.NewGuid();
+
+            Group group = new Group()
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Name = "Prysm Group",
+                IsLocked = false
+            };
+
+
+            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>()))
+                                .Throws(new NotFoundException(string.Empty));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateGroupAsync(group, tenantId, userId));
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupByIdThrowsValidationException()
+        {
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+            var userId = Guid.NewGuid();
+
+            Group group = new Group()
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenantId,
+                Name = "Prysm Group",
+                IsLocked = false
+            };
+
+            var errors = Enumerable.Empty<ValidationFailure>();
+
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                                .Throws(new ValidationFailedException(errors));
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateGroupAsync(group, tenantId, userId));
+        }
+       
         #endregion
     }
 }
