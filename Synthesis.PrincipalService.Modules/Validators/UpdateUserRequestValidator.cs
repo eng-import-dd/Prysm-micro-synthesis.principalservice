@@ -24,9 +24,6 @@ namespace Synthesis.PrincipalService.Validators
                 .NotEmpty().WithMessage("The Email property must not be empty")
                 .MaximumLength(100).WithMessage("The UserName must be less than 100 characters long")
                 .Matches(@"^[0-9a-zA-Z@\-\._]{1,100}$").WithMessage("Username may only contain alpha-numeric characters as well . @ _ -");
-
-            RuleFor(request => request.IsLocked)
-                .NotEmpty().WithMessage("The IsLocked property must not be empty");
         }
     }
 }
