@@ -994,6 +994,48 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             throw new NotFoundException($"A User group resource could not be found for id {userId}");
         }
 
+        public async Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId, Guid currentUserId)
+        {
+            var userIdValidationResult = await _userIdValidator.ValidateAsync(userId);
+            var groupIdValidationResult = await _groupIdValidator.ValidateAsync(groupId);
+            var countOfSuperAdmins=0;
+            if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to remove the User from group.");
+                throw new ValidationFailedException(userIdValidationResult.Errors);
+            }
+
+                if (!IsSuperAdmin(currentUserId))
+                {
+                    return false;
+                }
+
+                var user = await _userRepository.GetItemAsync(userId);
+                if (user == null)
+                {
+                    throw new DocumentNotFoundException("User doesn't exist with userId: " + userId);
+                }
+
+                var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+                countOfSuperAdmins += groupUsers.Count(u => IsSuperAdmin(u.Id ?? Guid.Empty) && !u.IsLocked);
+                if (countOfSuperAdmins <= 1)
+                {
+                    _logger.Warning("Cannot delete the last non locked super admin of this group.");
+                    return false;
+                }
+
+                user.Groups.Remove(groupId);
+                await _userRepository.UpdateItemAsync(userId, user);
+                return true;
+        }
+
+        private bool IsSuperAdmin(Guid userId)
+        {
+            //var userGroups = GetUserGroupsForUser(userId).Payload;
+            //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
+            //TODO: Put code here to check User Group - Charan
+            return true;
+        }
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
         {
             try
@@ -1207,6 +1249,5 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 user.LastName = user.LastName.Trim();
             }
         }
-
     }
 }

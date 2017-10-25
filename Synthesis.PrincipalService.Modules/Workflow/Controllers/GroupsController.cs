@@ -25,6 +25,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly IRepository<Group> _groupRepository;
         private readonly IRepository<User> _userRepository;
         private readonly IValidator _createGroupValidator;
+        private readonly IValidator _updateGroupValidator;
         private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
@@ -44,6 +45,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _userRepository = repositoryFactory.CreateRepository<User>();
             _createGroupValidator = validatorLocator.GetValidator(typeof(CreateGroupRequestValidator));
+            _updateGroupValidator = validatorLocator.GetValidator(typeof(UpdateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
             _logger = logger;
@@ -139,6 +141,38 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     Payload = groupId
                 });
                 return true;
+        }
+
+        public async Task<Group> UpdateGroupAsync(Group model, Guid tenantId, Guid userId)
+        {
+            var validationResult = await _updateGroupValidator.ValidateAsync(model);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Validation failed while attempting to update an existing Group resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.Value);
+            if (existingGroupInDb.Result != null)
+            {
+                if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
+                {
+                    throw new InvalidOperationException("You can not edit a locked group");
+                }
+            }
+            else
+            {
+                throw new NotFoundException($"Group not found with id {model.Id}");
+            }
+            
+            // Replace any fields in the DTO that shouldn't be changed here
+            model.TenantId = tenantId;
+
+            var result = await _groupRepository.UpdateItemAsync(model.Id.Value, model);
+
+            _eventService.Publish(EventNames.GroupUpdated, result);
+
+            return result;
         }
 
         public async Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId)

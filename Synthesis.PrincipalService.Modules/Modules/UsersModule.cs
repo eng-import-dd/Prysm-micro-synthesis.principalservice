@@ -6,15 +6,18 @@ using Nancy.Security;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
-using Synthesis.Nancy.MicroService.Security;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
-using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Workflow.Controllers;
-using Synthesis.PrincipalService.Workflow.Exceptions;
 using System;
 using System.Threading.Tasks;
+using Synthesis.DocumentStorage;
+using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.Nancy.MicroService.Security;
+using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -53,7 +56,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetGroupUsers();
             SetupRoute_GetGroupsForUser();
             SetupRoute_GetTenantIdByUserEmail();
-
+            SetupRoute_RemoveUserFromPermissionGroup();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -436,6 +439,32 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+
+        private void SetupRoute_RemoveUserFromPermissionGroup()
+        {
+            const string path = "v1/groups/{groupId}/users/{userId}";
+            Delete(path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroup");
+            Delete(LegacyBaseRoute + path, RemoveUserFromPermissionGroupAsync, null, "RemoveUserFromPermissionGroupLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new User());
+            var metadataDescription = "Removes a specific user from the group";
+
+            _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroup", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroupLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
         #endregion
 
         private async Task<object> LockUserAsync(dynamic input)
@@ -732,7 +761,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (NotFoundException ex)
             {
                 _logger.Error("User not found", ex);
-                return HttpStatusCode.NotFound;
+                return Response.NotFound();
             }
             catch (Exception ex)
             {
@@ -748,16 +777,16 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return HttpStatusCode.OK;
             }
-
-            if (accessedUserId == Guid.Empty || await _userController.GetUserAsync(accessedUserId) == null)
+            try
+            {
+             var accessedUser = await _userController.GetUserAsync(accessedUserId);
+            if (accessedUserId == Guid.Empty || accessedUser == null)
             {
                 return HttpStatusCode.NotFound;
             }
             //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-            try
-            {
-                var accessedUser = await _userController.GetUserAsync(accessedUserId);
+           
                 if (tenantId == accessedUser.TenantId)
                 {
                     return HttpStatusCode.OK;
@@ -993,6 +1022,40 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
+        {
+                Guid userId = input.userId;
+                Guid groupId = input.groupId;
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
+                var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, currentUserId);
+                if (!result)
+                {
+                    return Response.BadRequest("Either you don't have permission or cannot delete the last non locked super admin of this group.");
+                }
+
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Resource has been deleted"
+                };
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (DocumentNotFoundException ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "User could not be found", ex);
+                return Response.NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "RemoveUserFromGroup threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
         private async Task<object> GetTenantIdByUserEmail(dynamic input)
         {
             string email = input.email;
