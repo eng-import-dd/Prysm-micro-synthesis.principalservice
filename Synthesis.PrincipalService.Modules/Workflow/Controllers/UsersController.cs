@@ -1021,32 +1021,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <inheritdoc />
         public async Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds)
         {
-            try
+
+            var validationResult = _validatorLocator.Validate<GetUsersByIdValidator>(userIds);
+
+            if (!validationResult.IsValid)
             {
-                var validationResult = _validatorLocator.Validate<GetUsersByIdValidator>(userIds);
-
-                if (!validationResult.IsValid)
-                {
-                    _logger.Error("GetUsersByIds threw a ValidationFailedException");
-                    throw new ValidationFailedException(validationResult.Errors);
-                }
-
-                var userIdList = userIds.ToList();
-                var userList = (await _userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty))).ToList();
-
-                if (userList.Any())
-                {
-                    return userList;
-                }
-
-                _logger.Error("GetUsersById threw a NotFoundException");
-                throw new NotFoundException("Could not find any users with the provided Ids");
+                _logger.Error("GetUsersByIds threw a ValidationFailedException");
+                throw new ValidationFailedException(validationResult.Errors);
             }
-            catch (Exception e)
-            {
-                _logger.Error("An error occurred retrieving the users", e);
-                throw;
-            }
+
+            var userIdList = userIds.ToList();
+
+            return await _userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty));
         }
 
         private bool IsSuperAdmin(Guid userId)

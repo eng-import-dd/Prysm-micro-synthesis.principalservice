@@ -684,10 +684,6 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return await _userController.GetUsersByIds(userIds);
             }
-            catch (NotFoundException ex)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundUsers, ex.Message);
-            }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);

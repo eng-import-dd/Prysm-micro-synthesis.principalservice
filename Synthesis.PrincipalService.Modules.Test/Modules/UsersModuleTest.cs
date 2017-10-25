@@ -1398,23 +1398,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUsersByIdsReturnsNotFoundIfNoUsersAreFound()
-        {
-            _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))
-                           .Throws(new NotFoundException(string.Empty));
-
-            var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
-                                                                        {
-                                                                            with.Header("Accept", "application/json");
-                                                                            with.Header("Content-Type", "application/json");
-                                                                            with.HttpRequest();
-                                                                            with.JsonBody(new List<Guid>());
-                                                                        });
-
-            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
-        }
-
-        [Fact]
         public async Task GetUsersByIdsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
             _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))

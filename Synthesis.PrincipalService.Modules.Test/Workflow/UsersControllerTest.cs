@@ -1150,15 +1150,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task GetUserByIdsThrowsNotFoundExceptionIfNoUsersAreFound()
-        {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                               .Returns(Task.FromResult((IEnumerable<User>)new List<User>()));
-
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUsersByIds(new List<Guid>()));
-        }
-
-        [Fact]
         public async Task GetUserByIdsThrowsValidationFailedExceptionIfValidationFails()
         {
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
@@ -1172,7 +1163,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetUsersByIds(new List<Guid>()));
         }
-
 
         #endregion
     }
