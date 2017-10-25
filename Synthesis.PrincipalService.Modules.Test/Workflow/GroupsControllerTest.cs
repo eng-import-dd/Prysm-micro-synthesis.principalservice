@@ -223,7 +223,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
            
 
             var result = await _controller.UpdateGroupAsync(group, tenantId, userId);
-            //Assert.NotNull(result);
             Assert.Equal(group, result);
         }
 

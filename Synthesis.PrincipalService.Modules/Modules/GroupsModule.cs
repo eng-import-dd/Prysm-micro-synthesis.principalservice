@@ -10,6 +10,7 @@ using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Synthesis.Nancy.MicroService;
 
 namespace Synthesis.PrincipalService.Modules
@@ -181,12 +182,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataRequest = ToFormattedJson(new Group());
+            var metadataResponse = ToFormattedJson(new Group());
             var metadataDescription = "Updates an existing Group";
 
             _metadataRegistry.SetRouteMetadata("UpdateGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -194,9 +197,15 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("UpdateGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
+        }
+
+        protected static string ToFormattedJson(object obj)
+        {
+            return JsonConvert.SerializeObject(obj, Formatting.Indented);
         }
 
         /// <summary>
