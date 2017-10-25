@@ -155,7 +155,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.Value);
             if (existingGroupInDb.Result != null)
             {
-                if (existingGroupInDb.Result.IsLocked != model.IsLocked && !IsSuperAdmin(userId))
+                if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
                 {
                     throw new InvalidOperationException("You can not edit a locked group");
                 }
@@ -254,7 +254,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //var userGroups = GetUserGroupsForUser(userId).Payload;
             //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
             //TODO: Put code here to check User Group here - Yusuf
-            return true;
+            return false;
         }
     }
 }
