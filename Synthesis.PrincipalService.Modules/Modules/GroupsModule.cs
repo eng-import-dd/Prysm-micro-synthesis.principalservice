@@ -354,6 +354,11 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
+                if (existingGroup.TenantId.Equals(Guid.Empty))
+                {
+                    existingGroup.TenantId = tenantId;
+                }
+
                 var result = await _groupsController.UpdateGroupAsync(existingGroup, tenantId, userId);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
