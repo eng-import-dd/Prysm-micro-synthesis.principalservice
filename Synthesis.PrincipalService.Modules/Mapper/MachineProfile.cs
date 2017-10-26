@@ -10,6 +10,7 @@ namespace Synthesis.PrincipalService.Mapper
         {
             CreateMap<CreateMachineRequest, Machine>();
             CreateMap<Machine, MachineResponse>();
+            CreateMap<UpdateMachineRequest, Machine>();
         }
     }
 }

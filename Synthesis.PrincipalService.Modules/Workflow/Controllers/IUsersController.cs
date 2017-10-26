@@ -44,5 +44,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<Guid> GetTenantIdByUserEmailAsync(string email);
 
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
+
+        Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds);
     }
 }

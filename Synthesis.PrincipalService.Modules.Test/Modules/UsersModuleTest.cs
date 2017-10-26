@@ -1,12 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
@@ -20,22 +11,29 @@ using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.PrincipalService.Workflow.Exceptions;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
-using Synthesis.Nancy.MicroService;
 using ClaimTypes = System.IdentityModel.Claims.ClaimTypes;
-using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -1371,6 +1369,58 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                 });
             Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+        #endregion
+
+        #region Get Users by Ids Test Cases
+
+        [Fact]
+        public async Task GetUsersByIdsReturnsOkIfSuccessful()
+        {
+            var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
+                                                           {
+                                                               with.Header("Accept", "application/json");
+                                                               with.Header("Content-Type", "application/json");
+                                                               with.HttpRequest();
+                                                               with.JsonBody(new List<Guid>());
+                                                           });
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersByIdsReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
+                                                                        {
+                                                                            with.Header("Accept", "application/json");
+                                                                            with.Header("Content-Type", "application/json");
+                                                                            with.HttpRequest();
+                                                                            with.JsonBody(new List<Guid>());
+                                                                        });
+
+            Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersByIdsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))
+                           .Throws(new Exception());
+
+            var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
+                                                                        {
+                                                                            with.Header("Accept", "application/json");
+                                                                            with.Header("Content-Type", "application/json");
+                                                                            with.HttpRequest();
+                                                                            with.JsonBody(new List<Guid>());
+                                                                        });
+
+            Assert.Equal(HttpStatusCode.InternalServerError, result.StatusCode);
         }
 
         #endregion

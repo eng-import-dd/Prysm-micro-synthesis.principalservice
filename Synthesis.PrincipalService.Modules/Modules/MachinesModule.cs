@@ -40,6 +40,7 @@ namespace Synthesis.PrincipalService.Modules
             // Initialize documentation
             SetupRouteMetadata();
             SetupRoute_GetMachineById();
+            SetupRoute_UpdateMachine();
 
             // Routes
             // CRUD routes
@@ -82,6 +83,32 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("GetMachineByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_UpdateMachine()
+        {
+            const string path = "/v1/machines/{id:guid}";
+            Put(path, UpdateMachineAsync, null, "UpdateMachineAsync");
+            Put("/api/" + path, UpdateMachineAsync, null, "UpdateMachineAsyncLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataDescription = "Updates a machine";
+
+            _metadataRegistry.SetRouteMetadata("UpdateMachine", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("UpdateMachineLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
@@ -145,6 +172,46 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
+            }
+        }
+
+        private async Task<object> UpdateMachineAsync(dynamic input)
+        {
+            Guid machineId;
+            UpdateMachineRequest updateMachine;
+
+            try
+            {
+                machineId = Guid.Parse(input.Id);
+                updateMachine = this.Bind<UpdateMachineRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to create a Machine resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _machineController.UpdateMachineAsync(updateMachine, tenantId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "UpdateMachine: Not authorized to edit this machine!");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while attempting to update a Machine resource", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
             }
         }
     }

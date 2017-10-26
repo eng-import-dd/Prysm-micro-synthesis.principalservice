@@ -235,11 +235,14 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<TenantIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateGroupRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<UpdateGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<GroupIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateMachineRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<CreateUserGroupRequestValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<MachineIdValidator>().AsSelf().As<IValidator>();
             builder.RegisterType<UserNameValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<UpdateMachineRequestValidator>().AsSelf().As<IValidator>();
+            builder.RegisterType<GetUsersByIdValidator>().AsSelf().As<IValidator>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()

@@ -416,5 +416,80 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion
+
+        #region Update Group Test Cases
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupReturnsOk()
+        {
+            var actual = await _browserAuth.Put("/v1/groups", with =>
+                                                    {
+                                                        with.Header("Accept", "application/json");
+                                                        with.Header("Content-Type", "application/json");
+                                                        with.HttpRequest();
+                                                        with.JsonBody(new Group());
+                                                    });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var actual = await _browserAuth.Put("/v1/groups",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Group());
+                                                 });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var invalidBody = "{]";
+
+            var actual = await _browserAuth.Put("/v1/groups",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(invalidBody);
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, actual.ReasonPhrase);
+        }
+
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public async Task UpdateGroupReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Put("/v1/groups",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Group());
+                                                 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, actual.ReasonPhrase);
+        }
+
+        #endregion
     }
 }
