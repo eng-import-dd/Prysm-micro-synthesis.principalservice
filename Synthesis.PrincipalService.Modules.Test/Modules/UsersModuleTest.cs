@@ -56,7 +56,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                         new Claim(ClaimTypes.Name, "TestUser"),
                         new Claim(ClaimTypes.Email, "test@user.com"),
                         new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
-                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
+                        new Claim("UserId" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2"),
+                        new Claim("IsGuest" , "false")
                     },
                     AuthenticationTypes.Basic));
             });
@@ -146,8 +147,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task RespondWithOkAsync()
         {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
             var actual = await _browserAuth.Get(
-                "/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55",
+                $"/v1/users/{currentUserId}",
                 with =>
                 {
                     with.Header("Accept", "application/json");
@@ -552,6 +556,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsOk()
         {
+            
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
                            .ReturnsAsync(new UserResponse());
             Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var tenantId);
@@ -590,10 +595,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsNotFound()
         {
+            Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
+            _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
-                           .Throws(new DocumentNotFoundException());
+                           .Throws(new NotFoundException("user not found"));
             var actual = await _browserAuth.Put(
-                                                $"/v1/users/{Guid.NewGuid()}",
+                                                $"/v1/users/{currentUserId}",
                                                   with =>
                                                   {
                                                       with.Header("Accept", "application/json");
@@ -722,6 +730,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                  });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
+
         #endregion
 
         #region Can Promote user Test cases

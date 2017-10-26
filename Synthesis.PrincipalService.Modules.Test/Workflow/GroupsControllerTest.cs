@@ -176,26 +176,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.DeleteGroupAsync(groupId, userId);
             Assert.Equal(true, result);
         }
-
-        [Fact]
-        public async Task DeleteGroupAsyncReturnstrueIfDocumentNotFound()
-        {
-            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
-                                .Throws(new DocumentNotFoundException());
-            var userId = Guid.NewGuid();
-            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
-            Assert.Equal(true, result);
-        }
-
-        [Fact]
-        public async Task DeleteGroupAsyncReturnsFalseDueToException()
-        {
-            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
-                                .Throws(new Exception());
-            var userId = Guid.NewGuid();
-            var result = await _controller.DeleteGroupAsync(Guid.Empty, userId);
-            Assert.Equal(false, result);
-        }
         #endregion
 
         #region Update Group Test Cases

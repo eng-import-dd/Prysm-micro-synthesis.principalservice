@@ -85,8 +85,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
                 FirstName = "Test",
                 LastName = "User",
                 Email = "a@b.com",
-                UserName = "User",
-                IsLocked = false
+                UserName = "User"
             };
 
             var result = _validator.Validate(request);
