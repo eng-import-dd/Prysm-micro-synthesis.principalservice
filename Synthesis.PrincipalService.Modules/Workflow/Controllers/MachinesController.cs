@@ -3,8 +3,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.License.Manager.Interfaces;
-using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -17,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nancy;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -147,7 +146,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
             }
 
-            if(validationErrors.Any())
+            if (validationErrors.Any())
             {
                 throw new ValidationFailedException(validationErrors);
             }
@@ -161,7 +160,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if(machine.Id == null)
+            if (machine.Id == null)
             {
                 validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Id was not provided."));
             }
@@ -173,7 +172,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
             }
 
-            if(existingMachine.TenantId != tenantId)
+            if (existingMachine.TenantId != tenantId)
             {
                 throw new InvalidOperationException();
             }
@@ -210,7 +209,38 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
-       
+
+        public async Task DeleteMachineAsync(Guid machineId, Guid tenantId)
+        {
+            var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
+
+            if (!machineIdValidationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to delete a Machine resource.");
+                throw new ValidationFailedException(machineIdValidationResult.Errors);
+            }
+
+            if (!IsUserASuperAdmin(tenantId))
+            {
+                throw new InvalidOperationException();
+            }
+
+            var result = await _machineRepository.GetItemAsync(machineId);
+            if (result == null)
+            {
+                _logger.Warning($"A Machine resource could not be found for id {machineId}");
+                throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
+            }
+
+            await _machineRepository.DeleteItemAsync(machineId);
+        }
+
+
+        private bool IsUserASuperAdmin(Guid id)
+        {
+            // To be replaced by a call to Settings Service(?) determining if the user is a superadmin user.
+            return true;
+        }
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
