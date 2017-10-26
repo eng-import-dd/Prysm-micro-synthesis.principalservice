@@ -12,17 +12,17 @@ using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
 using System.Web.Script.Serialization;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
 {
-    public sealed class MachinesModule : NancyModule
+    public sealed class MachinesModule : AbstractModule
     {
         private const string TenantIdClaim = "TenantId";
         private const string UserIdClaim = "UserId";
         private readonly IMachineController _machineController;
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
-        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
         private const string DeprecationWarning = "DEPRECATED";
 
         public MachinesModule(
@@ -72,12 +72,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new Machine());
             var metadataDescription = "Retrieves a machine by Machine Id";
 
             _metadataRegistry.SetRouteMetadata("GetMachineById", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -85,6 +87,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetMachineByIdLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -98,12 +101,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataRequest = ToFormattedJson(new UpdateMachineRequest());
+            var metadataResponse = ToFormattedJson(new MachineResponse());
             var metadataDescription = "Updates a machine";
 
             _metadataRegistry.SetRouteMetadata("UpdateMachine", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -111,6 +116,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("UpdateMachineLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });

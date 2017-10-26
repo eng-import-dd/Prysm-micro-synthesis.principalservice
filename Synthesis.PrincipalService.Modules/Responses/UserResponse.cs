@@ -48,6 +48,17 @@ namespace Synthesis.PrincipalService.Responses
 
         public string FullName { get { return string.Format("{0} {1}", FirstName, LastName); } }
 
-        public string Initials { get { return string.Format("{0}{1}", FirstName?.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault()); } }
+        public string Initials
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(FirstName) && !string.IsNullOrEmpty(LastName))
+                {
+                    return string.Format("{0}{1}", FirstName?.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault());
+                }
+
+                return string.Empty;
+            } 
+        }
     }
 }

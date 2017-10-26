@@ -78,12 +78,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataRequest = ToFormattedJson(new Group());
+            var metadataResponse = ToFormattedJson(new Group());
             var metadataDescription = "Creates a new Group";
 
             _metadataRegistry.SetRouteMetadata("CreateGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -91,6 +93,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("CreateGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -104,12 +107,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new Group());
             var metadataDescription = "Get Group By Id";
 
             _metadataRegistry.SetRouteMetadata("GetGroupById", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -117,6 +122,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetGroupByIdLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -130,12 +136,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataRequest = ToFormattedJson(string.Empty);
+            var metadataResponse = ToFormattedJson(new Group());
             var metadataDescription = "Get Group for a tenant";
 
             _metadataRegistry.SetRouteMetadata("GetGroupsForAccountAsync", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -143,6 +151,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetGroupsForAccountAsyncLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -156,12 +165,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Group());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new Group());
             var metadataDescription = "Deletes a Group";
 
             _metadataRegistry.SetRouteMetadata("DeleteGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -169,6 +180,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("DeleteGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });

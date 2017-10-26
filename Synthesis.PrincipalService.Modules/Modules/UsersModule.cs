@@ -1,6 +1,5 @@
 using FluentValidation;
 using Nancy;
-using Nancy.Json;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -11,20 +10,19 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Nancy.Responses;
 using Synthesis.DocumentStorage;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.Nancy.MicroService.Security;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Workflow.Exceptions;
 
 namespace Synthesis.PrincipalService.Modules
 {
-    public sealed class UsersModule : NancyModule
+    public sealed class UsersModule : AbstractModule
     {
         private const string TenantIdClaim = "TenantId";
         private const string UserIdClaim = "UserId";
@@ -34,7 +32,6 @@ namespace Synthesis.PrincipalService.Modules
         private readonly IMetadataRegistry _metadataRegistry;
         private readonly ILogger _logger;
         private const string LegacyBaseRoute = "/api";
-        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
         private const string DeprecationWarning = "DEPRECATED";
 
         public UsersModule(
@@ -101,17 +98,20 @@ namespace Synthesis.PrincipalService.Modules
             Get(LegacyBaseRoute + path, GetUsersForAccount, null, "GetUsersForAccountLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
-            var metadataResponse = "Get Users";
+            var metadataRequest = ToFormattedJson(new GetUsersParams());
+            var metadataResponse = ToFormattedJson(new PagingMetadata<UserResponse> {  List = new List<UserResponse>()});
             var metadataDescription = "Retrieve all Users resource.";
             _metadataRegistry.SetRouteMetadata("GetUsers", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("GetUsersLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -124,17 +124,20 @@ namespace Synthesis.PrincipalService.Modules
             Post(LegacyBaseRoute + path, ResendUserWelcomeEmailAsync, null, "ResendUserWelcomeEmailLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
-            var metadataResponse = "Resend Welcome Email";
+            var metadataRequest = ToFormattedJson(new ResendEmailRequest());
+            var metadataResponse = ToFormattedJson(new bool());
             var metadataDescription = "Resend Welcome Email to the User.";
             _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("ResendUserWelcomeEmailLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -147,17 +150,20 @@ namespace Synthesis.PrincipalService.Modules
             Put(LegacyBaseRoute + path, UpdateUserAsync, null, "UpdateUserLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
-            var metadataResponse = "Update User";
+            var metadataRequest = ToFormattedJson(new UpdateUserRequest());
+            var metadataResponse = ToFormattedJson(new UserResponse());
             var metadataDescription = "Update User resource.";
             _metadataRegistry.SetRouteMetadata("UpdateUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("UpdateUserLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -171,12 +177,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(string.Empty);
+            var metadataResponse = ToFormattedJson(new CanPromoteUserResponse());
             var metadataDescription = "States whether a user can be promoted";
 
             _metadataRegistry.SetRouteMetadata("CanPromoteUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -184,6 +192,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("CanPromoteUserLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -244,12 +253,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new UserResponse());
             var metadataDescription = "Retrieves a user by User Id";
 
             _metadataRegistry.SetRouteMetadata("GetUserById", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -257,6 +268,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetUserByIdLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -273,12 +285,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new GetUsersParams());
+            var metadataResponse = ToFormattedJson(new PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse>() });
             var metadataDescription = "Retrieves a users basic details";
 
             _metadataRegistry.SetRouteMetadata("GetUsersBasic", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -286,6 +300,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetUsersBasicLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -299,12 +314,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new UserResponse());
             var metadataDescription = "Retrieves a user basic details by id";
 
             _metadataRegistry.SetRouteMetadata("GetUserByIdBasic", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -312,6 +329,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetUserByIdBasicLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -324,17 +342,20 @@ namespace Synthesis.PrincipalService.Modules
             Post(LegacyBaseRoute + path, LockUserAsync, null, "LockuserAsyncLegacy");
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError };
-            var metadataResponse = "Lock User";
+            var metadataRequest = ToFormattedJson(new User());
+            var metadataResponse = ToFormattedJson(new bool());
             var metadataDescription = "Locks the respective user";
             _metadataRegistry.SetRouteMetadata("LockUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
             _metadataRegistry.SetRouteMetadata("LockUserLegacy", new SynthesisRouteMetadata()
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -348,12 +369,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new CreateUserGroupRequest());
+            var metadataResponse = ToFormattedJson(new User());
             var metadataDescription = "Creates User Group";
 
             _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -361,6 +384,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("CreateUserGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -374,12 +398,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Found, HttpStatusCode.NotFound };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new List<Guid> {new Guid()});
             var metadataDescription = "Retrieves user groups by group Id";
 
             _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -387,6 +413,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetUserGroupsForGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -400,12 +427,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new List<Guid> { new Guid() });
             var metadataDescription = "Retrieves user groups by user Id";
 
             _metadataRegistry.SetRouteMetadata("GetGroupsForUser", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -413,6 +442,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetGroupsForUserLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -425,12 +455,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataRequest = ToFormattedJson(string.Empty);
+            var metadataResponse = ToFormattedJson(new Guid());
             var metadataDescription = "Retrieves tenant id by user email";
 
             _metadataRegistry.SetRouteMetadata("GetTenantIdByUserEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -438,6 +470,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("GetTenantIdByUserEmail", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -452,12 +485,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new User());
+            var metadataResponse = ToFormattedJson(new bool());
+            var metadataRequest = ToFormattedJson(new Guid());
             var metadataDescription = "Removes a specific user from the group";
 
             _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroup", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -465,6 +500,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("RemoveUserFromPermissionGroupLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -476,12 +512,14 @@ namespace Synthesis.PrincipalService.Modules
             Post($"{LegacyBaseRoute}{Routing.GetUsersByIds}", GetUsersByIds, null, RouteNames.GetUsersByIdsLegacy);
 
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.BadRequest, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new List<User> { new User() });
+            var metadataRequest = ToFormattedJson(Enumerable.Empty<Guid>());
+            var metadataResponse = ToFormattedJson(new List<User> { new User() });
             var metadataDescription = "Returns matching users from a list of user ids";
 
             _metadataRegistry.SetRouteMetadata(RouteNames.GetUsersByIds, new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });

@@ -9,11 +9,13 @@ using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
 {
-    public sealed class UserInviteModule : NancyModule
+    public sealed class UserInviteModule : AbstractModule
     {
         private const string TenantIdClaim = "TenantId";
         private readonly IUserInvitesController _userInviteController;
@@ -55,21 +57,24 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("CreateUserInviteListForTenant", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Email Invite",
+                Request = ToFormattedJson(new UserInviteRequest()),
+                Response = ToFormattedJson(new List<UserInviteResponse> { new UserInviteResponse() }),
                 Description = "Email invites for passed user list"
             });
 
             _metadataRegistry.SetRouteMetadata("ResendEmailInvitation", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Resend Email Invite",
+                Request = ToFormattedJson(new List<UserInviteRequest> { new UserInviteRequest() }),
+                Response = ToFormattedJson(new List<UserInviteResponse> { new UserInviteResponse() }),
                 Description = "Resend Email invites for passed user list"
             });
 
             _metadataRegistry.SetRouteMetadata("GetInvitedUsersForTenant", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = new[] { HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.InternalServerError },
-                Response = "Get Invited User",
+                Request = ToFormattedJson(new bool()),
+                Response = ToFormattedJson(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse>() }),
                 Description = "Gets all invited users for Tenant"
             });
         }
