@@ -17,6 +17,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerLockUser = "An error occurred Locking/Unlocking the User";
         public const string InternalServerErrorCreateMachine = "An error occurred while creating the Machine";
         public const string InternalServerErrorGetGuestUser = "An error occurred retriving the Guest Users";
+        public const string InternalServerErrorUpdateMachine = "An error occurred updating the Machine";
         public const string InternalServerErrorGetMachine = "An error occurred retrieving the Machine";
         public const string InternalServerErrorResendWelcomeMail = "An error occurred while sending mail";
 
