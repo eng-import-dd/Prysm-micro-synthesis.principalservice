@@ -41,6 +41,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRouteMetadata();
             SetupRoute_GetMachineById();
             SetupRoute_UpdateMachine();
+            SetupRoute_DeleteMachine();
 
             // Routes
             // CRUD routes
@@ -117,6 +118,32 @@ namespace Synthesis.PrincipalService.Modules
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Request = metadataRequest,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_DeleteMachine()
+        {
+            const string path = "/v1/machines/{id:guid}";
+            Delete(path, DeleteMachineAsync, null, "DeleteMachineAsync");
+            Delete("/api/" + path, DeleteMachineAsync, null, "DeleteMachineAsyncLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataDescription = "Deletes a machine";
+
+            _metadataRegistry.SetRouteMetadata("DeleteMachine", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("DeleteMachineLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
@@ -218,6 +245,40 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("Unhandled exception encountered while attempting to update a Machine resource", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
+            }
+        }
+
+        private async Task<object> DeleteMachineAsync(dynamic input)
+        {
+            var machineId = input.id;
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                await _machineController.DeleteMachineAsync(machineId, tenantId);
+
+                return new Response
+                {
+                    StatusCode = HttpStatusCode.NoContent,
+                    ReasonPhrase = "Machine has been deleted"
+                };
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineById: No access to get machines!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
     }
