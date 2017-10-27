@@ -131,12 +131,14 @@ namespace Synthesis.PrincipalService.Modules
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
-            var metadataResponse = _serializer.Serialize(new Machine());
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new Machine());
             var metadataDescription = "Deletes a machine";
 
             _metadataRegistry.SetRouteMetadata("DeleteMachine", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = metadataDescription
             });
@@ -144,6 +146,7 @@ namespace Synthesis.PrincipalService.Modules
             _metadataRegistry.SetRouteMetadata("DeleteMachineLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
