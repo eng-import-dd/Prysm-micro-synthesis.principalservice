@@ -19,6 +19,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.Documents.SystemFunctions;
 using Nancy;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
@@ -1042,6 +1043,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //TODO: Put code here to check User Group - Charan
             return true;
         }
+
         private async Task<User> CreateUserGroupInDb(CreateUserGroupRequest createUserGroupRequest, User existingUser)
         {
             try
@@ -1055,6 +1057,53 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 _logger.LogMessage(LogLevel.Error, "", ex);
                 throw;
             }
+        }
+
+        #endregion
+
+        #region User License Type Method
+
+        public async Task<LicenseType?> GetLicenseTypeForUser(Guid userId, Guid tenantId)
+        {
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User license type resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var userTenantId = (await _userRepository.GetItemAsync(userId)).TenantId;
+
+            if (userTenantId == Guid.Empty)
+            {
+                throw new NotFoundException($"A User resource could not be found for id {userId}");
+            }
+
+            if (userTenantId != tenantId)
+            {
+                throw new InvalidOperationException();
+            }
+
+            //TODO: Check valid access for user here - Yusuf
+            //Code required to check permission to make the API call IF the requesting user is not the requested user
+            // var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
+            //if (userPermissions.Value.Contains(requiredPermission)
+
+            LicenseType? licenseTypeResult;
+
+            try
+            {
+                //TODO: Call License Service here - Currently returning always UserLicense type - Yusuf
+                //licenseTypeResult = await _licenseService.GetUserLicenseType(userId, accountId);
+                licenseTypeResult = LicenseType.UserLicense;
+            }
+            catch (FailedToConnectToExternalServiceException)
+            {
+                throw new FailedToConnectToExternalServiceException();
+            }
+
+            return licenseTypeResult;
+
         }
 
         #endregion
@@ -1109,8 +1158,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return false;
         }
-
-
 
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {

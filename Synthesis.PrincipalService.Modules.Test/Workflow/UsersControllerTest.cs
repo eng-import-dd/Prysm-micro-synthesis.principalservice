@@ -1163,5 +1163,39 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         #endregion
+
+        #region User License Type Test Cases
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsLicenseTypeIfExists()
+        {
+            var userId = Guid.Parse("4d1b116e-debe-47e2-b0bd-6d7856b0c616");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new User
+                            {
+                                Id = userId,
+                                TenantId = tenantId
+                            });
+            var result = await _controller.GetLicenseTypeForUser(userId, tenantId);
+            Assert.IsType<LicenseType>(result);
+        }
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsUserNotFoundException()
+        {
+            var userId = Guid.Parse("4d1b116e-debe-47e2-b0bd-6d7856b0c616");
+            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .Throws(new NotFoundException(string.Empty));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUser(userId, tenantId));
+        }
+
+        #endregion
     }
 }

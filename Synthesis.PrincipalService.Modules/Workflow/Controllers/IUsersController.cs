@@ -46,5 +46,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
 
         Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds);
+
+        Task<LicenseType?> GetLicenseTypeForUser(Guid userId, Guid tenantId);
     }
 }

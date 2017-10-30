@@ -1424,5 +1424,105 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion
+
+        #region User License Type Test Cases
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .ReturnsAsync(LicenseType.Default);
+
+            var userId = Guid.NewGuid();
+
+            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
+                                    with =>
+                                    {
+                                        with.HttpRequest();
+                                        with.Header("Accept", "application/json");
+                                        with.Header("Content-Type", "application/json");
+                                    });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsNotFoundIfUserDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            var userId = Guid.NewGuid();
+
+            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsUnAuthorized()
+        {
+            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new InvalidOperationException());
+
+            var userId = Guid.NewGuid();
+
+            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsInernalServerError()
+        {
+            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var userId = Guid.NewGuid();
+
+            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
+        [Fact]
+        public async Task GetLicenseTypeForUserReturnsExternalServiceException()
+        {
+            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new FailedToConnectToExternalServiceException());
+
+            var userId = Guid.NewGuid();
+
+            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        
+        #endregion
     }
 }
