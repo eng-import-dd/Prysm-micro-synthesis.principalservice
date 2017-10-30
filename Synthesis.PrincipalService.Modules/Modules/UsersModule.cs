@@ -487,7 +487,7 @@ namespace Synthesis.PrincipalService.Modules
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound };
             var metadataRequest = ToFormattedJson(new Guid());
-            var metadataResponse = "LicenseType Enum";
+            var metadataResponse = ToFormattedJson(License.Manager.Models.LicenseType.Default);
             var metadataDescription = "Retrieves license type for User";
 
             _metadataRegistry.SetRouteMetadata("GetLicenseTypeForUser", new SynthesisRouteMetadata
