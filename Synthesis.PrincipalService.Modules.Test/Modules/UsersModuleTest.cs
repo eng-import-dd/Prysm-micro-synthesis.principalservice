@@ -1504,25 +1504,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
-        [Fact]
-        public async Task GetLicenseTypeForUserReturnsExternalServiceException()
-        {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Throws(new FailedToConnectToExternalServiceException());
-
-            var userId = Guid.NewGuid();
-
-            var response = await _browserAuth.Get($"/v1/users/{userId}/license-types",
-                                                  with =>
-                                                  {
-                                                      with.HttpRequest();
-                                                      with.Header("Accept", "application/json");
-                                                      with.Header("Content-Type", "application/json");
-                                                  });
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-        
         #endregion
     }
 }

@@ -16,6 +16,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -1172,6 +1173,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             var userId = Guid.Parse("4d1b116e-debe-47e2-b0bd-6d7856b0c616");
             var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
+
+            _licenseApiMock.Setup(m => m.GetUserLicenseDetailsAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .ReturnsAsync(new UserLicenseResponse
+                           {
+                               LicenseAssignments = new List<UserLicenseDto>
+                               {
+                                   new UserLicenseDto
+                                   {
+                                       LicenseType = LicenseType.UserLicense.ToString()
+                                   }
+                               }
+                           });
 
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new User

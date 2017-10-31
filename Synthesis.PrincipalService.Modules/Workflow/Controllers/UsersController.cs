@@ -1089,24 +1089,31 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             // var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
             //if (userPermissions.Value.Contains(requiredPermission)
 
-            LicenseType? licenseTypeResult;
-
-            try
-            {
-                //TODO: Call License Service here - Currently returning always UserLicense type - Yusuf
-                //licenseTypeResult = await _licenseService.GetUserLicenseType(userId, accountId);
-                licenseTypeResult = LicenseType.UserLicense;
-            }
-            catch (FailedToConnectToExternalServiceException ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser was not able to connect to external service", ex);
-                throw ex;
-            }
-
-            return licenseTypeResult;
+            return await GetUserLicenseType(userId, tenantId);
         }
 
         #endregion
+
+        private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid accountId)
+        {
+            List<UserLicenseDto> userLicenses;
+
+            try
+            {
+                userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(accountId, userId)).LicenseAssignments;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            if (userLicenses == null || userLicenses.Count == 0)
+            {
+                return null;
+            }
+
+            return (LicenseType)Enum.Parse(typeof(LicenseType), userLicenses[0].LicenseType);
+        }
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {

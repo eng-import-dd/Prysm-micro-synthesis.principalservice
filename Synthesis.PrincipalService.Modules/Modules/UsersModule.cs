@@ -1228,18 +1228,12 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetLicenseTypeForUser: Not authorized to call this route!");
             }
-           
-            catch (FailedToConnectToExternalServiceException)
-            {
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetLicenseTypeForUser);
-            }
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
-
 
         #endregion
     }
