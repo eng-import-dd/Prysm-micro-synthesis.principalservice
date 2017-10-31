@@ -1098,15 +1098,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             List<UserLicenseDto> userLicenses;
 
-            try
-            {
-                userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(accountId, userId)).LicenseAssignments;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
+            userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(accountId, userId)).LicenseAssignments;
+            
             if (userLicenses == null || userLicenses.Count == 0)
             {
                 return null;
