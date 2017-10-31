@@ -252,7 +252,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a Machine resource", ex);
+                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -317,9 +317,39 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> ChangeMachineAccountAsync(dynamic input)
         {
             UpdateMachineRequest updateMachine;
-            updateMachine = this.Bind<UpdateMachineRequest>();
+            try
+            {
+                updateMachine = this.Bind<UpdateMachineRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
             Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-            return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, tenantId, updateMachine.SettingProfileId);
+
+            try
+            {
+                return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, tenantId, updateMachine.SettingProfileId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "ChangeMachineAccount: Not authorized.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while attempting to Change Machine account", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
+            }
         }
     }
 }
