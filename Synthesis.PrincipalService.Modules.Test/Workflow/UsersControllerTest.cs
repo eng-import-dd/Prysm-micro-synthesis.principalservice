@@ -566,7 +566,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 FirstName = "TestUser",
                 LastName = "TestUser"
             };
-            var userResponse = await _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+            var userResponse = await _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy);
             Assert.NotNull(userResponse);
 
         }
@@ -603,7 +603,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _validatorMock.Setup(m => m.Validate(tenantId))
                           .Returns(new ValidationResult(new List<ValidationFailure>() { new ValidationFailure("", "") }));
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy));
         }
 
         [Fact]
@@ -627,7 +627,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 LastName = "TestUser",
                 IsGuestUser = true
             };
-            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy));
         }
 
         [Fact]
@@ -643,7 +643,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 FirstName = "TestUser",
                 LastName = "TestUser"
             };
-            await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy));
+            await Assert.ThrowsAsync<Exception>(() => _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy));
         }
         #endregion
 
@@ -851,13 +851,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             var validGroupId = Guid.NewGuid();
 
-            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _mockUserController.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Returns(Task.FromResult(Enumerable.Empty<User>()));
 
-            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
             Assert.IsType<List<Guid>>(result);
         }
@@ -868,13 +868,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             var validGroupId = Guid.NewGuid();
 
-            _mockUserController.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _mockUserController.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                                .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
                                .Throws(new NotFoundException(string.Empty));
 
-            var result = await _controller.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
             Assert.Equal(0, result.Count);
         }
@@ -1143,7 +1143,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                    new User()
                                }));
 
-            var result = await _controller.GetUsersByIds(new List<Guid>());
+            var result = await _controller.GetUsersByIdsAsync(new List<Guid>());
             Assert.NotNull(result);
         }
 
@@ -1159,7 +1159,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                               Errors = { new ValidationFailure(string.Empty, String.Empty, string.Empty)}
                           });
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetUsersByIds(new List<Guid>()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetUsersByIdsAsync(new List<Guid>()));
         }
 
         #endregion
@@ -1179,7 +1179,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                 Id = userId,
                                 TenantId = tenantId
                             });
-            var result = await _controller.GetLicenseTypeForUser(userId, tenantId);
+            var result = await _controller.GetLicenseTypeForUserAsync(userId, tenantId);
             Assert.IsType<LicenseType>(result);
         }
 
@@ -1193,7 +1193,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                                .Throws(new NotFoundException(string.Empty));
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUser(userId, tenantId));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
         }
 
         #endregion

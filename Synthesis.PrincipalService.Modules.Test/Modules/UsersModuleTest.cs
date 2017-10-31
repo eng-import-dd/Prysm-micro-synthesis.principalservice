@@ -917,7 +917,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -939,7 +939,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -961,7 +961,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -983,7 +983,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -1005,7 +1005,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var validGroupId = Guid.NewGuid();
 
-            _controllerMock.Setup(m => m.GetGroupUsers(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId)))
@@ -1206,7 +1206,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var response = await _browserAuth.Post("/v1/users/autoprovisionrefreshgroups", 
@@ -1223,7 +1223,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.AutoProvisionRefreshGroups(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new UserResponse()));
 
             const string invalidIdpRequest = "{]";
@@ -1392,7 +1392,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersByIdsReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))
+            _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
@@ -1409,7 +1409,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersByIdsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.GetUsersByIds(It.IsAny<IEnumerable<Guid>>()))
+            _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new Exception());
 
             var result = await _browserAuth.Post(Routing.GetUsersByIds, with =>
@@ -1431,7 +1431,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetLicenseTypeForUserReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ReturnsAsync(LicenseType.Default);
 
             var userId = Guid.NewGuid();
@@ -1450,7 +1450,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetLicenseTypeForUserReturnsNotFoundIfUserDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
             var userId = Guid.NewGuid();
@@ -1469,7 +1469,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetLicenseTypeForUserReturnsUnAuthorized()
         {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new InvalidOperationException());
 
             var userId = Guid.NewGuid();
@@ -1489,7 +1489,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetLicenseTypeForUserReturnsInernalServerError()
         {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var userId = Guid.NewGuid();
@@ -1508,7 +1508,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetLicenseTypeForUserReturnsExternalServiceException()
         {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUser(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new FailedToConnectToExternalServiceException());
 
             var userId = Guid.NewGuid();

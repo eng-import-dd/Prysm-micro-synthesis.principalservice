@@ -750,7 +750,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetUsersByIds(userIds);
+                return await _userController.GetUsersByIdsAsync(userIds);
             }
             catch (ValidationFailedException ex)
             {
@@ -1012,7 +1012,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
 
-                var result = await _userController.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy);
 
                 return Negotiate
                     .WithModel(result)
@@ -1089,7 +1089,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
-                var result = await _userController.GetGroupUsers(groupId, tenantId, userId);
+                var result = await _userController.GetGroupUsersAsync(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -1213,8 +1213,8 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
 
-                var result = await _userController.GetLicenseTypeForUser(userId, tenantId);
-                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
+                var result = await _userController.GetLicenseTypeForUserAsync(userId, tenantId);
+                return result;
             }
             catch (ValidationFailedException ex)
             {
@@ -1229,9 +1229,8 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetLicenseTypeForUser: Not authorized to call this route!");
             }
            
-            catch (FailedToConnectToExternalServiceException ex)
+            catch (FailedToConnectToExternalServiceException)
             {
-                _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser was not able to connect to external service", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetLicenseTypeForUser);
             }
             catch (Exception ex)

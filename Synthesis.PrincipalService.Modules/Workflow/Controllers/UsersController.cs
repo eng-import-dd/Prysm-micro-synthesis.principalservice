@@ -357,7 +357,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             };
         }
 
-        public async Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        public async Task<UserResponse> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -942,7 +942,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<Guid>> GetGroupUsersAsync(Guid groupId, Guid tenantId, Guid userId)
         {
             var validationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             if (!validationResult.IsValid)
@@ -1020,7 +1020,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds)
+        public async Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds)
         {
 
             var validationResult = _validatorLocator.Validate<GetUsersByIdValidator>(userIds);
@@ -1063,7 +1063,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         #region User License Type Method
 
-        public async Task<LicenseType?> GetLicenseTypeForUser(Guid userId, Guid tenantId)
+        public async Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -1097,13 +1097,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 //licenseTypeResult = await _licenseService.GetUserLicenseType(userId, accountId);
                 licenseTypeResult = LicenseType.UserLicense;
             }
-            catch (FailedToConnectToExternalServiceException)
+            catch (FailedToConnectToExternalServiceException ex)
             {
-                throw new FailedToConnectToExternalServiceException();
+                _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser was not able to connect to external service", ex);
+                throw ex;
             }
 
             return licenseTypeResult;
-
         }
 
         #endregion

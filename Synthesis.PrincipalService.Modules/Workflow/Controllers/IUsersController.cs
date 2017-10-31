@@ -29,13 +29,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
 
-        Task<List<Guid>> GetGroupUsers(Guid groupId, Guid tenantId, Guid userId);
+        Task<List<Guid>> GetGroupUsersAsync(Guid groupId, Guid tenantId, Guid userId);
 
         Task<List<Guid>> GetGroupsForUserAsync(Guid userId);
 
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
        
-        Task<UserResponse> AutoProvisionRefreshGroups(IdpUserRequest model, Guid tenantId, Guid createdBy);
+        Task<UserResponse> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
 
@@ -45,8 +45,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
 
-        Task<IEnumerable<User>> GetUsersByIds(IEnumerable<Guid> userIds);
+        Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds);
 
-        Task<LicenseType?> GetLicenseTypeForUser(Guid userId, Guid tenantId);
+        Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
     }
 }

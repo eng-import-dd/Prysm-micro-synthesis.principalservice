@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerErrorGetMachine = "An error occurred retrieving the Machine";
         public const string InternalServerErrorResendWelcomeMail = "An error occurred while sending mail";
 
-        public const string InternalServerErrorGetLicenseTypeForUser = "An error occurred while retrieving user license type. Faile to connect to License Service.";
+        public const string InternalServerErrorGetLicenseTypeForUser = "An error occurred while retrieving user license type. Failed to connect to License Service.";
 
         // Not found
         public const string NotFoundUser = "User Not Found";
