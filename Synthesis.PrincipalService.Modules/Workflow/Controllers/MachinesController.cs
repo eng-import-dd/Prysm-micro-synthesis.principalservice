@@ -13,6 +13,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Nancy;
@@ -235,6 +236,45 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             await _machineRepository.DeleteItemAsync(machineId);
         }
 
+        public async Task<MachineResponse> ChangeMachineAccountAsync(Guid machineId, Guid tenantId, Guid settingProfileId)
+        {
+            var existingMachine = await _machineRepository.GetItemAsync(machineId);
+
+            if (settingProfileId == null || settingProfileId == Guid.Empty)
+            {
+                throw new BadRequestException("Setting Profile Id cannot be null");
+            }
+
+            if (existingMachine == null)
+            {
+                throw new NotFoundException("No Machine with id " + machineId + " was found.");
+            }
+
+            if (!IsUserASuperAdmin(tenantId))
+            {
+                throw new InvalidOperationException();
+            }
+
+            // TODO: Validate that the SettingProfile provided is valid
+            if (!IsValidSettingProfile(settingProfileId))
+            {
+                throw new InvalidOperationException();
+            }
+
+            existingMachine.SettingProfileId = settingProfileId;
+
+            try
+            {
+                await _machineRepository.UpdateItemAsync(machineId, existingMachine);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not move machine", ex);
+                throw;
+            }
+            return _mapper.Map<Machine, MachineResponse>(existingMachine);
+        }
+
 
         private bool IsUserASuperAdmin(Guid id)
         {
@@ -252,6 +292,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey && (m.Id != machine.Id));
             return machinesWithMatchingMachinesKey.Any() == false;
+        }
+
+        private bool IsValidSettingProfile(Guid settingProfileId)
+        {
+            // To be replaced by a call to Settings Service(?) determining if the SettingProfile is valid.
+            return true;
         }
     }
 }
