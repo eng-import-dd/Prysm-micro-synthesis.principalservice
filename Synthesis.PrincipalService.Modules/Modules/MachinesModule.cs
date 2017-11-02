@@ -42,6 +42,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetMachineById();
             SetupRoute_UpdateMachine();
             SetupRoute_DeleteMachine();
+            SetupRoute_ChangeMachineAccount();
 
             // Routes
             // CRUD routes
