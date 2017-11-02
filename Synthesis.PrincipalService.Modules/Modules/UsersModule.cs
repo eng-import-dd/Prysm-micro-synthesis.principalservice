@@ -65,6 +65,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetUsersByIds();
             SetupRoute_GetUsersBasic();
             SetupRoute_GetUserByIdBasic();
+            SetupRoute_GetLicenseTypeForUser();
 
             Get("/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenant");
             Get("api/v1/users/guests", GetGuestUsersForTenant, null, "GetGuestUsersForTenantLegacy");
@@ -447,6 +448,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
+
         private void SetupRoute_GetTenantIdByUserEmail()
         {
             const string path = "/v1/users/tenantid/{email}";
@@ -476,6 +478,34 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_GetLicenseTypeForUser()
+        {
+            const string path = "/v1/users/{userId}/license-types";
+            Get(path, GetLicenseTypeForUser, null, "GetLicenseTypeForUser");
+            Get("/api" + path, GetLicenseTypeForUser, null, "GetLicenseTypeForUserLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.InternalServerError, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound };
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(License.Manager.Models.LicenseType.Default);
+            var metadataDescription = "Retrieves license type for User";
+
+            _metadataRegistry.SetRouteMetadata("GetLicenseTypeForUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetLicenseTypeForUser", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
 
         private void SetupRoute_RemoveUserFromPermissionGroup()
         {
@@ -720,7 +750,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetUsersByIds(userIds);
+                return await _userController.GetUsersByIdsAsync(userIds);
             }
             catch (ValidationFailedException ex)
             {
@@ -765,6 +795,7 @@ namespace Synthesis.PrincipalService.Modules
             }
 
         }
+
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             Guid userId;
@@ -855,6 +886,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
             }
         }
+
         private async Task<HttpStatusCode> ValidUserLevelAccess(Guid accessedUserId, PermissionEnum requiredPermission = PermissionEnum.CanViewUsers)
         {
             Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
@@ -980,7 +1012,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
 
-                var result = await _userController.AutoProvisionRefreshGroups(idpUserRequest, tenantId, createdBy);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy);
 
                 return Negotiate
                     .WithModel(result)
@@ -1057,7 +1089,7 @@ namespace Synthesis.PrincipalService.Modules
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
                 Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
 
-                var result = await _userController.GetGroupUsers(groupId, tenantId, userId);
+                var result = await _userController.GetGroupUsersAsync(groupId, tenantId, userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -1142,6 +1174,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
+
         private async Task<object> GetTenantIdByUserEmail(dynamic input)
         {
             string email = input.email;
@@ -1164,6 +1197,40 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "GetTenantIdByUserEmail threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        #endregion
+
+        #region User License Type Method
+
+        private async Task<object> GetLicenseTypeForUser(dynamic input)
+        {
+            Guid userId = input.userId;
+
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+
+                var result = await _userController.GetLicenseTypeForUserAsync(userId, tenantId);
+                return result;
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.TenantNotFound);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetLicenseTypeForUser: Not authorized to call this route!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
