@@ -317,9 +317,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                         ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
                                                         SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
                                                         DateModified = DateTime.UtcNow
-                                                    }
-
-                                                    );
+                                                    });
                                                 });
             Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
         }
@@ -342,9 +340,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                         ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
                                                         SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
                                                         DateModified = DateTime.UtcNow
-                                                    }
-
-                                                    );
+                                                    });
                                                 });
             Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
         }
@@ -366,9 +362,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                         ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
                                                         SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
                                                         DateModified = DateTime.UtcNow
-                                                    }
-
-                                                    );
+                                                    });
                                                 });
             Assert.Equal(HttpStatusCode.NotFound, actual.StatusCode);
         }
@@ -390,9 +384,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                         ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
                                                         SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
                                                         DateModified = DateTime.UtcNow
-                                                    }
-
-                                                    );
+                                                    });
                                                 });
             Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
         }
@@ -401,6 +393,110 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var actual = await _browserAuth.Put(
                                                 "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(";)[");
+                                                });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountReturnsOk()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    });
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.ChangeMachineAccountAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Throws(new Exception());
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    });
+                                                });
+            Assert.Equal(HttpStatusCode.InternalServerError, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountReturnsNotFound()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/notavalidmachine/changeaccount",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Conteny-Type", "application/json");
+                                                    with.HttpRequest();
+                                                    with.JsonBody(new Machine()
+                                                    {
+                                                        MachineKey = "12345678901234567890",
+                                                        Location = "TestLocation",
+                                                        ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                        SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                        DateModified = DateTime.UtcNow
+                                                    });
+                                                });
+            Assert.Equal(HttpStatusCode.NotFound, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountReturnsUnauthorized()
+        {
+            var actual = await _browserNoAuth.Put(
+                                                  "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount",
+                                                  with =>
+                                                  {
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Conteny-Type", "application/json");
+                                                      with.HttpRequest();
+                                                      with.JsonBody(new Machine()
+                                                      {
+                                                          MachineKey = "12345678901234567890",
+                                                          Location = "TestLocation",
+                                                          ModifiedBy = Guid.Parse("1d31260e-22cd-4cc2-8177-b6946f76ca10"),
+                                                          SettingProfileId = Guid.Parse("f8d5b613-9d21-4e84-acac-c70f3679d1e6"),
+                                                          DateModified = DateTime.UtcNow
+                                                      });
+                                                  });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountReturnsBadRequest()
+        {
+            var actual = await _browserAuth.Put(
+                                                "/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
@@ -421,10 +517,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var actual = await _browserAuth.Delete(
                                                    $"/v1/machines/{machineId}", with =>
                                                                {
-                                                                      with.Header("Accept", "application/json");
-                                                                      with.Header("Content-Type", "application/json");
-                                                                      with.HttpRequest();
-                                                                });
+                                                                   with.Header("Accept", "application/json");
+                                                                   with.Header("Content-Type", "application/json");
+                                                                   with.HttpRequest();
+                                                               });
             Assert.Equal(HttpStatusCode.NoContent, actual.StatusCode);
         }
 

@@ -18,6 +18,7 @@ using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using System.Linq.Expressions;
 using System.Collections.Generic;
+using System.IdentityModel;
 using System.Linq;
 using Nancy;
 using Nancy.Extensions;
@@ -69,11 +70,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                               );
         }
 
+        #region CREATE Machine Tests
+            
         [Fact]
         public async Task CreateMachineAsyncReturnsNewMachineIfSuccessful()
         {
             _machineRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Machine>())).Returns(Task.FromResult(new Machine()));
-
             var newMachine = new CreateMachineRequest();
             var tenantId = Guid.NewGuid();
             var result = await _controller.CreateMachineAsync(newMachine, tenantId);
@@ -99,6 +101,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEqual(ex.Errors.ToList().Count, 0);
         }
+
+        #endregion
+
+        #region GET Machine Tests
 
         [Fact]
         public async Task GetMachineByIdReturnsMachineIfExists()
@@ -151,6 +157,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByIdAsync(machineId, tenantId));
         }
 
+        #endregion
+
+        #region UPDATE Machine Tests
+
         [Fact]
         public async Task UpdateMachineAsyncThrowsValidationExceptionIfLocationIsDuplicate()
         {
@@ -197,7 +207,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
             Assert.IsType<InvalidOperationException>(ex);
         }
-
+        #endregion
 
         #region DELETE Machine Tests
 
@@ -231,6 +241,43 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<Exception>(() => _controller.DeleteMachineAsync(machineId, tenantId));
             Assert.IsType<Exception>(ex);
+        }
+
+        #endregion
+
+        #region CHANGE Machine Account Tests
+
+        [Fact]
+        public async Task ChangeMachineAccountAsyncReturnsNewMachineIfSuccessful()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            var tenantId = Guid.NewGuid();
+            var machineId = Guid.NewGuid();
+            var settingProfileId = Guid.NewGuid();
+            var result = await _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountAsyncThrowsbadRequestException()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            var tenantId = Guid.NewGuid();
+            var machineId = Guid.NewGuid();
+            var settingProfileId = Guid.Empty;
+            var ex = await Assert.ThrowsAsync<BadRequestException>(() => _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId));
+            Assert.IsType<BadRequestException>(ex);
+        }
+
+        [Fact]
+        public async Task ChangeMachineAccountAsyncNotFoundException()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync((Machine)null);
+            var tenantId = Guid.NewGuid();
+            var machineId = Guid.NewGuid();
+            var settingProfileId = Guid.NewGuid();
+            var ex = await Assert.ThrowsAsync<NotFoundException>(() => _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId));
+            Assert.IsType<NotFoundException>(ex);
         }
 
         #endregion
