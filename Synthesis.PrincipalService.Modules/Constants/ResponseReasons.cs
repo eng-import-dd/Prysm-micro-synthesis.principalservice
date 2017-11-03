@@ -20,6 +20,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerErrorUpdateMachine = "An error occurred updating the Machine";
         public const string InternalServerErrorGetMachine = "An error occurred retrieving the Machine";
         public const string InternalServerErrorResendWelcomeMail = "An error occurred while sending mail";
+        public const string InternalServerErrorChangeMachineAccount = "An error occurred changing the Machine's account";
 
         public const string InternalServerErrorGetLicenseTypeForUser = "An error occurred while retrieving user license type. Failed to connect to License Service.";
 

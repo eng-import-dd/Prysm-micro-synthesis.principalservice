@@ -43,6 +43,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetMachineById();
             SetupRoute_UpdateMachine();
             SetupRoute_DeleteMachine();
+            SetupRoute_ChangeMachineAccount();
             SetupRoute_GetTenanatMachines();
 
             // Routes
@@ -154,6 +155,35 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
+        private void SetupRoute_ChangeMachineAccount()
+        {
+            const string path = "/v1/machines/{id:guid}/changeaccount";
+            Put(path, ChangeMachineAccountAsync, null, "ChangeMachineAccountAsync");
+            Put("/api/" + path, ChangeMachineAccountAsync, null, "ChangeMachineAccountAsyncLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataRequest = ToFormattedJson(new UpdateMachineRequest());
+            var metadataResponse = ToFormattedJson(new MachineResponse());
+            var metadataDescription = "Changes the machine's account";
+
+            _metadataRegistry.SetRouteMetadata("ChangeMachineAccount", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("ChangeMachineAccountLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
         private void SetupRoute_GetTenanatMachines()
         {
             const string path = "/v1/tenantmachines";
@@ -254,7 +284,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a Machine resource", ex);
+                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -313,6 +343,44 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
+            }
+        }
+
+        private async Task<object> ChangeMachineAccountAsync(dynamic input)
+        {
+            UpdateMachineRequest updateMachine;
+            try
+            {
+                updateMachine = this.Bind<UpdateMachineRequest>();
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+
+            try
+            {
+                return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, tenantId, updateMachine.SettingProfileId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "ChangeMachineAccount: Not authorized.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while attempting to Change Machine account", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
             }
         }
 
