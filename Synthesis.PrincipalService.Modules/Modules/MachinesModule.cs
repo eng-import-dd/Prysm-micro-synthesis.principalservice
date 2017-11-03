@@ -9,6 +9,7 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Dao.Models;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
 using System.Web.Script.Serialization;
@@ -42,6 +43,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetMachineById();
             SetupRoute_UpdateMachine();
             SetupRoute_DeleteMachine();
+            SetupRoute_GetTenanatMachines();
 
             // Routes
             // CRUD routes
@@ -144,6 +146,35 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("DeleteMachineLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_GetTenanatMachines()
+        {
+            const string path = "/v1/tenantmachines";
+            Get(path, GetTenantMachinesAsync, null, "GetTenanatMachines");
+            Get("/api" + path, GetTenantMachinesAsync, null, "GetTenanatMachinesLegacy");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataRequest = ToFormattedJson(string.Empty);
+            var metadataResponse = ToFormattedJson(new List<MachineResponse>());
+            var metadataDescription = "Retrieves list of machines for a tenant";
+
+            _metadataRegistry.SetRouteMetadata("GetMachineById", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetTenanatMachinesLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Request = metadataRequest,
@@ -281,6 +312,28 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
+            }
+        }
+
+        private async Task<object> GetTenantMachinesAsync(dynamic input)
+        {
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _machineController.GetTenantMachinesAsync(tenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachines);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "GetTenanatMachinesAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }

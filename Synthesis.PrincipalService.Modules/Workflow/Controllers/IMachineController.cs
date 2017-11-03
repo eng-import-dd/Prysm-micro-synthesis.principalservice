@@ -14,5 +14,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         Task<MachineResponse> GetMachineByIdAsync(Guid id, Guid tenantId);
         Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId);
         Task DeleteMachineAsync(Guid id, Guid tenantId);
+        Task<List<MachineResponse>> GetTenantMachinesAsync(Guid tenantId);
     }
 }

@@ -463,5 +463,97 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #endregion
 
+        #region Get Tenant Machines Tests
+
+        [Fact]
+        [Trait("Tenant Machines", "Tenant Machines")]
+        public async Task GetTenantMachinesReturnsFound()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _controllerMock.Setup(m => m.GetTenantMachinesAsync(It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new List<MachineResponse>()));
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                               .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var response = await _browserAuth.Get("/v1/tenantmachines",
+                                                    with =>
+                                                    {
+                                                        with.HttpRequest();
+                                                        with.Header("Accept", "application/json");
+                                                        with.Header("Content-Type", "application/json");
+                                                    });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Tenant Machines", "Tenant Machines")]
+        public async Task GetTenantMachinesReturnsNotFoundException()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _controllerMock.Setup(m => m.GetTenantMachinesAsync(It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                                  .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var response = await _browserAuth.Get("/v1/tenantmachines",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Tenant Machines", "Tenant Machines")]
+        public async Task GetTenantMachinesReturnsValidationException()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _controllerMock.Setup(m => m.GetTenantMachinesAsync(It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                                  .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var response = await _browserAuth.Get("/v1/tenantmachines",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        [Trait("Tenant Machines", "Tenant Machines")]
+        public async Task GetTenantMachinesReturnsInternalServerError()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _controllerMock.Setup(m => m.GetTenantMachinesAsync(It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                                  .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var response = await _browserAuth.Get("/v1/tenantmachines",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        
+        #endregion
+
     }
 }

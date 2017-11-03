@@ -234,5 +234,38 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         #endregion
+
+        #region Get Tenant Machines Tests
+
+        [Fact]
+        [Trait("Tenant Machines", "Tenant Machines")]
+        public async Task GetTenantMachinesReturnsDataIfExists()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                                  .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var result = await _controller.GetTenantMachinesAsync(It.IsAny<Guid>());
+
+            Assert.IsType<List<MachineResponse>>(result);
+        }
+
+        [Trait("Tenant Machines", "Tenant Machines")]
+        [Fact]
+        public async Task GetTenantMachinesThrowsNotFoundExceptionIfDataDoesNotExist()
+        {
+            var validTenantId = Guid.NewGuid();
+
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
+                                  .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
+
+            var result = await _controller.GetTenantMachinesAsync(It.IsAny<Guid>());
+
+            Assert.Equal(0, result.Count);
+
+        }
+
+        #endregion
     }
 }
