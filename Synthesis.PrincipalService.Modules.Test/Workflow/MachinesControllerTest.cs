@@ -56,18 +56,24 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                                  .Returns(_validatorMock.Object);
 
+            // logger factory mock
+            var loggerFactoryMock = new Mock<ILoggerFactory>();
+            loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
+                             .Returns(_loggerMock.Object);
+
             // Mapper Mock
             _mapper = new MapperConfiguration(cfg =>
             {
                 cfg.AddProfile<MachineProfile>();
             }).CreateMapper();
 
+
             _controller = new MachinesController(_repositoryFactoryMock.Object,
-                                              _validatorLocatorMock.Object,
-                                              _loggerMock.Object,
-                                              _mapper,
-                                              _eventServiceMock.Object
-                                              );
+                                                 _validatorLocatorMock.Object,
+                                                 loggerFactoryMock.Object,
+                                                 _mapper,
+                                                 _eventServiceMock.Object
+                                                );
         }
 
         #region CREATE Machine Tests

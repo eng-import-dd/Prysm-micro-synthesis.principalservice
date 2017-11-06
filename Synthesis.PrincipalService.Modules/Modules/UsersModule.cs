@@ -37,12 +37,12 @@ namespace Synthesis.PrincipalService.Modules
         public UsersModule(
             IMetadataRegistry metadataRegistry,
             IUsersController userController,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             // Init DI
             _metadataRegistry = metadataRegistry;
             _userController = userController;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 

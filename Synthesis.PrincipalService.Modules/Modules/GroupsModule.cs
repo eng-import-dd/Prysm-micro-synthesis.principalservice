@@ -37,12 +37,12 @@ namespace Synthesis.PrincipalService.Modules
         /// </summary>
         /// <param name="metadataRegistry">The metadata registry.</param>
         /// <param name="groupsController">The groups controller.</param>
-        /// <param name="logger">The logger.</param>
-        public GroupsModule(IMetadataRegistry metadataRegistry, IGroupsController groupsController, ILogger logger)
+        /// <param name="loggerfactory">The logger factory.</param>
+        public GroupsModule(IMetadataRegistry metadataRegistry, IGroupsController groupsController, ILoggerFactory loggerfactory)
         {
             _metadataRegistry = metadataRegistry;
             _groupsController = groupsController;
-            _logger = logger;
+            _logger = loggerfactory.GetLogger(this);
 
             this.RequiresAuthentication();
 

@@ -36,11 +36,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
-        /// <param name="logger">The logger.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         public GroupsController(IRepositoryFactory repositoryFactory,
                                 IValidatorLocator validatorLocator,
                                 IEventService eventService,
-                                ILogger logger)
+                                ILoggerFactory loggerFactory)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -48,7 +48,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateGroupValidator = validatorLocator.GetValidator(typeof(UpdateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 throw new UnauthorizedAccessException();
             }
-           
+
             return result;
         }
 
@@ -164,7 +164,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 throw new NotFoundException($"Group not found with id {model.Id}");
             }
-            
+
             // Replace any fields in the DTO that shouldn't be changed here
             model.TenantId = tenantId;
 

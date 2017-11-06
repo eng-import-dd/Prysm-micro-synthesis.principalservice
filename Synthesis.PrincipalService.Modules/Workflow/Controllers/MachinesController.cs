@@ -39,13 +39,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// </summary>
         /// <param name="repositoryFactory">The Repository Factory </param>
         /// <param name="validatorLocator">The Validator Locator </param>
-        /// <param name="logger">The Logger Object </param>
+        /// <param name="loggerFactory">The Logger Factory Object </param>
         /// <param name="mapper">The Mapper Object </param>
         /// <param name="eventService">The Event Service </param>
         public MachinesController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
-            ILogger logger,
+            ILoggerFactory loggerFactory,
             IMapper mapper,
             IEventService eventService)
         {
@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _machineIdValidator = validatorLocator.GetValidator(typeof(MachineIdValidator));
             _updateMachineRequestValidator = validatorLocator.GetValidator(typeof(UpdateMachineRequestValidator));
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
             _mapper = mapper;
         }
 

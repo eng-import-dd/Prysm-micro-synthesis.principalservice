@@ -28,14 +28,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
-            ILogger logger,
+            ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
             IMapper mapper,
             IValidatorLocator validatorLocator)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _userRepository = repositoryFactory.CreateRepository<User>();
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
             _emailUtility = emailUtility;
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));

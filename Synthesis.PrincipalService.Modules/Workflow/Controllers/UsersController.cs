@@ -52,7 +52,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
-        /// <param name="logger">The logger.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi"></param>
         /// <param name="emailUtility"></param>
         /// <param name="mapper"></param>
@@ -61,7 +61,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             IEventService eventService,
-            ILogger logger,
+            ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailUtility emailUtility,
             IMapper mapper,
@@ -71,7 +71,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _validatorLocator = validatorLocator;
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
             _licenseApi = licenseApi;
             _emailUtility = emailUtility;
             _mapper = mapper;
