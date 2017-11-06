@@ -265,6 +265,19 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             existingMachine.SettingProfileId = settingProfileId;
+
+            try
+            {
+                await _machineRepository.UpdateItemAsync(machineId, existingMachine);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(LogLevel.Error, "Could not move machine", ex);
+                throw;
+            }
+            return _mapper.Map<Machine, MachineResponse>(existingMachine);
+        }
+
         public async Task<List<MachineResponse>> GetTenantMachinesAsync(Guid tenantId)
         {
             var tenantIdValidationResult = await _tenantIdValidator.ValidateAsync(tenantId);
@@ -299,19 +312,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             return machines;
         }
-
-            try
-            {
-                await _machineRepository.UpdateItemAsync(machineId, existingMachine);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogMessage(LogLevel.Error, "Could not move machine", ex);
-                throw;
-            }
-            return _mapper.Map<Machine, MachineResponse>(existingMachine);
-        }
-
 
         private bool IsUserASuperAdmin(Guid id)
         {
