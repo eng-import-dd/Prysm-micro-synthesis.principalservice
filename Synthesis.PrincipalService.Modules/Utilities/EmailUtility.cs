@@ -109,7 +109,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending the guest invite email.", ex);
                 return false;
             }
 
@@ -129,7 +129,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending the password reset email", ex);
                 return false;
             }
 
@@ -154,7 +154,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending account verification email", ex);
                 return false;
             }
 
@@ -177,7 +177,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending an email to notify the host of guests in lobby", ex);
                 return false;
             }
 
@@ -208,7 +208,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending shared content email", ex);
                 return false;
             }
 
@@ -240,7 +240,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending user invite email", ex);
                 return false;
             }
 
@@ -261,7 +261,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending welcome email", ex);
                 return false;
             }
 
@@ -288,7 +288,7 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "EMAIL", ex);
+                _logger.Error("An error occurred sending user locked email", ex);
                 return false;
             }
 
@@ -371,9 +371,9 @@ namespace Synthesis.PrincipalService.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "First Attempt of sending email failed", ex);
+                _logger.Error("First Attempt of sending email failed", ex);
                 client.Send(message);
-                _logger.LogMessage(LogLevel.Error, "Second Attempt of sending email succeeded", ex);
+                _logger.Error("Second Attempt of sending email succeeded", ex);
             }
         }
 
