@@ -204,7 +204,12 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
 
             // Key Manager
-            builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
+            builder.RegisterType<SimpleKeyManager>()
+                   .As<IKeyManager>()
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.ParameterType == typeof(ILogger),
+                                                        (p, c) => c.Resolve<ILoggerFactory>().GetLogger("Synthesis.PrincipalService.KeyManager")))
+                   .SingleInstance();
 
             //HttpClient
             builder.RegisterType<HttpClientConfiguration>().As<IHttpClientConfiguration>().SingleInstance();
