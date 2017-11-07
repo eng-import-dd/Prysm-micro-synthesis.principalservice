@@ -19,10 +19,6 @@ namespace Synthesis.PrincipalService.Requests
         
         public string UserName { get; set; }
 
-        public string PasswordHash { get; set; }
-
-        public string PasswordSalt { get; set; }
-
         public string LdapId { get; set; }
 
         public bool? IsIdpUser { get; set; }

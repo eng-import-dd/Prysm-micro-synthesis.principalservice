@@ -14,8 +14,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var request = new UpdateUserRequest
             {
                 LastName = "Test",
-                PasswordHash = "hash",
-                PasswordSalt = "salt",
                 Email = "a@b.com",
                 UserName = "User"
             };
@@ -32,8 +30,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
 
                 FirstName = "Test",
-                PasswordHash = "hash",
-                PasswordSalt = "salt",
                 Email = "a@b.com",
                 UserName = "User"
             };
@@ -50,8 +46,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
                 FirstName = "Test",
                 LastName = "User",
-                PasswordHash = "hash",
-                PasswordSalt = "salt",
                 UserName = "User"
             };
 

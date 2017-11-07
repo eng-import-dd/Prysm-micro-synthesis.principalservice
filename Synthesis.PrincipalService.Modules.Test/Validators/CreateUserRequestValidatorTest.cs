@@ -14,8 +14,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var request = new CreateUserRequest
             {
                 LastName = "Test",
-                 PasswordHash = "hash",
-                 PasswordSalt ="salt",
                  Email ="a@b.com",
                  UserName ="User"
             };
@@ -32,8 +30,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
 
                 FirstName = "Test",
-                PasswordHash = "hash",
-                PasswordSalt = "salt",
                 Email = "a@b.com",
                 UserName = "User"
             };
@@ -50,8 +46,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
                 FirstName = "Test",
                 LastName ="User",
-                PasswordHash = "hash",
-                PasswordSalt = "salt",
                 UserName = "User"
             };
 
@@ -68,8 +62,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
                 FirstName = "Test",
                 LastName = "User",
-                PasswordHash ="hash",
-                PasswordSalt = "salt",
                 Email = "a@b.com"
             };
 
@@ -78,42 +70,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             Assert.False(result.IsValid);
         }
 
-
-        [Fact]
-        public void ShouldFailIfPasswordHashIsEmpty()
-        {
-            var request = new CreateUserRequest
-            {
-                FirstName ="Test",
-                LastName = "User",
-                PasswordSalt = "salt",
-                Email = "a@b.com",
-                UserName = "User"
-            };
-
-            var result = _validator.Validate(request);
-
-            Assert.False(result.IsValid);
-        }
-
-        [Fact]
-        public void ShouldFailIfPasswordSaltIsEmpty()
-        {
-            var request = new CreateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                PasswordHash = "hash",
-                Email = "a@b.com",
-                UserName = "User"
-            };
-
-            var result = _validator.Validate(request);
-
-            Assert.False(result.IsValid);
-        }
-
-
         [Fact]
         public void ShouldPassIfValid()
         {
@@ -121,8 +77,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             {
                 FirstName = "Test",
                 LastName = "User",
-                PasswordHash = "hash",
-                PasswordSalt ="salt",
                 Email = "a@b.com",
                 UserName = "User"
             };
