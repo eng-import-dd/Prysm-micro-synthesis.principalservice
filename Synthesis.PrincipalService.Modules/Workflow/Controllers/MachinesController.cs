@@ -64,7 +64,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a Machine resource.");
+                _logger.Error($"Validation failed while attempting to create a Machine resource. {validationResult.Errors}");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -88,20 +88,21 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
             if (!machineIdValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a Machine resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a Machine resource.");
                 throw new ValidationFailedException(machineIdValidationResult.Errors);
             }
 
             var result = await _machineRepository.GetItemAsync(machineId);
             if (result == null)
             {
-                _logger.Warning($"A Machine resource could not be found for id {machineId}");
+                _logger.Error($"A Machine resource could not be found for id {machineId}");
                 throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
             }
 
             var assignedTenantId = result.TenantId;
             if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
             {
+                _logger.Error($"Invalid operation. Machine {machineId} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
             }
             return _mapper.Map<Machine, MachineResponse>(result);
@@ -113,9 +114,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to update a Machine resource.");
+                _logger.Error("Validation failed while attempting to update a Machine resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
+
             try
             {
                 var machine = _mapper.Map<UpdateMachineRequest, Machine>(model);
@@ -123,12 +125,12 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (DocumentNotFoundException ex)
             {
-                _logger.LogMessage(LogLevel.Error, "Could not find the Machine to update.", ex);
+                _logger.Error("Could not find the Machine to update", ex);
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "Could not Update the Machine.", ex);
+                _logger.Error("Could not Update the Machine.", ex);
                 throw;
             }
         }
@@ -149,6 +151,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (validationErrors.Any())
             {
+                _logger.Error("An error occurred creating the machine");
                 throw new ValidationFailedException(validationErrors);
             }
 
@@ -170,11 +173,13 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (existingMachine == null)
             {
+                _logger.Error($"An error occurred updating machine because it does not exist: {machine.Id}");
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
             }
 
             if (existingMachine.TenantId != tenantId)
             {
+                _logger.Error($"Invalid operation. Machine {machine.Id} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
             }
 
@@ -190,6 +195,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (validationErrors.Any())
             {
+                _logger.Error($"A validation error occurred updating machine: {machine.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 
@@ -205,7 +211,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "Machine Update failed.", ex);
+                _logger.Error("Machine Update failed.", ex);
                 throw;
             }
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
@@ -217,19 +223,20 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!machineIdValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to delete a Machine resource.");
+                _logger.Error("Failed to validate the resource id while attempting to delete a Machine resource.");
                 throw new ValidationFailedException(machineIdValidationResult.Errors);
             }
 
             if (!IsUserASuperAdmin(tenantId))
             {
+                _logger.Error("Could not delete machine. Current user is not a super admin.");
                 throw new InvalidOperationException();
             }
 
             var result = await _machineRepository.GetItemAsync(machineId);
             if (result == null)
             {
-                _logger.Warning($"A Machine resource could not be found for id {machineId}");
+                _logger.Error($"A Machine resource could not be found for id {machineId}");
                 throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
             }
 
@@ -242,22 +249,26 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (settingProfileId == null || settingProfileId == Guid.Empty)
             {
+                _logger.Error("An error occurred changing the account. settingProfileId must not be null or empty");
                 throw new BadRequestException("Setting Profile Id cannot be null");
             }
 
             if (existingMachine == null)
             {
-                throw new NotFoundException("No Machine with id " + machineId + " was found.");
+                _logger.Error($"An error occurred changing the account. Machine {machineId} was not found.");
+                throw new NotFoundException($"No Machine with id {machineId} was found.");
             }
 
             if (!IsUserASuperAdmin(tenantId))
             {
+                _logger.Error("Invalid operation. Current user is not a super admin.");
                 throw new InvalidOperationException();
             }
 
             // TODO: Validate that the SettingProfile provided is valid
             if (!IsValidSettingProfile(settingProfileId))
             {
+                _logger.Error("Invalid operation. The settings profile is not valid.");
                 throw new InvalidOperationException();
             }
 
@@ -269,7 +280,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "Could not move machine", ex);
+                _logger.Error("Could not move machine", ex);
                 throw;
             }
             return _mapper.Map<Machine, MachineResponse>(existingMachine);

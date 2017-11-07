@@ -225,7 +225,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id.");
+                _logger.Error("Failed to validate the resource id.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 

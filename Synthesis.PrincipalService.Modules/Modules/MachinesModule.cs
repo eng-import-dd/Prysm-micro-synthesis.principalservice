@@ -190,7 +190,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to create a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
             try
@@ -235,7 +235,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                _logger.Error("GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
@@ -252,7 +252,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -309,7 +309,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                _logger.Error("GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
@@ -323,7 +323,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 

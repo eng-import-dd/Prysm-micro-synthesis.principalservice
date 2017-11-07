@@ -88,7 +88,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting send user invite", ex);
+                _logger.Error("Binding failed while attempting send user invite", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -121,7 +121,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to resend user invites", ex);
+                _logger.Error("Binding failed while attempting to resend user invites", ex);
                 return Response.BadRequestBindingException();
             }
 

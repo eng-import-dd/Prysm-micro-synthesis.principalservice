@@ -306,6 +306,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configurations\HttpClientConfiguration.cs" />
+    <Compile Include="Constants\ErrorMessages.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Constants\RouteNames.cs" />

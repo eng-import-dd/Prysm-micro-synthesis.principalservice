@@ -229,7 +229,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a Group resource", ex);
+                _logger.Error("Binding failed while attempting to create a Group resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -276,7 +276,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetGroupByIdAsync threw an unhandled exception", ex);
+                _logger.Error("GetGroupByIdAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -309,7 +309,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetGroupsForTenantAsync threw an unhandled exception", ex);
+                _logger.Error("GetGroupsForTenantAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -334,7 +334,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException ex)
             {
-                _logger.Warning("Group is either deleted or doesn't exist", ex);
+                _logger.Error("Group is either deleted or doesn't exist", ex);
                 return new Response
                 {
                     StatusCode = HttpStatusCode.NoContent,
@@ -357,7 +357,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a Group resource", ex);
+                _logger.Error("Binding failed while attempting to update a Group resource", ex);
                 return Response.BadRequestBindingException();
             }
 

@@ -85,7 +85,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a User resource.");
+                _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -93,6 +93,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (IsBuiltInOnPremTenant(tenantId))
             {
+                _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
@@ -116,7 +117,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(id);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -124,9 +125,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (result == null)
             {
-                _logger.Warning($"A User resource could not be found for id {id}");
+                _logger.Error($"A User resource could not be found for id {id}");
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
+
             return _mapper.Map<User, UserResponse>(result);
         }
 
@@ -136,14 +138,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
             var userListResult = await GetAccountUsersFromDb(tenantId, userId, getUsersParams);
             if(userListResult == null)
             {
-                _logger.Warning($"Users resource could not be found for input data.");
+                _logger.Error($"Users resource could not be found for input data.");
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
@@ -167,14 +169,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             if (errors.Any())
             {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to get a User resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to get a User resource.");
                 throw new ValidationFailedException(errors);
             }
 
                 var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
                 if (!usersInAccount.Any())
                 {
-                    _logger.Warning($"Users for the account could not be found");
+                    _logger.Error("Users for the account could not be found");
                     throw new NotFoundException($"Users for the account could not be found");
                 }
 
@@ -207,7 +209,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (errors.Any())
             {
-                _logger.Warning("Failed to validate the resource id and/or resource while attempting to update a User resource.");
+                _logger.Error("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
             /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
@@ -221,7 +223,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var isValidEmail = EmailValidator.IsValid(email);
             if (!isValidEmail)
             {
-                _logger.Warning("Email is either empty or invalid.");
+                _logger.Error("Email is either empty or invalid.");
                 throw new ValidationException("Email is either empty or invalid");
             }
 
@@ -243,7 +245,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     };
                 }
 
-                _logger.Warning("User already in an account");
+                _logger.Error("User already in an account");
                 return new CanPromoteUserResponse
                 {
                     ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
@@ -255,7 +257,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(id);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
+                _logger.Error("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -282,7 +284,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to promote guest.");
+                _logger.Error("Validation failed while attempting to promote guest.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -299,6 +301,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 if (!licenseAvailable)
                 {
+                    _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
                     throw new PromotionFailedException("Not promoting the user as there are no user licenses available");
                 }
             }
@@ -313,12 +316,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     return userAccountExistsResult;
                 }
 
+                _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
                 throw new PromotionFailedException("User is not valid for promotion");
             }
 
             var assignGuestResult = await AssignGuestUserToTenant(user, tenantId);
             if (assignGuestResult != PromoteGuestResultCode.Success)
             {
+                _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
                 throw new PromotionFailedException($"Failed to assign Guest User {userId} to tenant {tenantId}");
             }
 
@@ -343,8 +348,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 // If assignign a license fails, then we must disable the user
                 await LockUser(userId, true);
+                var errorMessage = $"Assigned user {userId} to tenant {tenantId}, but failed to assign license";
 
-                throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
+                _logger.Error(errorMessage);
+                throw new LicenseAssignmentFailedException(errorMessage, userId);
             }
 
             await _emailUtility.SendWelcomeEmailAsync(user.Email, user.FirstName);
@@ -362,7 +369,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the tenant id.");
+                _logger.Error("Failed to validate the tenant id.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -377,6 +384,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var promoteGuestResponse = await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
                 if (promoteGuestResponse?.ResultCode == PromoteGuestResultCode.Failed)
                 {
+                    _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
                     throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
                 await _emailUtility.SendWelcomeEmailAsync(model.EmailId, model.FirstName);
@@ -395,7 +403,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (!userNameValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the email address id while attempting to retrieve a tenant id.");
+                _logger.Error("Failed to validate the email address id while attempting to retrieve a tenant id.");
                 throw new ValidationFailedException(userNameValidationResult.Errors);
             }
 
@@ -405,7 +413,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (userWithEmail == null)
             {
-                _logger.Warning($"User resource could not be found for input email {email}.");
+                _logger.Error($"User resource could not be found for input email {email}.");
                 throw new NotFoundException($"User resource could not be found for input email {email}.");
             }
 
@@ -457,7 +465,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
                 if (groupResult == null)
                 {
-                   throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
+                    _logger.Error($"An error occurred updating user groups for user {result.Id.Value}");
+                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
                 }
             }
 
@@ -533,7 +542,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var isValidEmail = EmailValidator.IsValid(email);
             if (!isValidEmail)
             {
-                _logger.Warning("Email is either empty or invalid.");
+                _logger.Error("Email is either empty or invalid.");
                 throw new ValidationException("Email is either empty or invalid");
             }
 
@@ -593,7 +602,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the tenant id.");
+                _logger.Error("Failed to validate the tenant id.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -712,6 +721,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (validationErrors.Any())
             {
+                _logger.Error($"Validation failed creating user {user.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 
@@ -732,6 +742,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var existingUser = await _userRepository.GetItemAsync(id);
             if (existingUser == null)
             {
+                _logger.Error($"An error occurred retrieving user {id}");
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
 
@@ -756,7 +767,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "User Updation failed", ex);
+                _logger.Error("User Updation failed", ex);
                 throw;
             }
 
@@ -766,7 +777,10 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         {
             if (user.Id == null || user.Id == Guid.Empty)
             {
-                throw new ArgumentException("User Id is required for assiging license");
+                var errorMessage = "User Id is required for assiging license";
+
+                _logger.Error(errorMessage);
+                throw new ArgumentException(errorMessage);
             }
 
             var licenseRequestDto = new UserLicenseDto
@@ -790,7 +804,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "Erro assigning license to user", ex);
+                _logger.Error("Erro assigning license to user", ex);
             }
             /* If a license could not be obtained lock the user that was just created. */
             await LockUser(user.Id.Value, true);
@@ -837,7 +851,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to delete a User resource.");
+                _logger.Error("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
                 //TODO: dependency on group implementation to get all the groupIds
@@ -876,7 +890,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<CreateUserGroupRequestValidator>(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a User group resource.");
+                _logger.Error("Validation failed while attempting to create a User group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -898,7 +912,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             //TODO: User Permission check here - Yusuf
-            #region Legacy code - Will be removed after implementation 
+            #region Legacy code - Will be removed after implementation
             /*
             * if (UserId == accessedUserId)
                 return ResultCode.Success;
@@ -920,7 +934,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf
             #region Legacy code - Will be removed after implementation
             /*
-             * 
+             *
              *  if (userGroupDto.GroupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
                 {
                     return new ServiceResult<UserGroupDTO>
@@ -947,7 +961,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -955,7 +969,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (result == null)
             {
-                _logger.Warning($"A User group resource could not be found for id {groupId}");
+                _logger.Error($"A User group resource could not be found for id {groupId}");
                 throw new NotFoundException($"A User group resource could not be found for id {groupId}");
             }
 
@@ -970,7 +984,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User group resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -991,7 +1005,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var countOfSuperAdmins=0;
             if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to remove the User from group.");
+                _logger.Error("Failed to validate the resource id while attempting to remove the User from group.");
                 throw new ValidationFailedException(userIdValidationResult.Errors);
             }
 
@@ -1010,7 +1024,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 countOfSuperAdmins += groupUsers.Count(u => IsSuperAdmin(u.Id ?? Guid.Empty) && !u.IsLocked);
                 if (countOfSuperAdmins <= 1)
                 {
-                    _logger.Warning("Cannot delete the last non locked super admin of this group.");
+                    _logger.Error("Cannot delete the last non locked super admin of this group.");
                     return false;
                 }
 
@@ -1054,7 +1068,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "", ex);
+                _logger.Error("", ex);
                 throw;
             }
         }
@@ -1068,7 +1082,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a User license type resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User license type resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -1099,7 +1113,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             List<UserLicenseDto> userLicenses;
 
             userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(accountId, userId)).LicenseAssignments;
-            
+
             if (userLicenses == null || userLicenses.Count == 0)
             {
                 return null;
@@ -1148,6 +1162,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
                 if (validationErrors.Any())
                 {
+                    _logger.Error($"Validation failed updating lock state for user {id}");
                     throw new ValidationFailedException(validationErrors);
                 }
 
@@ -1185,110 +1200,115 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                                                     : u.Id != userId && u.LdapId == ldapId);
             return !users.Any();
         }
+
         public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
-                if (getUsersParams == null)
+            if (getUsersParams == null)
+            {
+                getUsersParams = new GetUsersParams
                 {
-                    getUsersParams = new GetUsersParams
-                    {
-                        SearchValue = "",
-                        OnlyCurrentUser = false,
-                        IncludeInactive = false,
-                        SortColumn = "FirstName",
-                        SortDescending = false,
-                        IdpFilter = IdpFilter.All,
-                    };
-                }
-                var  criteria = new List<Expression<Func<User, bool>>>();
-                Expression<Func<User, string>> orderBy;
-                criteria.Add(u => u.TenantId == tenantId);
-
-                if (getUsersParams.OnlyCurrentUser)
-                {
-                    criteria.Add(u => u.Id == currentUserId);
-                }
-
-                if (!getUsersParams.IncludeInactive)
-                {
-                    criteria.Add(u => !u.IsLocked);
-                }
-                switch (getUsersParams.IdpFilter)
-                {
-                    case IdpFilter.IdpUsers:
-                        criteria.Add(u => u.IsIdpUser == true);
-                        break;
-                    case IdpFilter.LocalUsers:
-                        criteria.Add(u => u.IsIdpUser == false);
-                        break;
-                    case IdpFilter.NotSet:
-                        criteria.Add(u => u.IsIdpUser == null);
-                        break;
-                }
-
-                if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
-                {
-                    criteria.Add(x =>
-                             x != null &&
-                             (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                                                                                           getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                             x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
-                }
-                if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
-                {
-                    orderBy = u => u.FirstName;
-                }
-                else
-                {
-                        switch (getUsersParams.SortColumn.ToLower())
-                        {
-                            case "firstname":
-                                orderBy = u => u.FirstName;
-                                break;
-
-                            case "lastname":
-                                orderBy = u => u.LastName;
-                                break;
-
-                            case "email":
-                                orderBy = u => u.Email;
-                                break;
-
-                            case "username":
-                                orderBy = u => u.UserName;
-                                break;
-
-                            default:
-                                // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                                orderBy = u => u.FirstName;
-                                break;
-                    }
-                }
-                var queryparams = new OrderedQueryParameters<User, string>
-                {
-                    Criteria =criteria,
-                    OrderBy = orderBy,
-                    SortDescending = getUsersParams.SortDescending,
-                    ContinuationToken = getUsersParams.ContinuationToken??""
+                    SearchValue = "",
+                    OnlyCurrentUser = false,
+                    IncludeInactive = false,
+                    SortColumn = "FirstName",
+                    SortDescending = false,
+                    IdpFilter = IdpFilter.All
                 };
-                var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-                if (!usersInAccountsResult.Items.Any())
-                {
-                    throw new NotFoundException("Users for this account could not be found");
-                }
-                var usersInAccounts = usersInAccountsResult.Items.ToList();
-                var filteredUserCount = usersInAccounts.Count;
-                var resultingUsers = usersInAccounts;
-                var returnMetaData = new PagingMetadata<User>
-                {
-                    CurrentCount = filteredUserCount,
-                    List = resultingUsers,
-                    SearchValue = getUsersParams.SearchValue,
-                    ContinuationToken = usersInAccountsResult.ContinuationToken,
-                    IsLastChunk = usersInAccountsResult.IsLastChunk
-                };
+            }
+            var criteria = new List<Expression<Func<User, bool>>>();
+            Expression<Func<User, string>> orderBy;
+            criteria.Add(u => u.TenantId == tenantId);
 
-                return returnMetaData;
+            if (getUsersParams.OnlyCurrentUser)
+            {
+                criteria.Add(u => u.Id == currentUserId);
+            }
+
+            if (!getUsersParams.IncludeInactive)
+            {
+                criteria.Add(u => !u.IsLocked);
+            }
+            switch (getUsersParams.IdpFilter)
+            {
+                case IdpFilter.IdpUsers:
+                    criteria.Add(u => u.IsIdpUser == true);
+                    break;
+                case IdpFilter.LocalUsers:
+                    criteria.Add(u => u.IsIdpUser == false);
+                    break;
+                case IdpFilter.NotSet:
+                    criteria.Add(u => u.IsIdpUser == null);
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
+            {
+                criteria.Add(x =>
+                                 x != null &&
+                                 (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                                                                                               getUsersParams.SearchValue.ToLower()) ||
+                                 x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
+                                 x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
+            }
+            if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
+            {
+                orderBy = u => u.FirstName;
+            }
+            else
+            {
+                switch (getUsersParams.SortColumn.ToLower())
+                {
+                    case "firstname":
+                        orderBy = u => u.FirstName;
+                        break;
+
+                    case "lastname":
+                        orderBy = u => u.LastName;
+                        break;
+
+                    case "email":
+                        orderBy = u => u.Email;
+                        break;
+
+                    case "username":
+                        orderBy = u => u.UserName;
+                        break;
+
+                    default:
+
+                        // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
+                        orderBy = u => u.FirstName;
+                        break;
+                }
+            }
+
+            var queryparams = new OrderedQueryParameters<User, string>
+            {
+                Criteria = criteria,
+                OrderBy = orderBy,
+                SortDescending = getUsersParams.SortDescending,
+                ContinuationToken = getUsersParams.ContinuationToken ?? ""
+            };
+            var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
+            if (!usersInAccountsResult.Items.Any())
+            {
+                _logger.Error($"Could not find users for account {tenantId}");
+                throw new NotFoundException("Users for this account could not be found");
+            }
+
+            var usersInAccounts = usersInAccountsResult.Items.ToList();
+            var filteredUserCount = usersInAccounts.Count;
+            var resultingUsers = usersInAccounts;
+            var returnMetaData = new PagingMetadata<User>
+            {
+                CurrentCount = filteredUserCount,
+                List = resultingUsers,
+                SearchValue = getUsersParams.SearchValue,
+                ContinuationToken = usersInAccountsResult.ContinuationToken,
+                IsLastChunk = usersInAccountsResult.IsLastChunk
+            };
+
+            return returnMetaData;
         }
 
         private void TrimNameOfUser(UpdateUserRequest user)
