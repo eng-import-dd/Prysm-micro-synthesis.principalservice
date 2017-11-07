@@ -157,7 +157,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
                 {
-                    _logger.Error();
+                    _logger.Error("Invalid operation. Locked groups cannot be edited.");
                     throw new InvalidOperationException("You can not edit a locked group");
                 }
             }
