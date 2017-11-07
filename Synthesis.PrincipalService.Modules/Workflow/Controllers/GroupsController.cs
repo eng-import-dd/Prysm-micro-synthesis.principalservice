@@ -36,11 +36,11 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
-        /// <param name="logger">The logger.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         public GroupsController(IRepositoryFactory repositoryFactory,
                                 IValidatorLocator validatorLocator,
                                 IEventService eventService,
-                                ILogger logger)
+                                ILoggerFactory loggerFactory)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -48,7 +48,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _updateGroupValidator = validatorLocator.GetValidator(typeof(UpdateGroupRequestValidator));
             _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
             _eventService = eventService;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = await _createGroupValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to create a Group resource.");
+                _logger.Error("Validation failed while attempting to create a Group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -90,14 +90,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = await _groupValidatorId.ValidateAsync(groupId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a Group resource.");
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a Group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
             var result = await _groupRepository.GetItemAsync(groupId);
             if (result == null)
             {
-                _logger.Warning($"A Group resource could not be found for id {groupId}");
+                _logger.Error($"A Group resource could not be found for id {groupId}");
                 throw new NotFoundException($"A Group resource could not be found for id {groupId}");
             }
 
@@ -106,7 +106,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 throw new UnauthorizedAccessException();
             }
-           
+
             return result;
         }
 
@@ -115,32 +115,32 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = await _groupValidatorId.ValidateAsync(groupId);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to delete a Group resource.");
+                _logger.Error("Validation failed while attempting to delete a Group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-                var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
-                if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
-                {
-                    _logger.Error("Cannot delete a locked group since user is not SuperAdmin.");
-                    return false;
-                }
+            var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
+            if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
+            {
+                _logger.Error("Cannot delete a locked group since user is not SuperAdmin.");
+                return false;
+            }
 
-                var usersWithGroupToBeDeleted= await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
-                foreach (var user in usersWithGroupToBeDeleted)
-                {
-                    user.Groups.Remove(groupId);
-                    await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty,user);
-                }
+            var usersWithGroupToBeDeleted= await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+            foreach (var user in usersWithGroupToBeDeleted)
+            {
+                user.Groups.Remove(groupId);
+                await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty,user);
+            }
 
-                await _groupRepository.DeleteItemAsync(groupId);
+            await _groupRepository.DeleteItemAsync(groupId);
 
-                _eventService.Publish(new ServiceBusEvent<Guid>
-                {
-                    Name = EventNames.GroupDeleted,
-                    Payload = groupId
-                });
-                return true;
+            _eventService.Publish(new ServiceBusEvent<Guid>
+            {
+                Name = EventNames.GroupDeleted,
+                Payload = groupId
+            });
+            return true;
         }
 
         public async Task<Group> UpdateGroupAsync(Group model, Guid tenantId, Guid userId)
@@ -148,7 +148,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             var validationResult = await _updateGroupValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
             {
-                _logger.Warning("Validation failed while attempting to update an existing Group resource.");
+                _logger.Error("Validation failed while attempting to update an existing Group resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -157,14 +157,18 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             {
                 if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
                 {
+                    _logger.Error("Invalid operation. Locked groups cannot be edited.");
                     throw new InvalidOperationException("You can not edit a locked group");
                 }
             }
             else
             {
-                throw new NotFoundException($"Group not found with id {model.Id}");
+                var errorMessage = $"Group not found with id {model.Id}";
+
+                _logger.Error(errorMessage);
+                throw new NotFoundException(errorMessage);
             }
-            
+
             // Replace any fields in the DTO that shouldn't be changed here
             model.TenantId = tenantId;
 
@@ -197,7 +201,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (result == null)
             {
-                _logger.Warning($"A Group resource could not be found for tenant id {tenantId}");
+                _logger.Error($"A Group resource could not be found for tenant id {tenantId}");
                 throw new NotFoundException($"A Group resource could not be found for tenant id {tenantId}");
             }
 
@@ -223,6 +227,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             if (validationErrors.Any())
             {
+                _logger.Error($"A validation error occurred creating group {group.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 

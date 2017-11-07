@@ -22,17 +22,17 @@ namespace Synthesis.PrincipalService
         private string _publishAddress;
         private string _listeningAddress;
 
-        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILogger logger, string endpointName)
-            : this(startup, serviceContext, logger, endpointName, null)
+        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILoggerFactory loggerFactory, string endpointName)
+            : this(startup, serviceContext, loggerFactory, endpointName, null)
         {
         }
 
-        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILogger logger, string endpointName, string appRoot)
+        public OwinCommunicationListener(Action<IAppBuilder> startup, ServiceContext serviceContext, ILoggerFactory loggerFactory, string endpointName, string appRoot)
         {
             _startup = startup ?? throw new ArgumentNullException(nameof(startup));
             _serviceContext = serviceContext ?? throw new ArgumentNullException(nameof(serviceContext));
             _endpointName = endpointName ?? throw new ArgumentNullException(nameof(endpointName));
-            _logger = logger ?? throw new ArgumentNullException(nameof(log4net));
+            _logger = loggerFactory == null ? throw new ArgumentNullException(nameof(loggerFactory)) : loggerFactory.GetLogger(this);
             _appRoot = appRoot;
         }
 

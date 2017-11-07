@@ -37,12 +37,12 @@ namespace Synthesis.PrincipalService.Modules
         public UsersModule(
             IMetadataRegistry metadataRegistry,
             IUsersController userController,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             // Init DI
             _metadataRegistry = metadataRegistry;
             _userController = userController;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 
@@ -335,7 +335,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
         }
-        
+
         private void SetupRouteMetadata_LockUser()
         {
             const string path = "/v1/users/{userId:guid}/lock";
@@ -566,7 +566,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to lock/unlock a User resource", ex);
+                _logger.Error("Binding failed while attempting to lock/unlock a User resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -602,7 +602,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                _logger.Error("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -657,11 +657,11 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetUserById threw an unhandled exception", ex);
+                _logger.Error("GetUserById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
-        
+
         private async Task<object> GetUsersBasic(dynamic input)
         {
             try
@@ -674,7 +674,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetUsersBasic threw an unhandled exception", ex);
+                _logger.Error("GetUsersBasic threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -696,7 +696,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetUserByIdBasic threw an unhandled exception", ex);
+                _logger.Error("GetUserByIdBasic threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -711,7 +711,7 @@ namespace Synthesis.PrincipalService.Modules
 
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User resource", ex);
+                _logger.Error("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
             try
@@ -772,7 +772,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a User resource.", ex);
+                _logger.Error("Binding failed while attempting to update a User resource.", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -812,7 +812,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a User resource.", ex);
+                _logger.Error("Binding failed while attempting to update a User resource.", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -904,7 +904,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             //TODO: address the code once permission service dependency is implemented
             //var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-           
+
                 if (tenantId == accessedUser.TenantId)
                 {
                     return HttpStatusCode.OK;
@@ -912,7 +912,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, ex.ToString());
+                _logger.Error($"An error occurred validating access for user: {accessedUserId}", ex);
                 throw;
             }
 
@@ -928,7 +928,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to promote guest", ex);
+                _logger.Error("Binding failed while attempting to promote guest", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -970,7 +970,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to get geust users", ex);
+                _logger.Error("Binding failed while attempting to get geust users", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -1003,7 +1003,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to auto provision and refresh groups.", ex);
+                _logger.Error("Binding failed while attempting to auto provision and refresh groups.", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -1051,7 +1051,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a User Group resource", ex);
+                _logger.Error("Binding failed while attempting to create a User Group resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -1104,7 +1104,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetUserGroupsForGroup threw an unhandled exception", ex);
+                _logger.Error("GetUserGroupsForGroup threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -1135,7 +1135,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetUserGroupsForUser threw an unhandled exception", ex);
+                _logger.Error("GetUserGroupsForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -1165,12 +1165,12 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (DocumentNotFoundException ex)
             {
-                _logger.LogMessage(LogLevel.Error, "User could not be found", ex);
+                _logger.Error("User could not be found", ex);
                 return Response.NotFound();
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "RemoveUserFromGroup threw an unhandled exception", ex);
+                _logger.Error("RemoveUserFromGroup threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -1196,7 +1196,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetTenantIdByUserEmail threw an unhandled exception", ex);
+                _logger.Error("GetTenantIdByUserEmail threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -1230,7 +1230,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetLicenseTypeForUser threw an unhandled exception", ex);
+                _logger.Error("GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
