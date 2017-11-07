@@ -295,22 +295,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException($"Machine resources could not be found for id {tenantId}");
             }
 
-            var machines = result.Select(machine => new MachineResponse
-            {
-                Id = machine.Id,
-                MachineKey = machine.MachineKey,
-                Location = machine.Location,
-                SettingProfileId = machine.SettingProfileId,
-                SettingProfileName = "", //TODO: Need to get value for this from Settings Service - Yusuf
-                TenantId = machine.TenantId,
-                DateCreated = machine.DateCreated,
-                DateModified = machine.DateModified,
-                ModifiedBy = machine.ModifiedBy,
-                SynthesisVersion = machine.SynthesisVersion,
-                LastOnline = machine.LastOnline
-            }).ToList();
-
-            return machines;
+            return _mapper.Map<List<Machine>, List<MachineResponse>>(result.ToList());
         }
 
         private bool IsUserASuperAdmin(Guid id)
