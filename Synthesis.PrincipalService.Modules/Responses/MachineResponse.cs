@@ -13,9 +13,7 @@ namespace Synthesis.PrincipalService.Responses
         public string Location { get; set; }
 
         public Guid? SettingProfileId { get; set; }
-
-        public string SettingProfileName { get; set; }
-
+        
         public bool IsSelected { get; set; }
 
         public Guid TenantId { get; set; }

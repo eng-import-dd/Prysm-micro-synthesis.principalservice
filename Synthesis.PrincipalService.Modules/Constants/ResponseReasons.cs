@@ -28,6 +28,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string NotFoundUser = "User Not Found";
         public const string NotFoundUsers = "Users Not Found";    
         public const string NotFoundMachine = "Machine Not Found";
+        public const string NotFoundMachines = "Machines Not Found for Tenanat";
 
         public const string NotFoundGroup = "Group Not Found";
 
