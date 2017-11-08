@@ -554,22 +554,14 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<UserResponse> GetUserByUserNameOrEmailAsync(string username)
         {
             var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
-            var isValidEmail = EmailValidator.IsValid(username);
             IEnumerable<User> userList;
-            if (!isValidEmail && !unameValidationResult.IsValid)
+            if (!unameValidationResult.IsValid)
             {
                 _logger.Error("Email/UserName is either empty or invalid.");
                 throw new ValidationException("Email/UserName is either empty or invalid");
             }
 
-            if (isValidEmail)
-            {
-                userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username));
-            }
-            else
-            {
-                userList = await _userRepository.GetItemsAsync(u => u.UserName.Equals(username));
-            }
+            userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.UserName.Equals(username));
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
             {

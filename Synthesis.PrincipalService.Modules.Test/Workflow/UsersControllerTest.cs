@@ -1231,6 +1231,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             Assert.IsType<UserResponse>(result);
         }
 
+        [Fact]
+        public async Task GetUserByEmailOrUserNameIfDoesntExistsAsync()
+        {
+            var validEmail = "smm@pry.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ThrowsAsync(new NotFoundException("Not found"));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserByUserNameOrEmailAsync(validEmail));
+        }
+
         #endregion
     }
 }
