@@ -16,6 +16,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
 using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -1212,6 +1213,22 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                                .Throws(new NotFoundException(string.Empty));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
+        }
+
+        #endregion
+
+
+        #region Get User By Email Or Username Test cases
+        [Fact]
+        public async Task GetUserByEmailOrUserNameIfExistsAsync()
+        {
+            var validEmail = "smm@pry.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
+                               .ReturnsAsync(new List<User>(){new User(){Email = validEmail}});
+
+            var result = await _controller.GetUserByUserNameOrEmailAsync(validEmail);
+
+            Assert.IsType<UserResponse>(result);
         }
 
         #endregion
