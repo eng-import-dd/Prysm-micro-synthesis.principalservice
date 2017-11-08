@@ -182,8 +182,8 @@
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta004\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
+    <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta006\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -198,7 +198,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta013\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta014\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>

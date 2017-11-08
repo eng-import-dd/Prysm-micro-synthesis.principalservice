@@ -221,11 +221,11 @@
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta005\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus, Version=1.0.0.13, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.0.13-beta1\lib\net452\Synthesis.EventBus.dll</HintPath>
+    <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta006\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.0.10, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.10-beta2\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
+    <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.0.11, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.0.11-beta4\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -240,7 +240,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta013\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta014\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -392,6 +392,12 @@
     <None Include="x86\librdkafkacpp.lib" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
+      <Project>{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}</Project>
+      <Name>Synthesis.License.Manager</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="x64\librdkafka.dll" />
     <Content Include="x64\librdkafkacpp.dll" />
     <Content Include="x64\msvcr120.dll" />
@@ -401,13 +407,6 @@
     <Content Include="x86\msvcr120.dll" />
     <Content Include="x86\zlib.dll" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
-      <Project>{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}</Project>
-      <Name>Synthesis.License.Manager</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
