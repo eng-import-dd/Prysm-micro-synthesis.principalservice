@@ -43,7 +43,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_UpdateMachine();
             SetupRoute_DeleteMachine();
             SetupRoute_ChangeMachineAccount();
-            SetupRoute_GetTenanatMachines();
+            SetupRoute_GetTenantMachines();
 
             // Routes
             // CRUD routes
@@ -183,11 +183,11 @@ namespace Synthesis.PrincipalService.Modules
             });
         }
 
-        private void SetupRoute_GetTenanatMachines()
+        private void SetupRoute_GetTenantMachines()
         {
             const string path = "/v1/tenantmachines";
-            Get(path, GetTenantMachinesAsync, null, "GetTenanatMachines");
-            Get("/api" + path, GetTenantMachinesAsync, null, "GetTenanatMachinesLegacy");
+            Get(path, GetTenantMachinesAsync, null, "GetTenantMachines");
+            Get("/api" + path, GetTenantMachinesAsync, null, "GetTenantMachinesLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
@@ -203,7 +203,7 @@ namespace Synthesis.PrincipalService.Modules
                 Description = metadataDescription
             });
 
-            _metadataRegistry.SetRouteMetadata("GetTenanatMachinesLegacy", new SynthesisRouteMetadata
+            _metadataRegistry.SetRouteMetadata("GetTenantMachinesLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Request = metadataRequest,
@@ -400,7 +400,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetTenanatMachinesAsync threw an unhandled exception", ex);
+                _logger.LogMessage(LogLevel.Error, "GetTenantMachinesAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
