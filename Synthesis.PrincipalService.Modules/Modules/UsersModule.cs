@@ -202,7 +202,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_GetUserByUserNameOrEmail()
         {
-            const string path = "/v1/users/byname/{username}";
+            const string path = "/v1/users/user/{username}";
             Get(path, GetUserByUserNameOrEmailAsync, null, "GetUserByUserNameOrEmail");
 
             // register metadata
