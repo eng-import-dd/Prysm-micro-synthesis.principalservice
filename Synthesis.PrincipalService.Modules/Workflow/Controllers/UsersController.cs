@@ -454,8 +454,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
-                PasswordHash = hash,
-                PasswordSalt = salt,
                 IsIdpUser = true
             };
 
@@ -753,14 +751,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
             existingUser.Email = user.Email;
-            existingUser.PasswordAttempts = user.PasswordAttempts;
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
-            if (!string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash != existingUser.PasswordHash)
-            {
-                existingUser.PasswordHash = user.PasswordHash;
-                existingUser.PasswordLastChanged = DateTime.Now;
-            }
+
             try
             {
                 await _userRepository.UpdateItemAsync(id, existingUser);

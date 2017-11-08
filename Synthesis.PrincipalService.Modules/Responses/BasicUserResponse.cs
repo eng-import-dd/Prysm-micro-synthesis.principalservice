@@ -15,9 +15,7 @@ namespace Synthesis.PrincipalService.Responses
 
         public string Email { get; set; }
 
-        public string FullName { get { return string.Format("{0} {1}", FirstName, LastName); } }
-
-        public string Initials { get { return string.Format("{0}{1}", FirstName?.ToUpper().FirstOrDefault(), LastName.ToUpper().FirstOrDefault()); } }
-
+        public string FullName => $"{FirstName} {LastName}";
+        public string Initials => $"{FirstName?.ToUpper().FirstOrDefault()}{LastName.ToUpper().FirstOrDefault()}";
     }
 }

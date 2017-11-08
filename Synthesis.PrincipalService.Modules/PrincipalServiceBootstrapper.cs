@@ -38,6 +38,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.Authentication;
 
 namespace Synthesis.PrincipalService
 {
@@ -87,10 +88,10 @@ namespace Synthesis.PrincipalService
                 builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
 
                 // Update this registration if you need to change the authorization implementation.
-                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<IKeyManager>(),
+                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<ITokenValidator>(),
                                                                           c.Resolve<ILoggerFactory>().GetLogger(nameof(SynthesisStatelessAuthorization))))
-                       .As<IStatelessAuthorization>()
-                       .SingleInstance();
+                    .As<IStatelessAuthorization>()
+                    .SingleInstance();
 
                 // Change the default json serializer to use a different contract resolver
                 builder.Register(c =>

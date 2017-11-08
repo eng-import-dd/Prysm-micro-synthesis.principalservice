@@ -27,28 +27,10 @@ namespace Synthesis.PrincipalService.Dao.Models
         public string Email { get; set; }
 
         [DataMember]
-        [NullableSchema]
-        public DateTime? LastLogin { get; set; }
-
-        [DataMember]
         public string UserName { get; set; }
 
         [DataMember]
         public bool IsLocked { get; set; }
-
-        [DataMember]
-        [NullableSchema]
-        public int? PasswordAttempts { get; set; }
-
-        [DataMember]
-        public string PasswordHash { get; set; }
-
-        [DataMember]
-        public string PasswordSalt { get; set; }
-
-        [NullableSchema]
-        [DataMember]
-        public DateTime? PasswordLastChanged { get; set; }
 
         [NullableSchema]
         [DataMember]
@@ -57,18 +39,6 @@ namespace Synthesis.PrincipalService.Dao.Models
         [DataMember]
         [NullableSchema]
         public bool? IsIdpUser { get; set; }
-
-        [DataMember]
-        [NullableSchema]
-        public DateTime? VerificationEmailSentDateTime { get; set; }
-
-        [DataMember]
-        [NullableSchema]
-        public bool? IsEmailVerified { get; set; }
-
-        [DataMember]
-        [NullableSchema]
-        public DateTime? EmailVerifiedDateTime { get; set; }
 
         [DataMember]
         [NullableSchema]
