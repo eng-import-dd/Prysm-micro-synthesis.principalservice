@@ -1505,5 +1505,72 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion
+
+        #region Get User By Email Or UserName
+        [Fact]
+        public async Task GetUserByEmailOrUserNameReturnsOkIfSuccessful()
+        {
+            var validEmail = "cmm@prysm.com";
+            var actual = await _browserAuth.Get($"/v1/users/byname/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.OK, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task GetUserByEmailOrUserNameReturnsUnauthorized()
+        {
+            var validEmail = "cmm@prysm.com";
+            var actual = await _browserNoAuth.Get($"/v1/users/byname/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.Unauthorized, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task GetUserByEmailOrUserNameReturnsBadRequestDueToValidation()
+        {
+            var validEmail = "cmm@prysm.com";
+            _controllerMock.Setup(m => m.GetUserByUserNameOrEmailAsync(It.IsAny<string>()))
+                           .Throws(new ValidationException(new List<ValidationFailure>()));
+            var actual = await _browserAuth.Get($"/v1/users/byname/{validEmail}",
+                                                  with =>
+                                                  {
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                      with.HttpRequest();
+                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, actual.StatusCode);
+
+        }
+
+        [Fact]
+        public async Task GetUserByEmailOrUserNameReturnsNotFound()
+        {
+            var validEmail = "as";
+            _controllerMock.Setup(m => m.GetUserByUserNameOrEmailAsync(It.IsAny<string>()))
+                           .Throws(new NotFoundException("not found"));
+            var actual = await _browserAuth.Get($"/v1/users/byname/{validEmail}",
+                                                with =>
+                                                {
+                                                    with.Header("Accept", "application/json");
+                                                    with.Header("Content-Type", "application/json");
+                                                    with.HttpRequest();
+                                                });
+            Assert.Equal(HttpStatusCode.NotFound, actual.StatusCode);
+
+        }
+
+        #endregion
     }
 }

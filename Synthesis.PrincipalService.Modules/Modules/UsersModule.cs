@@ -57,6 +57,7 @@ namespace Synthesis.PrincipalService.Modules
             SetupRoute_GetGroupsForUser();
             SetupRoute_GetTenantIdByUserEmail();
             SetupRoute_RemoveUserFromPermissionGroup();
+            SetupRoute_GetUserByUserNameOrEmail();
             // CRUD routes
             Post("/v1/users", CreateUserAsync, null, "CreateUser");
             Post("/api/v1/users", CreateUserAsync, null, "CreateUserLegacy");
@@ -197,6 +198,27 @@ namespace Synthesis.PrincipalService.Modules
                 Response = metadataResponse,
                 Description = $"{DeprecationWarning}: {metadataDescription}"
             });
+        }
+
+        private void SetupRoute_GetUserByUserNameOrEmail()
+        {
+            const string path = "/v1/users/byname/{username}";
+            Get(path, GetUserByUserNameOrEmailAsync, null, "GetUserByUserNameOrEmail");
+
+            // register metadata
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataRequest = ToFormattedJson(string.Empty);
+            var metadataResponse = ToFormattedJson(new CanPromoteUserResponse());
+            var metadataDescription = "Gets the user resource by email or username";
+
+            _metadataRegistry.SetRouteMetadata("GetUserByUserNameOrEmail", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
         }
         private void SetupRouteMetadata()
         {
@@ -556,6 +578,29 @@ namespace Synthesis.PrincipalService.Modules
         }
         #endregion
 
+        private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input)
+        {
+            var userName = input.username;
+            try
+            {
+                return await _userController.GetUserByUserNameOrEmailAsync(userName);
+            }
+            catch (ValidationException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.Error("User not found", ex);
+                return Response.NotFound();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Unhandled exception encountered while fetchig a User", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+
+        }
         private async Task<object> LockUserAsync(dynamic input)
         {
             Guid id = input.userId;

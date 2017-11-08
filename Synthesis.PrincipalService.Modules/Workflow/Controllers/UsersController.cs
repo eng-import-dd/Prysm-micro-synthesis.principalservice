@@ -551,6 +551,35 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return userMailed;
         }
 
+        public async Task<UserResponse> GetUserByUserNameOrEmailAsync(string username)
+        {
+            var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
+            var isValidEmail = EmailValidator.IsValid(username);
+            IEnumerable<User> userList;
+            if (!isValidEmail && !unameValidationResult.IsValid)
+            {
+                _logger.Error("Email/UserName is either empty or invalid.");
+                throw new ValidationException("Email/UserName is either empty or invalid");
+            }
+
+            if (isValidEmail)
+            {
+                userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username));
+            }
+            else
+            {
+                userList = await _userRepository.GetItemsAsync(u => u.UserName.Equals(username));
+            }
+            var existingUser = userList.ToList().FirstOrDefault();
+            if (existingUser == null)
+            {
+                _logger.Error("User not found with that Email/Username.");
+                throw new NotFoundException("User not found with that Email/Username.");
+            }
+
+            return _mapper.Map<User, UserResponse>(existingUser);
+        }
+
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
