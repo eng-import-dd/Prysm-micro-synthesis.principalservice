@@ -67,14 +67,6 @@ namespace Synthesis.PrincipalService
         /// </summary>
         public new ILifetimeScope ApplicationContainer { get; }
 
-        /// <summary>
-        /// Gets a logger using the default log topic for this service.
-        /// </summary>
-        public ILogger GetDefaultLogger()
-        {
-            return ApplicationContainer.Resolve<ILogger>();
-        }
-
         /// <inheritdoc />
         protected override Func<ITypeCatalog, NancyInternalConfiguration> InternalConfiguration
         {
@@ -96,7 +88,8 @@ namespace Synthesis.PrincipalService
                 builder.RegisterType<MetadataRegistry>().As<IMetadataRegistry>().SingleInstance();
 
                 // Update this registration if you need to change the authorization implementation.
-                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<ITokenValidator>(), c.Resolve<ILogger>()))
+                builder.Register(c => new SynthesisStatelessAuthorization(c.Resolve<ITokenValidator>(),
+                                                                          c.Resolve<ILoggerFactory>().GetLogger(nameof(SynthesisStatelessAuthorization))))
                     .As<IStatelessAuthorization>()
                     .SingleInstance();
 
@@ -112,7 +105,9 @@ namespace Synthesis.PrincipalService
                                  });
             });
 
-            container.Resolve<ILogger>().Info("PrincipalService Service Running....");
+            container.Resolve<ILoggerFactory>()
+                     .GetLogger(this)
+                     .Info("PrincipalService Service Running....");
         }
 
         protected override void ApplicationStartup(ILifetimeScope container, IPipelines pipelines)
@@ -168,13 +163,11 @@ namespace Synthesis.PrincipalService
 
             var settingsReader = new DefaultAppSettingsReader();
             var loggerFactory = new LoggerFactory();
-            var defaultLogger = loggerFactory.Get(DefaultLogTopic);
 
             builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
 
             // Logging
             builder.RegisterInstance(CreateLogLayout(settingsReader));
-            builder.RegisterInstance(defaultLogger);
             builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
 
             // Tracking
@@ -212,7 +205,12 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
 
             // Key Manager
-            builder.RegisterType<SimpleKeyManager>().As<IKeyManager>().SingleInstance();
+            builder.RegisterType<SimpleKeyManager>()
+                   .As<IKeyManager>()
+                   .WithParameter(new ResolvedParameter(
+                                                        (p, c) => p.ParameterType == typeof(ILogger),
+                                                        (p, c) => c.Resolve<ILoggerFactory>().GetLogger("Synthesis.PrincipalService.KeyManager")))
+                   .SingleInstance();
 
             //HttpClient
             builder.RegisterType<HttpClientConfiguration>().As<IHttpClientConfiguration>().SingleInstance();

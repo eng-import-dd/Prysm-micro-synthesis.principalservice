@@ -25,12 +25,12 @@ namespace Synthesis.PrincipalService.Modules
         public UserInviteModule(
             IUserInvitesController userInvitesController,
             IMetadataRegistry metadataRegistry,
-            ILogger logger
+            ILoggerFactory loggerFactory
             )
         {
             _metadataRegistry = metadataRegistry;
             _userInviteController = userInvitesController;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 
@@ -88,7 +88,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting send user invite", ex);
+                _logger.Error("Binding failed while attempting send user invite", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -121,7 +121,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to resend user invites", ex);
+                _logger.Error("Binding failed while attempting to resend user invites", ex);
                 return Response.BadRequestBindingException();
             }
 

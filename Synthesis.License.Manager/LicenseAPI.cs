@@ -23,9 +23,9 @@ namespace Synthesis.License.Manager
 
         protected override string SecurityToken => "C35BB5D0-4A9D-4BFB-A3EC-6E24694D2B3D";
 
-        public LicenseApi(ILogger loggingService, IHttpClient httpClient): base(httpClient)
+        public LicenseApi(ILoggerFactory loggerFactory, IHttpClient httpClient): base(httpClient)
         {
-            LoggingService = loggingService;
+            LoggingService = loggerFactory.GetLogger(this);
             ApiBaseUrl = ConfigurationManager.AppSettings["BaseLicenseEndpoint"];
         }
         

@@ -49,10 +49,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                                  .Returns(_validatorMock.Object);
 
+            var loggerFactoryMock = new Mock<ILoggerFactory>();
+            loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
+                             .Returns(_loggerMock.Object);
+
             _controller = new GroupsController(_repositoryFactoryMock.Object,
                                               _validatorLocatorMock.Object,
                                               _eventServiceMock.Object,
-                                              _loggerMock.Object);
+                                               loggerFactoryMock.Object);
         }
 
         [Fact]
