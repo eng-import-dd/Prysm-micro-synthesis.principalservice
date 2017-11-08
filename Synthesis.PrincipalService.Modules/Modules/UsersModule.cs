@@ -202,7 +202,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private void SetupRoute_GetUserByUserNameOrEmail()
         {
-            const string path = "/v1/users/user/{username}";
+            const string path = "/v1/user/{username}";
             Get(path, GetUserByUserNameOrEmailAsync, null, "GetUserByUserNameOrEmail");
 
             // register metadata
@@ -593,6 +593,10 @@ namespace Synthesis.PrincipalService.Modules
             {
                 _logger.Error("User not found", ex);
                 return Response.NotFound();
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetUserByUserNameOrEmailAsync: Not authorized to call this route!");
             }
             catch (Exception ex)
             {
