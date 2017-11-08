@@ -55,11 +55,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
 
+            // logger factory mock
+            var loggerFactoryMock = new Mock<ILoggerFactory>();
+            loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
+                             .Returns(_loggerMock.Object);
+
             _controller = new UserInvitesController(_repositoryFactoryMock.Object,
-                                              _loggerMock.Object,
-                                              _emailUtilityMock.Object,
-                                              mapper,
-                                              _validatorLocatorMock.Object);
+                                                    loggerFactoryMock.Object,
+                                                    _emailUtilityMock.Object,
+                                                    mapper,
+                                                    _validatorLocatorMock.Object);
         }
 
         [Fact]

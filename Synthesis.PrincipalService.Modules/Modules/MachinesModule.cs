@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Requests;
-using System.Web.Script.Serialization;
 using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
@@ -29,12 +28,12 @@ namespace Synthesis.PrincipalService.Modules
         public MachinesModule(
             IMetadataRegistry metadataRegistry,
             IMachineController machineController,
-            ILogger logger)
+            ILoggerFactory loggerFactory)
         {
             // Init DI
             _metadataRegistry = metadataRegistry;
             _machineController = machineController;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
 
             this.RequiresAuthentication();
 
@@ -222,7 +221,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to create a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to create a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
             try
@@ -241,7 +240,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 _logger.Error("Failed to create machine resource due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateMachine); ;
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateMachine);
             }
         }
 
@@ -267,7 +266,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                _logger.Error("GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
@@ -284,7 +283,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -341,7 +340,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(LogLevel.Error, "GetMachineById threw an unhandled exception", ex);
+                _logger.Error("GetMachineById threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
@@ -355,7 +354,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                _logger.Warning("Binding failed while attempting to update a Machine resource", ex);
+                _logger.Error("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 

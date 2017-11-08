@@ -32,6 +32,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
+        private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
@@ -68,11 +69,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                                  .Returns(_validatorMock.Object);
 
+            // logger factory mock
+            _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
+                              .Returns(_loggerMock.Object);
+
             string deploymentType = "";
             _controller = new UsersController(_repositoryFactoryMock.Object,
                                               _validatorLocatorMock.Object,
                                               _eventServiceMock.Object,
-                                              _loggerMock.Object,
+                                              _loggerFactoryMock.Object,
                                               _licenseApiMock.Object,
                                               _emailUtilityMock.Object,
                                               _mapper,
@@ -245,7 +250,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var controller = new UsersController(_repositoryFactoryMock.Object,
                                                  _validatorLocatorMock.Object,
                                                  _eventServiceMock.Object,
-                                                 _loggerMock.Object,
+                                                 _loggerFactoryMock.Object,
                                                  _licenseApiMock.Object,
                                                  _emailUtilityMock.Object,
                                                  _mapper,
@@ -266,7 +271,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var controller = new UsersController(_repositoryFactoryMock.Object,
                                                  _validatorLocatorMock.Object,
                                                  _eventServiceMock.Object,
-                                                 _loggerMock.Object,
+                                                 _loggerFactoryMock.Object,
                                                  _licenseApiMock.Object,
                                                  _emailUtilityMock.Object,
                                                  _mapper,

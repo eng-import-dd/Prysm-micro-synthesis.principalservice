@@ -13,9 +13,9 @@ namespace Synthesis.PrincipalService.Owin
         private readonly ITrackingService _tracking;
 
         /// <inheritdoc />
-        public GlobalExceptionHandlerMiddleware(OwinMiddleware next, ILogger logger, ITrackingService tracking) : base(next)
+        public GlobalExceptionHandlerMiddleware(OwinMiddleware next, ILoggerFactory loggerFactory, ITrackingService tracking) : base(next)
         {
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(this);
             _tracking = tracking;
         }
 

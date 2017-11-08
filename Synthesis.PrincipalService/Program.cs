@@ -19,7 +19,7 @@ namespace Synthesis.PrincipalService
         {
             var rootContainer = PrincipalServiceBootstrapper.RootContainer;
             var settingsReader = rootContainer.Resolve<IAppSettingsReader>();
-            var logger = rootContainer.Resolve<ILogger>();
+            var logger = rootContainer.Resolve<ILoggerFactory>().GetLogger(nameof(Program));
 
             if (args == null || args.Length == 0)
             {
