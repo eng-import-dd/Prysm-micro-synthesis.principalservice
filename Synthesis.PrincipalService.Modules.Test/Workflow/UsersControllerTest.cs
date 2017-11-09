@@ -667,7 +667,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 FirstName = "FirstName",
                 LastName = "LastName",
                 Email = "cmalyala@prysm.com",
-                PasswordAttempts = 3,
                 IsLocked = false,
                 IsIdpUser = false
             };

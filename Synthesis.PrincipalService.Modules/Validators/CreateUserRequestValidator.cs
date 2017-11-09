@@ -24,12 +24,6 @@ namespace Synthesis.PrincipalService.Validators
                 .NotEmpty().WithMessage("The UserName property must not be empty")
                 .MaximumLength(100).WithMessage("The UserName must be less than 100 characters long")
                 .Matches(@"^[0-9a-zA-Z@\-\._]{1,100}$").WithMessage("Username may only contain alpha-numeric characters as well . @ _ -");
-
-            RuleFor(request => request.PasswordHash)
-                .NotEmpty().WithMessage("Password Hash and Salt can not be null");
-
-            RuleFor(request => request.PasswordSalt)
-                .NotEmpty().WithMessage("Password Hash and Salt can not be null");
-        }
+            }
     }
 }
