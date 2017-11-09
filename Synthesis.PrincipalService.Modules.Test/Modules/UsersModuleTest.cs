@@ -1025,7 +1025,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #region Get UserGroups For User
         [Fact]
-        public async Task GetGroupsForUserReturnsFound()
+        public async Task GetGroupsForUserReturnsOk()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
             _controllerMock.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
@@ -1041,7 +1041,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                                                                                        with.Header("Accept", "application/json");
                                                                                        with.Header("Content-Type", "application/json");
                                                                                    });
-            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
