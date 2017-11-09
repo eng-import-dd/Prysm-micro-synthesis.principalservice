@@ -204,6 +204,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             const string path = "/v1/user/{username}";
             Get(path, GetUserByUserNameOrEmailAsync, null, "GetUserByUserNameOrEmail");
+            Get(LegacyBaseRoute + path, GetUserByUserNameOrEmailAsync, null, "GetUserByUserNameOrEmailLegacy");
 
             // register metadata
             var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
@@ -212,6 +213,14 @@ namespace Synthesis.PrincipalService.Modules
             var metadataDescription = "Gets the user resource by email or username";
 
             _metadataRegistry.SetRouteMetadata("GetUserByUserNameOrEmail", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetUserByUserNameOrEmailLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Request = metadataRequest,
