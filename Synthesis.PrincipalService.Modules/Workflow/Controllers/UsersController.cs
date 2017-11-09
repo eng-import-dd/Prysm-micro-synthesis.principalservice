@@ -1002,8 +1002,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemsAsync(u => u.Id == userId);
-            var userWithGivenUserId = result.ToList().FirstOrDefault();
+            var userWithGivenUserId = await _userRepository.GetItemAsync(userId);
             if (userWithGivenUserId != null)
             {
                 return userWithGivenUserId.Groups;
