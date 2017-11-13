@@ -549,7 +549,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return userMailed;
         }
 
-        public async Task<UserResponse> GetUserByUserNameOrEmailAsync(string username)
+        public async Task<User> GetUserByUserNameOrEmailAsync(string username)
         {
             var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
             IEnumerable<User> userList;
@@ -567,7 +567,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new NotFoundException("User not found with that Email/Username.");
             }
 
-            return _mapper.Map<User, UserResponse>(existingUser);
+            return existingUser;
         }
 
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)

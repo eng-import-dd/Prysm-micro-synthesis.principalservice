@@ -49,6 +49,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
 
-        Task<UserResponse> GetUserByUserNameOrEmailAsync(string username);
+        Task<User> GetUserByUserNameOrEmailAsync(string username);
     }
 }
