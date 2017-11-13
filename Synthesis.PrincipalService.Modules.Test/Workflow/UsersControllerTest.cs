@@ -1227,7 +1227,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             var result = await _controller.GetUserByUserNameOrEmailAsync(validEmail);
 
-            Assert.IsType<UserResponse>(result);
+            Assert.IsType<User>(result);
         }
 
         [Fact]
