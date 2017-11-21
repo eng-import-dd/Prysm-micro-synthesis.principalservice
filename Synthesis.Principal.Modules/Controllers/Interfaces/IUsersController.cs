@@ -48,5 +48,7 @@ namespace Synthesis.PrincipalService.Controllers.Interfaces
         Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds);
 
         Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
+
+        Task<User> GetUserByUserNameOrEmailAsync(string username);
     }
 }

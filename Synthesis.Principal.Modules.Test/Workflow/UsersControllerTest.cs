@@ -22,6 +22,14 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
+using System;
+using System.CodeDom;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -967,15 +975,50 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<LicenseSummaryDto>());
 
-            var tenantId = Guid.NewGuid();
-            var userid = Guid.Empty;
+        [Fact]
+        public async Task GetGroupsForUserSuccess()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .Returns(Task.FromResult(new List<Guid>()));
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
+                               .ReturnsAsync(new List<User> { new User(){Id = userId,Groups = new List<Guid>()} });
+            var result = await _controller.GetGroupsForUserAsync(userId ?? Guid.Empty);
+            Assert.IsType<List<Guid>>(result);
+        }
 
-            _validatorMock.Setup(m => m.Validate(userid))
-                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+        [Fact]
+        public async Task GetGroupsForUserThrowsNotFoundException()
+        {
+            Guid? userId = Guid.NewGuid();
+            var exception = "Resource Not Found";
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new NotFoundException(exception));
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new NotFoundException(exception));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
+        }
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense));
+        [Fact]
+        public async Task GetGroupsForUserThrowsException()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new Exception());
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new Exception());
+            await Assert.ThrowsAsync<Exception>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
+        }
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+        [Fact]
+        public async Task GetGroupsForUserThrowsValidationException()
+        {
+            Guid? userId = Guid.NewGuid();
+            _mockUserController.Setup(m => m.GetGroupsForUserAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                               .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupsForUserAsync(userId ?? Guid.Empty));
         }
 
         [Fact]
@@ -1139,5 +1182,32 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
             Assert.Equal(ex.Errors.ToList().Count, 3);
         }
+
+        #endregion
+
+
+        #region Get User By Email Or Username Test cases
+        [Fact]
+        public async Task GetUserByEmailOrUserNameIfExistsAsync()
+        {
+            var validEmail = "smm@pry.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
+                               .ReturnsAsync(new List<User>(){new User(){Email = validEmail}});
+
+            var result = await _controller.GetUserByUserNameOrEmailAsync(validEmail);
+
+            Assert.IsType<User>(result);
+        }
+
+        [Fact]
+        public async Task GetUserByEmailOrUserNameIfDoesntExistsAsync()
+        {
+            var validEmail = "smm@pry.com";
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ThrowsAsync(new NotFoundException("Not found"));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserByUserNameOrEmailAsync(validEmail));
+        }
+
+        #endregion
     }
 }

@@ -550,6 +550,27 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 return userMailed;
         }
 
+        public async Task<User> GetUserByUserNameOrEmailAsync(string username)
+        {
+            var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
+            IEnumerable<User> userList;
+            if (!unameValidationResult.IsValid)
+            {
+                _logger.Error("Email/UserName is either empty or invalid.");
+                throw new ValidationException("Email/UserName is either empty or invalid");
+            }
+
+            userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.UserName.Equals(username));
+            var existingUser = userList.ToList().FirstOrDefault();
+            if (existingUser == null)
+            {
+                _logger.Error("User not found with that Email/Username.");
+                throw new NotFoundException("User not found with that Email/Username.");
+            }
+
+            return existingUser;
+        }
+
         private async Task<bool> IsLicenseAvailable(Guid tenantId, LicenseType licenseType)
         {
             var summary = await _licenseApi.GetTenantLicenseSummaryAsync(tenantId);
@@ -982,8 +1003,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemsAsync(u => u.Id == userId);
-            var userWithGivenUserId = result.ToList().FirstOrDefault();
+            var userWithGivenUserId = await _userRepository.GetItemAsync(userId);
             if (userWithGivenUserId != null)
             {
                 return userWithGivenUserId.Groups;
