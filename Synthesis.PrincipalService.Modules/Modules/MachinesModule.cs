@@ -40,6 +40,7 @@ namespace Synthesis.PrincipalService.Modules
             // Initialize documentation
             SetupRouteMetadata();
             SetupRoute_GetMachineById();
+            SetupRoute_GetMachineByKey();
             SetupRoute_UpdateMachine();
             SetupRoute_DeleteMachine();
             SetupRoute_ChangeMachineAccount();
@@ -88,6 +89,34 @@ namespace Synthesis.PrincipalService.Modules
             });
 
             _metadataRegistry.SetRouteMetadata("GetMachineByIdLegacy", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = $"{DeprecationWarning}: {metadataDescription}"
+            });
+        }
+
+        private void SetupRoute_GetMachineByKey()
+        {
+            const string path = "/v1/machines/machinekey/{machineKey}";
+            Get(path, GetMachineByKeyAsync, null, "GetMachineByKey");
+            Get("/api/" + path, GetMachineByKeyAsync, null, "GetMachineByKeyLegacy");
+
+            var metadataStatusCodes = new[] { HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.NotFound, HttpStatusCode.InternalServerError };
+            var metadataRequest = ToFormattedJson(new Guid());
+            var metadataResponse = ToFormattedJson(new Machine());
+            var metadataDescription = "Retrieves a machine by Machine Key";
+
+            _metadataRegistry.SetRouteMetadata("GetMachineByKey", new SynthesisRouteMetadata
+            {
+                ValidStatusCodes = metadataStatusCodes,
+                Request = metadataRequest,
+                Response = metadataResponse,
+                Description = metadataDescription
+            });
+
+            _metadataRegistry.SetRouteMetadata("GetMachineByKeyLegacy", new SynthesisRouteMetadata
             {
                 ValidStatusCodes = metadataStatusCodes,
                 Request = metadataRequest,
@@ -271,6 +300,32 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> GetMachineByKeyAsync(dynamic input)
+        {
+            var machineKey = input.machineKey;
+            try
+            {
+                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
+                return await _machineController.GetMachineByKeyAsync(machineKey, tenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineByKey: No access to get machines!");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("GetMachineByKey threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
+            }
+        }
         private async Task<object> UpdateMachineAsync(dynamic input)
         {
             Guid machineId;

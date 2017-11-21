@@ -299,6 +299,93 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
+        #region GET by MachineKey Tests
+        [Fact]
+        public async Task GetMachineByKeyReturnsOk()
+        {
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new MachineResponse()));
+
+            var validMachineKey = Guid.NewGuid().ToString();
+            var response = await _browserAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var validMachineKey = Guid.NewGuid().ToString();
+            var response = await _browserAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyReturnsUnauthorized()
+        {
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
+                           .Returns(Task.FromResult(new MachineResponse()));
+
+            var validMachineKey = Guid.NewGuid();
+            var response = await _browserNoAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
+                                                    with =>
+                                                    {
+                                                        with.HttpRequest();
+                                                        with.Header("Accept", "application/json");
+                                                        with.Header("Content-Type", "application/json");
+                                                    });
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var validMachineKey = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyReturnsNotFoundIfItemDoesNotExist()
+        {
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
+                           .Throws(new NotFoundException(string.Empty));
+
+            var validMachineKey = Guid.NewGuid();
+            var response = await _browserAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
+                                                  with =>
+                                                  {
+                                                      with.HttpRequest();
+                                                      with.Header("Accept", "application/json");
+                                                      with.Header("Content-Type", "application/json");
+                                                  });
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        #endregion
+
         #region UPDATE Tests
         [Fact]
         public async Task UpdateMachineReturnsOK()

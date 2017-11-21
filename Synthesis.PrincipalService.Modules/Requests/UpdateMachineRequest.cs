@@ -23,5 +23,9 @@ namespace Synthesis.PrincipalService.Requests
         public DateTime DateModified { get; set; }
 
         public Guid ModifiedBy { get; set; }
+
+        public string SynthesisVersion { get; set; }
+
+        public DateTime? LastOnline { get; set; }
     }
 }
