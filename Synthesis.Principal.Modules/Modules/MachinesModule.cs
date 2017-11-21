@@ -73,7 +73,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateMachineAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             CreateMachineRequest newMachine;
             try
@@ -107,7 +109,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetMachineByIdAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             var machineId = input.id;
             try
@@ -135,7 +139,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateMachineAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             UpdateMachineRequest updateMachine;
 
@@ -174,7 +180,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteMachineAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             var machineId = input.id;
 
@@ -209,7 +217,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> ChangeMachineAccountAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             UpdateMachineRequest updateMachine;
             try
@@ -247,7 +257,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetTenantMachinesAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {

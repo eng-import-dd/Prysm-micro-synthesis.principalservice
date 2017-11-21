@@ -57,7 +57,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserInviteListForTenantAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             List<UserInviteRequest> invitedUsersList;
             try
@@ -91,7 +93,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> ResendEmailInvitationAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             List<UserInviteRequest> invitedUsersList;
             try
@@ -124,7 +128,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUsersInvitedForTenantAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             bool allUsers = input.allusers;
             try

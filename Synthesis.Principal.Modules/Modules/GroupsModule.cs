@@ -91,7 +91,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupByIdAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             Guid groupId = input.id;
             try
@@ -119,7 +121,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupsForTenantAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -150,7 +154,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteGroupAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -185,7 +191,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateGroupAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             Group existingGroup;
             try
