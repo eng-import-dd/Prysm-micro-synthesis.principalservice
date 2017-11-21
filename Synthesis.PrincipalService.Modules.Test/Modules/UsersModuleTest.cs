@@ -1511,7 +1511,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetUserByEmailOrUserNameReturnsOkIfSuccessful()
         {
             var validEmail = "cmm@prysm.com";
-            var actual = await _browserAuth.Get($"/v1/users/user/{validEmail}",
+            var actual = await _browserAuth.Get($"/v1/user/{validEmail}",
                                                 with =>
                                                 {
                                                     with.Header("Accept", "application/json");
