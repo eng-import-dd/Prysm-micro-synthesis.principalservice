@@ -37,8 +37,8 @@
     <Reference Include="AsyncEnumerable, Version=2.1.0.0, Culture=neutral, PublicKeyToken=0426b068161bd1d1, processorArchitecture=MSIL">
       <HintPath>..\packages\AsyncEnumerator.2.1.0\lib\net45\AsyncEnumerable.dll</HintPath>
     </Reference>
-    <Reference Include="Autofac, Version=4.6.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.4.6.1\lib\net45\Autofac.dll</HintPath>
+    <Reference Include="Autofac, Version=4.6.2.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.4.6.2\lib\net45\Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Autofac.Extras.DynamicProxy, Version=4.2.1.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\packages\Autofac.Extras.DynamicProxy.4.2.1\lib\net45\Autofac.Extras.DynamicProxy.dll</HintPath>
@@ -173,7 +173,7 @@
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.4\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta005\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta007\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
@@ -201,7 +201,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta007\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -213,7 +213,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta022\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta024\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -222,7 +222,10 @@
       <HintPath>..\packages\Synthesis.Owin.Host.2.0.0\lib\net452\Synthesis.Owin.Host.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta001\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta004\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta004\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.3\lib\net452\Synthesis.Serialization.dll</HintPath>
@@ -252,11 +255,13 @@
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.4.0\lib\net45\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
+    <Reference Include="System.Drawing" />
     <Reference Include="System.IdentityModel" />
     <Reference Include="System.IdentityModel.Tokens.Jwt, Version=5.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.5.1.4\lib\net451\System.IdentityModel.Tokens.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http.Extensions, Version=2.2.29.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Net.Http.2.2.29\lib\net45\System.Net.Http.Extensions.dll</HintPath>
@@ -270,6 +275,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -313,6 +319,7 @@
     <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Models\Group.cs" />
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Models\Principal.cs" />

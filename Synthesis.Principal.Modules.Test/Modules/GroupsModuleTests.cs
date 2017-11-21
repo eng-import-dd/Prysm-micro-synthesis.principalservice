@@ -1,106 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
-using Nancy.Testing;
-using Synthesis.Authentication;
-using Synthesis.DocumentStorage;
-using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
-using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PolicyEvaluator;
-using Synthesis.PolicyEvaluator.Models;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Models;
 using Xunit;
-using ClaimTypes = Synthesis.Nancy.MicroService.Constants.ClaimTypes;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
-    /// <summary>
-    ///     Groups Module Unit Test Cases class.
-    /// </summary>
-    [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-    public class GroupsModuleTests
+    public class GroupsModuleTests : BaseModuleTests<GroupsModule>
     {
-        private Browser AuthenticatedBrowser => GetBrowser();
-        private Browser UnauthenticatedBrowser => GetBrowser(false);
-        // TODO: Uncomment the browsers below when Unauthenticated and ForbiddenBrowser tests are added
-        //private Browser ForbiddenBrowser => GetBrowser(true, false);
-
+        /// <inheritdoc />
+        protected override List<object> BrowserDependencies { get; }
         private readonly Mock<IGroupsController> _controllerMock = new Mock<IGroupsController>();
-        private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
-        private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
-        private readonly Mock<IPolicyEvaluator> _policyEvaluatorForbiddenMock = new Mock<IPolicyEvaluator>();
-        private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();
-        private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
-        private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
+
 
         public GroupsModuleTests()
         {
-            _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
-                .Returns(new Mock<ILogger>().Object);
-
-            _policyEvaluatorForbiddenMock
-                .Setup(x => x.EvaluateAsync(It.IsAny<PolicyEvaluationContext>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(PermissionScope.Deny);
-
-            _metadataRegistryMock
-                .Setup(x => x.GetRouteMetadata(It.IsAny<string>()))
-                .Returns<string>(name => new SynthesisRouteMetadata(null, null, name));
-        }
-
-        private Browser GetBrowser(bool isAuthenticated = true, bool hasAccess = true)
-        {
-            return new Browser(with =>
-            {
-                if (isAuthenticated)
-                {
-                    with.RequestStartup((container, pipelines, context) =>
-                    {
-                        var identity = new ClaimsIdentity(new[]
-                            {
-                                new Claim(ClaimTypes.Account, "Test User"),
-                                new Claim(ClaimTypes.Email, "test@user.com"),
-                                new Claim("TenantId", "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
-                                new Claim("UserId", "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
-                            },
-                            AuthenticationTypes.Basic);
-                        context.CurrentUser = new ClaimsPrincipal(identity);
-                    });
-                }
-
-                with.Dependency(_controllerMock.Object);
-                with.Dependency(_groupRepositoryMock.Object);
-                with.Dependency(_tokenValidatorMock.Object);
-                with.Dependency(_loggerFactoryMock.Object);
-                with.Dependency(_metadataRegistryMock.Object);
-                with.Dependency(hasAccess ? _policyEvaluatorMock.Object : _policyEvaluatorForbiddenMock.Object);
-                with.Module<GroupsModule>();
-            });
-        }
-
-        private static void BuildRequest(BrowserContext context)
-        {
-            context.HttpRequest();
-            context.Header("Accept", "application/json");
-            context.Header("Content-Type", "application/json");
-        }
-
-        private static void BuildRequest<T>(BrowserContext context, T body)
-        {
-            context.HttpRequest();
-            context.Header("Accept", "application/json");
-            context.Header("Content-Type", "application/json");
-            context.JsonBody(body);
+            BrowserDependencies = new List<object> { _controllerMock.Object };
         }
 
         [Fact]
@@ -109,7 +32,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await AuthenticatedBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -121,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await AuthenticatedBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -129,7 +52,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsItemWithInvalidBodyReturnsBadRequest()
         {
-            var response = await AuthenticatedBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -138,7 +61,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsOk()
         {
-            var response = await AuthenticatedBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Post("/v1/groups", ctx => BuildRequest(ctx, new Group()));
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -150,7 +73,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var groupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
+            var response = await UserTokenBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -164,7 +87,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var groupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
+            var response = await UserTokenBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -174,7 +97,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var groupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
+            var response = await UserTokenBrowser.Delete($"/v1/groups/{groupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
@@ -187,7 +110,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validGroupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -200,7 +123,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validGroupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -213,7 +136,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validGroupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -226,7 +149,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validGroupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -253,7 +176,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validGroupId = Guid.NewGuid();
 
-            var response = await AuthenticatedBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -265,7 +188,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await AuthenticatedBrowser.Get("/v1/groups/tenant", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/groups/tenant", BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -277,7 +200,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
-            var response = await AuthenticatedBrowser.Get("/v1/groups/tenant", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/groups/tenant", BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -289,7 +212,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(Enumerable.Empty<Group>()));
 
-            var response = await AuthenticatedBrowser.Get("/v1/groups/tenant", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/groups/tenant", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -301,7 +224,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await AuthenticatedBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -314,7 +237,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await AuthenticatedBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -323,7 +246,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateGroupReturnsItemWithInvalidBodyReturnsBadRequest()
         {
-            var response = await AuthenticatedBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -333,7 +256,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateGroupReturnsOk()
         {
-            var response = await AuthenticatedBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
+            var response = await UserTokenBrowser.Put("/v1/groups", ctx => BuildRequest(ctx, new Group()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }

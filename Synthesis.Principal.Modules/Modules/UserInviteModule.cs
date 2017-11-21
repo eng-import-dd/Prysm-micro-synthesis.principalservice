@@ -22,7 +22,6 @@ namespace Synthesis.PrincipalService.Modules
 {
     public sealed class UserInviteModule : SynthesisModule
     {
-        private const string TenantIdClaim = "TenantId";
         private readonly IUserInvitesController _userInviteController;
 
         public UserInviteModule(
@@ -73,8 +72,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userInviteController.CreateUserInviteListAsync(invitedUsersList, tenantId);
+                var result = await _userInviteController.CreateUserInviteListAsync(invitedUsersList, TenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -108,8 +106,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userInviteController.ResendEmailInviteAsync(invitedUsersList, tenantId);
+                var result = await _userInviteController.ResendEmailInviteAsync(invitedUsersList, TenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -132,8 +129,7 @@ namespace Synthesis.PrincipalService.Modules
             bool allUsers = input.allusers;
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _userInviteController.GetUsersInvitedForTenantAsync(tenantId, allUsers);
+                var result = await _userInviteController.GetUsersInvitedForTenantAsync(TenantId, allUsers);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);

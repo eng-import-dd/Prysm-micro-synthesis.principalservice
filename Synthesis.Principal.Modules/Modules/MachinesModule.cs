@@ -23,7 +23,6 @@ namespace Synthesis.PrincipalService.Modules
 {
     public sealed class MachinesModule : SynthesisModule
     {
-        private const string TenantIdClaim = "TenantId";
         private readonly IMachineController _machineController;
 
         public MachinesModule(
@@ -89,8 +88,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                var result = await _machineController.CreateMachineAsync(newMachine, tenantId);
+                var result = await _machineController.CreateMachineAsync(newMachine, TenantId);
 
                 return Negotiate
                     .WithModel(result)
@@ -114,8 +112,7 @@ namespace Synthesis.PrincipalService.Modules
             var machineId = input.id;
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                return await _machineController.GetMachineByIdAsync(machineId, tenantId);
+                return await _machineController.GetMachineByIdAsync(machineId, TenantId);
             }
             catch (NotFoundException)
             {
@@ -154,8 +151,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                return await _machineController.UpdateMachineAsync(updateMachine, tenantId);
+                return await _machineController.UpdateMachineAsync(updateMachine, TenantId);
             }
             catch (ValidationFailedException ex)
             {
@@ -184,8 +180,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                await _machineController.DeleteMachineAsync(machineId, tenantId);
+                await _machineController.DeleteMachineAsync(machineId, TenantId);
 
                 return new Response
                 {
@@ -227,11 +222,9 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
-            Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-
             try
             {
-                return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, tenantId, updateMachine.SettingProfileId);
+                return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, TenantId, updateMachine.SettingProfileId);
             }
             catch (ValidationFailedException ex)
             {
@@ -258,8 +251,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                return await _machineController.GetTenantMachinesAsync(tenantId);
+                return await _machineController.GetTenantMachinesAsync(TenantId);
             }
             catch (NotFoundException)
             {

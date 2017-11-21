@@ -36,7 +36,7 @@ using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Mapper;
@@ -238,7 +238,8 @@ namespace Synthesis.PrincipalService
                 .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
 
             builder.RegisterType<ServiceToServiceClient>()
-                .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey);
+                .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey)
+                .AsSelf();
 
             builder.RegisterType<SynthesisHttpClient>()
                 .As<IHttpClient>();
@@ -272,12 +273,15 @@ namespace Synthesis.PrincipalService
                 .As<ITokenValidator>()
                 .SingleInstance();
 
-            // Policy Evaluator (make sure to use AuthorizationPassThroughClient)
-            builder.RegisterType<PolicyEvaluator.Workflow.PolicyEvaluator>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClient),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey)))
-                .As<IPolicyEvaluator>();
+                builder.RegisterType<MicroserviceHttpClientResolver>()
+                    .As<IMicroserviceHttpClientResolver>()
+                    .WithParameter(new ResolvedParameter(
+                        (p, c) => p.Name == "passThroughKey",
+                        (p, c) => AuthorizationPassThroughKey))
+                    .WithParameter(new ResolvedParameter(
+                        (p, c) => p.Name == "serviceToServiceKey",
+                        (p, c) => ServiceToServiceKey));
+               builder.RegisterPolicyEvaluatorComponents();
 
             // Redis cache
             builder.RegisterType<RedisCache>()

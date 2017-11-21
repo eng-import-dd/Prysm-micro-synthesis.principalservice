@@ -29,9 +29,6 @@ namespace Synthesis.PrincipalService.Modules
     {
         private readonly IUsersController _userController;
 
-        private const string TenantIdClaim = "TenantId";
-        private const string UserIdClaim = "UserId";
-
         public UsersModule(
             IUsersController userController,
             IMetadataRegistry metadataRegistry,
@@ -154,7 +151,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userId}/promote", PromoteGuestAsync)
+            CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userIdzzz}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(new PromoteGuestRequest());
@@ -221,10 +218,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
-
-                var result = await _userController.CreateUserAsync(newUser, tenantId, createdBy);
+                var result = await _userController.CreateUserAsync(newUser, TenantId, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -271,9 +265,7 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 var getUsersParams = this.Bind<GetUsersParams>();
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-                return await _userController.GetUsersBasicAsync(tenantId, userId, getUsersParams);
+                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, getUsersParams);
 
             }
             catch (Exception ex)
@@ -325,9 +317,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
-                return await _userController.GetUsersForAccountAsync(getUsersParams, tenantId, currentUserId);
+                return await _userController.GetUsersForAccountAsync(getUsersParams, TenantId, PrincipalId);
             }
             catch (NotFoundException)
             {
@@ -518,9 +508,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-
-                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, tenantId, promoteRequest.LicenseType);
+                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, TenantId, promoteRequest.LicenseType);
 
                 return Negotiate
                     .WithModel(result)
@@ -562,8 +550,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                return await _userController.GetGuestUsersForTenantAsync(tenantId, getGuestUsersParams);
+                return await _userController.GetGuestUsersForTenantAsync(TenantId, getGuestUsersParams);
             }
             catch (NotFoundException)
             {
@@ -597,10 +584,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var createdBy);
-
-                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, TenantId, PrincipalId);
 
                 return Negotiate
                     .WithModel(result)
@@ -645,10 +629,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-
-                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, TenantId, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -676,10 +657,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-
-                var result = await _userController.GetGroupUsersAsync(groupId, tenantId, userId);
+                var result = await _userController.GetGroupUsersAsync(groupId, TenantId, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -735,8 +713,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var currentUserId);
-                var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, currentUserId);
+ var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, PrincipalId);
                 if (!result)
                 {
                     return Response.BadRequest("Either you don't have permission or cannot delete the last non locked super admin of this group.");
@@ -800,9 +777,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-
-                var result = await _userController.GetLicenseTypeForUserAsync(userId, tenantId);
+                var result = await _userController.GetLicenseTypeForUserAsync(userId, TenantId);
                 return result;
             }
             catch (ValidationFailedException ex)

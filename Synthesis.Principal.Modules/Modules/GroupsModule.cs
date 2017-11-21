@@ -20,8 +20,6 @@ namespace Synthesis.PrincipalService.Modules
 {
     public class GroupsModule : SynthesisModule
     {
-        private const string TenantIdClaim = "TenantId";
-        private const string UserIdClaim = "UserId";
         private readonly IGroupsController _groupsController;
 
         public GroupsModule(
@@ -76,10 +74,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-
-                var result = await _groupsController.CreateGroupAsync(newGroup, tenantId, userId);
+                var result = await _groupsController.CreateGroupAsync(newGroup, TenantId, PrincipalId);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.Created);
             }
@@ -101,9 +96,7 @@ namespace Synthesis.PrincipalService.Modules
             Guid groupId = input.id;
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-
-                return await _groupsController.GetGroupByIdAsync(groupId, tenantId);
+                return await _groupsController.GetGroupByIdAsync(groupId, TenantId);
             }
             catch (NotFoundException)
             {
@@ -130,10 +123,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-
-                var result = await _groupsController.GetGroupsForTenantAsync(tenantId, userId);
+                var result = await _groupsController.GetGroupsForTenantAsync(TenantId, PrincipalId);
 
                 return Negotiate
                     .WithModel(result)
@@ -165,8 +155,7 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 Guid groupId = Guid.Parse(input.groupId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-                await _groupsController.DeleteGroupAsync(groupId, userId);
+                await _groupsController.DeleteGroupAsync(groupId, PrincipalId);
 
                 return new Response
                 {
@@ -211,15 +200,12 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
-                Guid.TryParse(Context.CurrentUser.FindFirst(UserIdClaim).Value, out var userId);
-
                 if (existingGroup.TenantId.Equals(Guid.Empty))
                 {
-                    existingGroup.TenantId = tenantId;
+                    existingGroup.TenantId = TenantId;
                 }
 
-                var result = await _groupsController.UpdateGroupAsync(existingGroup, tenantId, userId);
+                var result = await _groupsController.UpdateGroupAsync(existingGroup, TenantId, PrincipalId);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
             }
