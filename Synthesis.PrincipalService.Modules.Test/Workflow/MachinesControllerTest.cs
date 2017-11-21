@@ -200,18 +200,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
-        public async Task GetMachineByKeyThrowsValidationException()
-        {
-            var errors = Enumerable.Empty<ValidationFailure>();
-            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>()))
-                                  .Throws(new ValidationFailedException(errors));
-
-            var machineKey = Guid.NewGuid().ToString();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetMachineByKeyAsync(machineKey, tenantId));
-        }
-
-        [Fact]
         public async Task GetMachineByKeyThrowsInvalidOperationException()
         {
             var errors = Enumerable.Empty<ValidationFailure>();

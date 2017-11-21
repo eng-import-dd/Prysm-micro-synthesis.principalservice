@@ -312,10 +312,6 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
             }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
             catch (InvalidOperationException)
             {
                 return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineByKey: No access to get machines!");
