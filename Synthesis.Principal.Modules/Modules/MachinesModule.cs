@@ -45,12 +45,12 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("GetMachineById", HttpMethod.Get, "/v1/machines/{id:guid}", GetMachineByIdAsync)
                 .Description("Gets a machine by its unique identifier")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new Machine());
 
             CreateRoute("UpdateMachine", HttpMethod.Put, "/v1/machines/{id:guid}", UpdateMachineAsync)
                 .Description("Update a Principal resource.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(new UpdateMachineRequest())
                 .ResponseFormat(new MachineResponse());
 
@@ -60,13 +60,13 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("ChangeMachineAccount", HttpMethod.Put, "/v1/machines/{id:guid}/changeaccount", ChangeMachineAccountAsync)
                 .Description("Changes a machine's account")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(new UpdateMachineRequest())
                 .ResponseFormat(new MachineResponse());
 
             CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/tenantmachines", GetTenantMachinesAsync)
                 .Description("Retrieves a list of machines for a given tenant")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(string.Empty)
                 .ResponseFormat(new List<MachineResponse>());
         }
@@ -195,10 +195,6 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Machine has been deleted"
                 };
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundMachine);
             }
             catch (ValidationFailedException ex)
             {

@@ -42,11 +42,11 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("GetGroupById", HttpMethod.Get, "/v1/groups/{id}", GetGroupByIdAsync)
                 .Description("Get a group by its unique identifier")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
 
             CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups/tenant", GetGroupsForTenantAsync)
                 .Description("Get Group for a tenant")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
 
             CreateRoute("DeleteGroup", HttpMethod.Delete, "/v1/groups/{groupId}", DeleteGroupAsync)
                 .Description("Deletes a Group")
@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("UpdateGroup", HttpMethod.Put, "/v1/groups", UpdateGroupAsync)
                 .Description("Updates an existing Group")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
         }
 
         private async Task<object> CreateGroupAsync(dynamic input)

@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.Authentication;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Controllers;
@@ -50,7 +51,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("GetdUsersInviteForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
                 .Description("Gets all invited users for Tenant")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(new bool())
                 .ResponseFormat(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse>() });
         }
@@ -139,6 +140,10 @@ namespace Synthesis.PrincipalService.Modules
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (ValidationFailedException ex)
             {

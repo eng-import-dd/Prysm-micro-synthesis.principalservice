@@ -215,6 +215,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Machine Update failed.", ex);
                 throw;
             }
+
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
 
@@ -241,7 +242,14 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
             }
 
-            await _machineRepository.DeleteItemAsync(machineId);
+            try
+            {
+                await _machineRepository.DeleteItemAsync(machineId);
+            }
+            catch (DocumentNotFoundException)
+            {
+                // Suppressing this exception for deletes
+            }
         }
 
         public async Task<MachineResponse> ChangeMachineAccountAsync(Guid machineId, Guid tenantId, Guid settingProfileId)
@@ -284,6 +292,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Could not move machine", ex);
                 throw;
             }
+
             return _mapper.Map<Machine, MachineResponse>(existingMachine);
         }
 
