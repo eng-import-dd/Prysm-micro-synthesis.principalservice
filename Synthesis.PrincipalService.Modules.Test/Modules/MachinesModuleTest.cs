@@ -318,23 +318,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetMachineByKeyReturnsBadRequest()
-        {
-            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
-                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
-
-            var validMachineKey = Guid.NewGuid().ToString();
-            var response = await _browserAuth.Get($"/v1/machines/machinekey/{validMachineKey}",
-                                                  with =>
-                                                  {
-                                                      with.HttpRequest();
-                                                      with.Header("Accept", "application/json");
-                                                      with.Header("Content-Type", "application/json");
-                                                  });
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        }
-
-        [Fact]
         public async Task GetMachineByKeyReturnsUnauthorized()
         {
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>()))
