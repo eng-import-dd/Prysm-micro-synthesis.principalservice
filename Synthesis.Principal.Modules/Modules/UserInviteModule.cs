@@ -8,6 +8,7 @@ using Synthesis.PrincipalService.Constants;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.Authentication;
 using Synthesis.Nancy.MicroService.Modules;
@@ -57,6 +58,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserInviteListForTenantAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             List<UserInviteRequest> invitedUsersList;
             try
             {
@@ -88,8 +91,10 @@ namespace Synthesis.PrincipalService.Modules
 
         }
 
-        private async Task<Object> ResendEmailInvitationAsync(dynamic input)
+        private async Task<object> ResendEmailInvitationAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             List<UserInviteRequest> invitedUsersList;
             try
             {
@@ -122,6 +127,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUsersInvitedForTenantAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             bool allUsers = input.allusers;
             try
             {

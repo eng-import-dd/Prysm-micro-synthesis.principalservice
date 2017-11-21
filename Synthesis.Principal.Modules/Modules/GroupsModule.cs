@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
@@ -60,6 +61,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateGroupAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             Group newGroup;
             try
             {
@@ -93,6 +96,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupByIdAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             Guid groupId = input.id;
             try
             {
@@ -121,7 +126,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupsForTenantAsync(dynamic input)
         {
-            //A list of the Groups which belong to the current user's tenant
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
@@ -154,6 +160,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteGroupAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             try
             {
                 Guid groupId = Guid.Parse(input.groupId);
@@ -188,6 +196,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateGroupAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             Group existingGroup;
             try
             {

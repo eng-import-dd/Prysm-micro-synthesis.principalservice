@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
@@ -73,6 +74,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateMachineAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             CreateMachineRequest newMachine;
             try
             {
@@ -106,6 +109,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetMachineByIdAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             var machineId = input.id;
             try
             {
@@ -133,6 +138,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateMachineAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             UpdateMachineRequest updateMachine;
 
             try
@@ -171,6 +178,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteMachineAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             var machineId = input.id;
 
             try
@@ -205,6 +214,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> ChangeMachineAccountAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             UpdateMachineRequest updateMachine;
             try
             {
@@ -243,6 +254,8 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetTenantMachinesAsync(dynamic input)
         {
+            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+
             try
             {
                 Guid.TryParse(Context.CurrentUser.FindFirst(TenantIdClaim).Value, out var tenantId);
