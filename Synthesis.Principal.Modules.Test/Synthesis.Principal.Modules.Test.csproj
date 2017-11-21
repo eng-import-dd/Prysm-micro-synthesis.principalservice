@@ -234,22 +234,22 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Modules\GroupsModuleTest.cs" />
-    <Compile Include="Modules\MachinesModuleTest.cs" />
-    <Compile Include="Modules\UserInviteModuleTest.cs" />
-    <Compile Include="Modules\UsersModuleTest.cs" />
+    <Compile Include="Modules\GroupsModuleTests.cs" />
+    <Compile Include="Modules\MachinesModuleTests.cs" />
+    <Compile Include="Modules\UserInviteModuleTests.cs" />
+    <Compile Include="Modules\UsersModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Validators\CreateMachineRequestValidatorTest.cs" />
-    <Compile Include="Validators\CreateUserGroupRequestValidatorTest.cs" />
-    <Compile Include="Validators\CreateUserRequestValidatorTest.cs" />
-    <Compile Include="Validators\UpdateGroupRequestValidatorTest.cs" />
-    <Compile Include="Validators\UpdateMachineRequestValidatorTest.cs" />
-    <Compile Include="Validators\UpdateUserRequestValidatorTest.cs" />
-    <Compile Include="Validators\UserNameValidatorTest.cs" />
-    <Compile Include="Workflow\GroupsControllerTest.cs" />
-    <Compile Include="Workflow\MachinesControllerTest.cs" />
-    <Compile Include="Workflow\UserInvitesControllerTest.cs" />
-    <Compile Include="Workflow\UsersControllerTest.cs" />
+    <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
+    <Compile Include="Validators\CreateUserGroupRequestValidatorTests.cs" />
+    <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />
+    <Compile Include="Validators\UpdateGroupRequestValidatorTests.cs" />
+    <Compile Include="Validators\UpdateMachineRequestValidatorTests.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidatorTests.cs" />
+    <Compile Include="Validators\UserNameValidatorTests.cs" />
+    <Compile Include="Workflow\GroupsControllerTests.cs" />
+    <Compile Include="Workflow\MachinesControllerTests.cs" />
+    <Compile Include="Workflow\UserInvitesControllerTests.cs" />
+    <Compile Include="Workflow\UsersControllerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">

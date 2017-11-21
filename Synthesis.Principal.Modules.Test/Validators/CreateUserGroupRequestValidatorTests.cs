@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public class CreateUserGroupRequestValidatorTest
+    public class CreateUserGroupRequestValidatorTests
     {
         private readonly CreateUserGroupRequestValidator _validator = new CreateUserGroupRequestValidator();
 

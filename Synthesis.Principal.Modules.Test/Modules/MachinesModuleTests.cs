@@ -28,7 +28,7 @@ using ClaimTypes = Synthesis.Nancy.MicroService.Constants.ClaimTypes;
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-    public class MachinesModuleTest
+    public class MachinesModuleTests
     {
         private Browser AuthenticatedBrowser => GetBrowser();
         private Browser UnauthenticatedBrowser => GetBrowser(false);
@@ -43,7 +43,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
 
-        public MachinesModuleTest()
+        public MachinesModuleTests()
         {
             _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);

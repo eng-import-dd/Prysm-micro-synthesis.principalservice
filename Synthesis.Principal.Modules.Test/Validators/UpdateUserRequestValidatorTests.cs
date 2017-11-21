@@ -4,18 +4,18 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public class CreateUserRequestValidatorTest
+    public class UpdateUserRequestValidatorTests
     {
-        private readonly CreateUserRequestValidator _validator = new CreateUserRequestValidator();
+        private readonly UpdateUserRequestValidator _validator = new UpdateUserRequestValidator();
 
         [Fact]
         public void ShouldFailIfFirstNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UpdateUserRequest
             {
                 LastName = "Test",
-                 Email ="a@b.com",
-                 UserName ="User"
+                Email = "a@b.com",
+                UserName = "User"
             };
 
             var result = _validator.Validate(request);
@@ -26,7 +26,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLastNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UpdateUserRequest
             {
 
                 FirstName = "Test",
@@ -42,10 +42,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfEmailIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UpdateUserRequest
             {
                 FirstName = "Test",
-                LastName ="User",
+                LastName = "User",
                 UserName = "User"
             };
 
@@ -58,7 +58,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfUserNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UpdateUserRequest
             {
                 FirstName = "Test",
                 LastName = "User",
@@ -70,10 +70,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             Assert.False(result.IsValid);
         }
 
+
         [Fact]
         public void ShouldPassIfValid()
         {
-            var request = new CreateUserRequest
+            var request = new UpdateUserRequest
             {
                 FirstName = "Test",
                 LastName = "User",

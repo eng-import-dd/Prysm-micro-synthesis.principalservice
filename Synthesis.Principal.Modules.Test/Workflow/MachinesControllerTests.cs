@@ -24,9 +24,9 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
-    public class MachinesControllerTest
+    public class MachinesControllerTests
     {
-        public MachinesControllerTest()
+        public MachinesControllerTests()
         {
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Machine>())

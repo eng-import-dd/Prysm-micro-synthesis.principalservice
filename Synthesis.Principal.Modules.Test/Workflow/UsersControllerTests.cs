@@ -26,9 +26,9 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
-    public class UsersControllerTest
+    public class UsersControllerTests
     {
-        public UsersControllerTest()
+        public UsersControllerTests()
         {
             _mapper = new MapperConfiguration(cfg => { cfg.AddProfile<UserProfile>(); }).CreateMapper();
 

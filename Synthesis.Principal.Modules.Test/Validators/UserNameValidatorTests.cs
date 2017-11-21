@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public class UserNameValidatorTest
+    public class UserNameValidatorTests
     {
         private readonly UserNameValidator _validator = new UserNameValidator();
 

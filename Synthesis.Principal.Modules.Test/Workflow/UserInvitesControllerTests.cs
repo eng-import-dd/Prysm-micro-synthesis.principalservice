@@ -23,9 +23,9 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
-    public class UserInvitesControllerTest
+    public class UserInvitesControllerTests
     {
-        public UserInvitesControllerTest()
+        public UserInvitesControllerTests()
         {
             var mapper = new MapperConfiguration(cfg => { cfg.AddProfile<UserInviteProfile>(); }).CreateMapper();
 

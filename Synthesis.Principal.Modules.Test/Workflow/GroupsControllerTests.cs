@@ -19,9 +19,9 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
 {
-    public class GroupsControllerTest
+    public class GroupsControllerTests
     {
-        public GroupsControllerTest()
+        public GroupsControllerTests()
         {
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())

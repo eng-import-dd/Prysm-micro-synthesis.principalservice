@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public class CreateMachineRequestValidatorTest
+    public class CreateMachineRequestValidatorTests
     {
         private readonly CreateMachineRequestValidator _validator = new CreateMachineRequestValidator();
 

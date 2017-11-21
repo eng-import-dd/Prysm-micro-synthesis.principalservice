@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
     ///     Groups Module Unit Test Cases class.
     /// </summary>
     [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-    public class GroupsModuleTest
+    public class GroupsModuleTests
     {
         private Browser AuthenticatedBrowser => GetBrowser();
         private Browser UnauthenticatedBrowser => GetBrowser(false);
@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
 
-        public GroupsModuleTest()
+        public GroupsModuleTests()
         {
             _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);

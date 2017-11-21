@@ -33,7 +33,7 @@ using ClaimTypes = Synthesis.Nancy.MicroService.Constants.ClaimTypes;
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-    public class UsersModuleTest
+    public class UsersModuleTests
     {
         private Browser AuthenticatedBrowser => GetBrowser();
         private Browser UnauthenticatedBrowser => GetBrowser(false);
@@ -51,7 +51,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private const string ValidTestEmail = "asd@hmm.com";
         private const string EmptyTestEmail = "";
 
-        public UsersModuleTest()
+        public UsersModuleTests()
         {
             _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(new Mock<ILogger>().Object);
