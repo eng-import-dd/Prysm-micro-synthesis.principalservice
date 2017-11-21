@@ -69,7 +69,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                         var identity = new ClaimsIdentity(new[]
                             {
                                 new Claim(ClaimTypes.Account, "Test User"),
-                                new Claim(ClaimTypes.Email, "test@user.com")
+                                new Claim(ClaimTypes.Email, "test@user.com"),
+                                new Claim("TenantId", "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
+                                new Claim("UserId", "16367A84-65E7-423C-B2A5-5C42F8F1D5F2")
                             },
                             AuthenticationTypes.Basic);
                         context.CurrentUser = new ClaimsPrincipal(identity);
@@ -83,7 +85,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Dependency(_metadataRegistryMock.Object);
                 with.Dependency(hasAccess ? _policyEvaluatorMock.Object : _policyEvaluatorForbiddenMock.Object);
                 with.Module<GroupsModule>();
-                with.EnableAutoRegistration();
             });
         }
 

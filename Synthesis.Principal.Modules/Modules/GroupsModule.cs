@@ -33,7 +33,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             _groupsController = groupsController;
 
-            //this.RequiresAuthentication();
+            this.RequiresAuthentication();
 
             CreateRoute("CreateGroup", HttpMethod.Post, "/v1/groups", CreateGroupAsync)
                 .Description("Creates a new group")

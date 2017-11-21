@@ -55,7 +55,7 @@ namespace Synthesis.PrincipalService.Modules
                 .ResponseFormat(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse>() });
         }
 
-        private async Task<Object> CreateUserInviteListForTenantAsync(dynamic input)
+        private async Task<object> CreateUserInviteListForTenantAsync(dynamic input)
         {
             List<UserInviteRequest> invitedUsersList;
             try

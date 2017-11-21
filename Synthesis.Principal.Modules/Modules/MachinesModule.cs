@@ -22,9 +22,7 @@ namespace Synthesis.PrincipalService.Modules
 {
     public sealed class MachinesModule : SynthesisModule
     {
-        //private const string DeprecationWarning = "DEPRECATED";
         private const string TenantIdClaim = "TenantId";
-        //private const string UserIdClaim = "UserId";
         private readonly IMachineController _machineController;
 
         public MachinesModule(

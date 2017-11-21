@@ -26,11 +26,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
     {
         private Browser AuthenticatedBrowser => GetBrowser();
         private Browser UnauthenticatedBrowser => GetBrowser(false);
-
         // TODO: Uncomment the browsers below when ForbiddenBrowser tests are added
         //private Browser ForbiddenBrowser => GetBrowser(true, false);
-        private readonly Mock<IUserInvitesController> _controllerMock = new Mock<IUserInvitesController>();
 
+        private readonly Mock<IUserInvitesController> _controllerMock = new Mock<IUserInvitesController>();
         private readonly Mock<IRepository<UserInvite>> _userInviteRepositoryMock = new Mock<IRepository<UserInvite>>();
         private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
@@ -38,14 +37,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private readonly Mock<ITokenValidator> _tokenValidatorMock = new Mock<ITokenValidator>();
         private readonly Mock<IMetadataRegistry> _metadataRegistryMock = new Mock<IMetadataRegistry>();
         private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
-
-        private readonly UserInvite _resource = new UserInvite
-        {
-            Id = Guid.Parse("2c1156fa-5902-4978-9c3d-ebcb77ae0d55"),
-            FirstName = "abc",
-            LastName = "xyz",
-            Email = "abc@yopmail.com"
-        };
 
         public UserInviteModuleTest()
         {
@@ -59,10 +50,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _metadataRegistryMock
                 .Setup(x => x.GetRouteMetadata(It.IsAny<string>()))
                 .Returns<string>(name => new SynthesisRouteMetadata(null, null, name));
-
-            _userInviteRepositoryMock
-                .Setup(r => r.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(_resource);
 
             _repositoryFactoryMock
                 .Setup(f => f.CreateRepository<UserInvite>())
@@ -80,7 +67,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                         var identity = new ClaimsIdentity(new[]
                             {
                                 new Claim(ClaimTypes.Account, "Test User"),
-                                new Claim(ClaimTypes.Email, "test@user.com")
+                                new Claim(ClaimTypes.Email, "test@user.com"),
+                                new Claim("TenantId" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3")
                             },
                             AuthenticationTypes.Basic);
                         context.CurrentUser = new ClaimsPrincipal(identity);
@@ -95,7 +83,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 with.Dependency(_metadataRegistryMock.Object);
                 with.Dependency(hasAccess ? _policyEvaluatorMock.Object : _policyEvaluatorForbiddenMock.Object);
                 with.Module<UserInviteModule>();
-                with.EnableAutoRegistration();
             });
         }
 
@@ -117,6 +104,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void CreateUserInviteReturnCreated()
         {
+            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new List<UserInviteResponse>());
+
             var response = await AuthenticatedBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);

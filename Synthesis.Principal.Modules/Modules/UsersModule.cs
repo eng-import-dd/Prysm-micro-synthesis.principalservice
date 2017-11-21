@@ -99,7 +99,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(string.Empty)
                 .ResponseFormat(new Guid());
 
-            CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "/v1/principals/{id:guid}", RemoveUserFromPermissionGroupAsync)
+            CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "v1/groups/{groupId}/users/{userId}", RemoveUserFromPermissionGroupAsync)
                 .Description("Removes a specific user from the group")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .RequestFormat(new bool())
