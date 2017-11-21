@@ -59,7 +59,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateGroupAsync(dynamic input)
         {
-            await RequiresAccess().ExecuteAsync(CancellationToken.None);
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
 
             Group newGroup;
             try
