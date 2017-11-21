@@ -23,8 +23,7 @@ using Microsoft.Azure.Documents.SystemFunctions;
 using Nancy;
 using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
-using Synthesis.PrincipalService.Controllers.Exceptions;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Utilities;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers

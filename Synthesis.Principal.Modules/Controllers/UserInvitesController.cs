@@ -8,7 +8,6 @@ using FluentValidation;
 using Synthesis.DocumentStorage;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;

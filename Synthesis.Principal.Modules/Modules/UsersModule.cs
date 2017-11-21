@@ -19,8 +19,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PrincipalService.Controllers.Exceptions;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Responses;
 

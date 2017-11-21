@@ -7,7 +7,7 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 
-namespace Synthesis.PrincipalService.Controllers.Interfaces
+namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUsersController
     {

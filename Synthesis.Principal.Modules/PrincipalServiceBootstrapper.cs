@@ -39,7 +39,6 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
-using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;

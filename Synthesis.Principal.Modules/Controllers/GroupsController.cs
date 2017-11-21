@@ -10,7 +10,6 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
-using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 

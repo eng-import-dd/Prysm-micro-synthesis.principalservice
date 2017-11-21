@@ -12,7 +12,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Models;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;

@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Models;
 
-namespace Synthesis.PrincipalService.Controllers.Interfaces
+namespace Synthesis.PrincipalService.Controllers
 {
     public interface IPrincipalsController
     {

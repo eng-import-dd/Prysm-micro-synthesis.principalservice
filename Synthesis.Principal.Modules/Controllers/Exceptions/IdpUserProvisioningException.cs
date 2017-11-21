@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Synthesis.PrincipalService.Controllers.Exceptions
+namespace Synthesis.PrincipalService.Controllers
 {
     public class IdpUserProvisioningException : Exception
     {

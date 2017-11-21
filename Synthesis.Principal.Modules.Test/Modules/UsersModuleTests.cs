@@ -25,8 +25,7 @@ using System.Threading.Tasks;
 using Synthesis.Authentication;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Models;
-using Synthesis.PrincipalService.Controllers.Exceptions;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Xunit;
 using ClaimTypes = Synthesis.Nancy.MicroService.Constants.ClaimTypes;
 

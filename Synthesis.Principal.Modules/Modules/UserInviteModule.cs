@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Synthesis.Authentication;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
