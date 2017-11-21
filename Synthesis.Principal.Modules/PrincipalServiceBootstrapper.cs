@@ -314,11 +314,10 @@ namespace Synthesis.PrincipalService
                     (p, c) => p.Name == "deploymentType",
                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
-            //builder.RegisterType<UserInvitesController>().As<IUserInvitesController>(); <-- TODO: Can this be removed, or uncommented?
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
-
-
             builder.RegisterType<GroupsController>().As<IGroupsController>();
+
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
 
