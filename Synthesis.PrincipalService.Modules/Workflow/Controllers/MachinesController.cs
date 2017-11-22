@@ -114,7 +114,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         public async Task<MachineResponse> GetMachineByKeyAsync(String machineKey, Guid tenantId)
         {
             var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(machineKey));
-            var machine = result.ToList().FirstOrDefault();
+            var machine = result.FirstOrDefault();
             if (machine == null)
             {
                 _logger.Error($"A Machine resource could not be found for id {machineKey}");
