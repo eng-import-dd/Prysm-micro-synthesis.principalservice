@@ -37,16 +37,18 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateGroup", HttpMethod.Post, "/v1/groups", CreateGroupAsync)
                 .Description("Creates a new group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new Group())
-                .ResponseFormat(new Principal());
+                .RequestFormat(Group.Example())
+                .ResponseFormat(Principal.Example());
 
             CreateRoute("GetGroupById", HttpMethod.Get, "/v1/groups/{id}", GetGroupByIdAsync)
                 .Description("Get a group by its unique identifier")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .ResponseFormat(Group.Example());
 
             CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups/tenant", GetGroupsForTenantAsync)
                 .Description("Get Group for a tenant")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .ResponseFormat(Group.Example());
 
             CreateRoute("DeleteGroup", HttpMethod.Delete, "/v1/groups/{groupId}", DeleteGroupAsync)
                 .Description("Deletes a Group")
@@ -54,7 +56,9 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("UpdateGroup", HttpMethod.Put, "/v1/groups", UpdateGroupAsync)
                 .Description("Updates an existing Group")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .RequestFormat(Group.Example())
+                .ResponseFormat(Group.Example());
         }
 
         private async Task<object> CreateGroupAsync(dynamic input)

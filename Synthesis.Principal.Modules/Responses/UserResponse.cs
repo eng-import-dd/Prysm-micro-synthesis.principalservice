@@ -25,5 +25,25 @@ namespace Synthesis.PrincipalService.Responses
         public LicenseType? LicenseType { get; set; }
         public Guid TenantId { get; set; }
         public string UserName { get; set; }
+
+        public static UserResponse Example()
+        {
+            return new UserResponse
+            {
+                CreatedBy = Guid.NewGuid(),
+                CreatedDate = DateTime.UtcNow,
+                Email = "example@email.com",
+                FirstName = "ExampleFirstname",
+                Id = Guid.NewGuid(),
+                IsIdpUser = false,
+                IsLocked = false,
+                LastAccessDate = DateTime.UtcNow,
+                LastName = "ExampleLastname",
+                LdapId = "ExampleLdapId",
+                LicenseType = License.Manager.Models.LicenseType.Default,
+                TenantId = Guid.NewGuid(),
+                UserName = "ExampleUsername"
+            };
+        }
     }
 }

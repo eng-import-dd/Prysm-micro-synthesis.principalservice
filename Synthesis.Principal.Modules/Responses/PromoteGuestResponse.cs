@@ -12,6 +12,16 @@ namespace Synthesis.PrincipalService.Responses
         public PromoteGuestResultCode ResultCode { get; set; }
 
         public Guid? UserId { get; set; }
+
+        public static PromoteGuestResponse Example()
+        {
+            return new PromoteGuestResponse
+            {
+                Message = "ExampleMessage",
+                ResultCode = PromoteGuestResultCode.Success,
+                UserId = Guid.NewGuid()
+            };
+        }
     }
 
     public enum PromoteGuestResultCode

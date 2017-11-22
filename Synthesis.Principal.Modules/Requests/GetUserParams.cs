@@ -1,18 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Synthesis.PrincipalService.Entity;
+﻿using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    public class GetUsersParams: ServerSidePagingParams
+    public class GetUsersParams : ServerSidePagingParams
     {
-        public bool OnlyCurrentUser { get; set; }
-        public bool IncludeInactive { get; set; }
-
         public IdpFilter IdpFilter { get; set; }
+        public bool IncludeInactive { get; set; }
+        public bool OnlyCurrentUser { get; set; }
+
+        public static GetUsersParams Example()
+        {
+            return new GetUsersParams
+            {
+                OnlyCurrentUser = false,
+                IncludeInactive = false,
+                IdpFilter = IdpFilter.NotSet
+            };
+        }
     }
 
     public enum IdpFilter

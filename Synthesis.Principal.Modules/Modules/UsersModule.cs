@@ -10,7 +10,6 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,107 +43,96 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, "/v1/users", CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new CreateUserRequest())
-                .ResponseFormat(new User());
+                .RequestFormat(CreateUserRequest.Example())
+                .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForAccount", HttpMethod.Get, "/v1/users/", GetUsersForAccountAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new GetUsersParams())
-                .ResponseFormat(new PagingMetadata<UserResponse> { List = new List<UserResponse>() });
+                .ResponseFormat(new PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
                 .Description("Update a User resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new UpdateUserRequest())
-                .ResponseFormat(new UserResponse());
+                .RequestFormat(UpdateUserRequest.Example())
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("LockUser", HttpMethod.Post, "/v1/users/{userId:guid}/lock", LockUserAsync)
                 .Description("Locks the respective user")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new User())
+                .RequestFormat(User.Example())
                 .ResponseFormat(new bool());
 
             CreateRoute("CreateUserGroup", HttpMethod.Post, "/v1/usergroups", CreateUserGroupAsync)
                 .Description("Creates a User Group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new CreateUserGroupRequest())
-                .ResponseFormat(new User());
+                .RequestFormat(CreateUserGroupRequest.Example())
+                .ResponseFormat(User.Example());
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, "/v1/users/canpromoteuser/{0}", CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(string.Empty)
-                .ResponseFormat(new CanPromoteUserResponse());
+                .ResponseFormat(CanPromoteUserResponse.Example());
 
             CreateRoute("GetGroupUsers", HttpMethod.Get, "/v1/groups/{id}/users", GetGroupUsersAsync)
                 .Description("Retrieves user groups by group Id")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new Guid())
                 .ResponseFormat(new List<Guid> { new Guid() });
 
             CreateRoute("GetUserGroupsForUser", HttpMethod.Get, "/v1/users/{userId}/groups", GetUserGroupsForUserAsync)
                 .Description("Retrieves user groups by user Id")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new Guid())
                 .ResponseFormat(new List<Guid> { new Guid() });
 
             CreateRoute("GetTenantIdByUserEmail", HttpMethod.Get, "/v1/users/tenantid/{email}", GetTenantIdByUserEmailAsync)
                 .Description("Retrieves tenant id by user email")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(string.Empty)
                 .ResponseFormat(new Guid());
 
             CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "v1/groups/{groupId}/users/{userId}", RemoveUserFromPermissionGroupAsync)
                 .Description("Removes a specific user from the group")
-                .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .RequestFormat(new bool())
-                .ResponseFormat(new Guid());
+                .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
             CreateRoute("GetUserById", HttpMethod.Get, "/v1/users/{id:guid}", GetUserByIdAsync)
                 .Description("Gets a User resource by UserId")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new Guid())
-                .ResponseFormat(new UserResponse());
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("GetUsersByIds", HttpMethod.Get, Routing.GetUsersByIds, GetUsersByIdsAsync)
                 .Description("Get a Principal resource by it's identifier.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(Enumerable.Empty<Guid>())
-                .ResponseFormat(new List<User> { new User() });
+                .ResponseFormat(new List<User> { User.Example() });
 
             CreateRoute("GetUsersBasic", HttpMethod.Get, "/v1/users/basic", GetUsersBasicAsync)
                 .Description("Retrieves a users basic details")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new GetUsersParams())
-                .ResponseFormat(new PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse>() });
+                .ResponseFormat(new PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse> { BasicUserResponse.Example() } });
 
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
                 .Description("Get a Principal resource by it's identifier.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new Guid())
-                .ResponseFormat(new UserResponse());
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("GetLicenseTypeForUser", HttpMethod.Get, "/v1/users/{userId}/license-types", GetLicenseTypeForUserAsync)
                 .Description("Retrieves license type for User")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new Guid())
                 .ResponseFormat(License.Manager.Models.LicenseType.Default);
 
             CreateRoute("GetGuestUsersForTenant", HttpMethod.Get, "/v1/users/guests", GetGuestUsersForTenantAsync)
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new GetUsersParams());
+                .ResponseFormat(new PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
                 .Description("Update a User resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new UpdateUserRequest());
+                .RequestFormat(UpdateUserRequest.Example())
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("ResendUserWelcomeEmail", HttpMethod.Post, "/v1/users/resendwelcomemail", ResendUserWelcomeEmailAsync)
                 .Description("Resend Welcome Email to the User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new ResendEmailRequest())
+                .RequestFormat(ResendEmailRequest.Example())
                 .ResponseFormat(new bool());
 
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
@@ -154,12 +142,13 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userIdzzz}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new PromoteGuestRequest());
+                .RequestFormat(PromoteGuestRequest.Example());
 
             CreateRoute("AutoProvisionRefreshGroups", HttpMethod.Post, "/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync)
                 .Description("Autoprovisions the refresh groups")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new IdpUserRequest());
+                .RequestFormat(IdpUserRequest.Example())
+                .ResponseFormat(UserResponse.Example());
         }
 
         private async Task<object> LockUserAsync(dynamic input)

@@ -60,5 +60,25 @@ namespace Synthesis.PrincipalService.Models
 
         [DataMember]
         public string UserName { get; set; }
+
+        public static User Example()
+        {
+            return new User
+            {
+                CreatedBy = Guid.NewGuid(),
+                CreatedDate = DateTime.UtcNow,
+                Email = "example@email.com",
+                FirstName = "ExampleFirstname",
+                Groups = new List<Guid> { Guid.NewGuid() },
+                Id = Guid.NewGuid(),
+                IsIdpUser = false,
+                IsLocked = false,
+                LastAccessDate = DateTime.UtcNow,
+                LastName = "ExampleLastname",
+                LdapId = "ExampleLdapId",
+                TenantId = Guid.NewGuid(),
+                UserName = "ExampleUsername"
+            };
+        }
     }
 }

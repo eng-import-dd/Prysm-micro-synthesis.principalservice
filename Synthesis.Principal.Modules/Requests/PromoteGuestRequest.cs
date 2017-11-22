@@ -11,5 +11,14 @@ namespace Synthesis.PrincipalService.Requests
         public LicenseType LicenseType { get; set; }
 
         public Guid UserId { get; set; }
+
+        public static PromoteGuestRequest Example()
+        {
+            return new PromoteGuestRequest
+            {
+                LicenseType = LicenseType.Default,
+                UserId = Guid.NewGuid()
+            };
+        }
     }
 }

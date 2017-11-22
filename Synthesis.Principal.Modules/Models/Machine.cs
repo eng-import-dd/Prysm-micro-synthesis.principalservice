@@ -39,5 +39,10 @@ namespace Synthesis.PrincipalService.Models
 
         [DataMember]
         public Guid TenantId { get; set; }
+
+        public static Machine Example()
+        {
+            return new Machine();
+        }
     }
 }

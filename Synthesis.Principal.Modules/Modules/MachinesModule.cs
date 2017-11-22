@@ -40,19 +40,19 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateMachine", HttpMethod.Post, "/v1/machines", CreateMachineAsync)
                 .Description("Create a new machine resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new Machine())
-                .ResponseFormat(new Machine());
+                .RequestFormat(Machine.Example())
+                .ResponseFormat(Machine.Example());
 
             CreateRoute("GetMachineById", HttpMethod.Get, "/v1/machines/{id:guid}", GetMachineByIdAsync)
                 .Description("Gets a machine by its unique identifier")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Machine());
+                .ResponseFormat(Machine.Example());
 
             CreateRoute("UpdateMachine", HttpMethod.Put, "/v1/machines/{id:guid}", UpdateMachineAsync)
                 .Description("Update a Principal resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new UpdateMachineRequest())
-                .ResponseFormat(new MachineResponse());
+                .RequestFormat(UpdateMachineRequest.Example())
+                .ResponseFormat(MachineResponse.Example());
 
             CreateRoute("DeleteMachine", HttpMethod.Delete, "/v1/machines/{id:guid}", DeleteMachineAsync)
                 .Description("Deletes a machine")
@@ -61,14 +61,13 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("ChangeMachineAccount", HttpMethod.Put, "/v1/machines/{id:guid}/changeaccount", ChangeMachineAccountAsync)
                 .Description("Changes a machine's account")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new UpdateMachineRequest())
-                .ResponseFormat(new MachineResponse());
+                .RequestFormat(UpdateMachineRequest.Example())
+                .ResponseFormat(MachineResponse.Example());
 
             CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/tenantmachines", GetTenantMachinesAsync)
                 .Description("Retrieves a list of machines for a given tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(string.Empty)
-                .ResponseFormat(new List<MachineResponse>());
+                .ResponseFormat(new List<MachineResponse> { MachineResponse.Example() });
         }
 
         private async Task<object> CreateMachineAsync(dynamic input)

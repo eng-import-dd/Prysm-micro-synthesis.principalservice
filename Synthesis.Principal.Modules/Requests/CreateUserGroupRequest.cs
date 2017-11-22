@@ -6,9 +6,18 @@ namespace Synthesis.PrincipalService.Requests
     public class CreateUserGroupRequest
     {
         [DataMember]
-        public Guid UserId { get; set; }
+        public Guid GroupId { get; set; }
 
         [DataMember]
-        public Guid GroupId { get; set; }
+        public Guid UserId { get; set; }
+
+        public static CreateUserGroupRequest Example()
+        {
+            return new CreateUserGroupRequest
+            {
+                UserId = Guid.NewGuid(),
+                GroupId = Guid.NewGuid()
+            };
+        }
     }
 }

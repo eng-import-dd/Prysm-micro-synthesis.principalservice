@@ -37,26 +37,25 @@ namespace Synthesis.PrincipalService.Modules
 
             this.RequiresAuthentication();
 
-            CreateRoute("CreateUserInviteListForAccount", HttpMethod.Post, "/v1/userinvites", CreateUserInviteListForTenantAsync)
+            CreateRoute("CreateUserInviteListForAccount", HttpMethod.Post, "/v1/userinvites", _ => CreateUserInviteListForTenantAsync())
                 .Description("Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new UserInviteRequest())
+                .RequestFormat(UserInviteRequest.Example())
                 .ResponseFormat(new List<UserInviteResponse>{ new UserInviteResponse() });
 
-            CreateRoute("ResendEmailInvitation", HttpMethod.Post, "/v1/userinvites/resend", ResendEmailInvitationAsync)
+            CreateRoute("ResendEmailInvitation", HttpMethod.Post, "/v1/userinvites/resend", _ => ResendEmailInvitationAsync())
                 .Description("Resend Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new List<UserInviteRequest> { new UserInviteRequest() })
-                .ResponseFormat(new List<UserInviteResponse> { new UserInviteResponse() });
+                .RequestFormat(new List<UserInviteRequest> { UserInviteRequest.Example() })
+                .ResponseFormat(new List<UserInviteResponse> { UserInviteResponse.Example() });
 
             CreateRoute("GetdUsersInviteForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
                 .Description("Gets all invited users for Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(new bool())
-                .ResponseFormat(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse>() });
+                .ResponseFormat(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse> { UserInviteResponse.Example() } });
         }
 
-        private async Task<object> CreateUserInviteListForTenantAsync(dynamic input)
+        private async Task<object> CreateUserInviteListForTenantAsync()
         {
             await RequiresAccess()
                 .WithPrincipalIdExpansion(_ => PrincipalId)
@@ -92,7 +91,7 @@ namespace Synthesis.PrincipalService.Modules
 
         }
 
-        private async Task<object> ResendEmailInvitationAsync(dynamic input)
+        private async Task<object> ResendEmailInvitationAsync()
         {
             await RequiresAccess()
                 .WithPrincipalIdExpansion(_ => PrincipalId)

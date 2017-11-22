@@ -25,5 +25,18 @@ namespace Synthesis.PrincipalService.Models
 
         [DataMember]
         public Guid TenantId { get; set; }
+
+        public static UserInvite Example()
+        {
+            return new UserInvite
+            {
+                Email = "Example@email.com",
+                FirstName = "ExampleFirstname",
+                Id = Guid.NewGuid(),
+                LastInvitedDate = DateTime.UtcNow,
+                LastName = "ExampleLastname",
+                TenantId = Guid.NewGuid()
+            };
+        }
     }
 }
