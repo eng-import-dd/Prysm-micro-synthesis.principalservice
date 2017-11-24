@@ -345,7 +345,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
-            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id == machine.Id));
+            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
             return accountMachines.Any() == false;
         }
 
