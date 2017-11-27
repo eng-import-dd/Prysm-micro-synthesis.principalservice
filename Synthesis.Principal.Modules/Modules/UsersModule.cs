@@ -113,6 +113,11 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(UserResponse.Example());
 
+            CreateRoute("GetUserByUserNameOrEmail", HttpMethod.Get, "/v1/user/{userName}", GetUserByUserNameOrEmailAsync)
+                .Description("Get a user object by username or email.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .ResponseFormat(User.Example());
+
             CreateRoute("GetLicenseTypeForUser", HttpMethod.Get, "/v1/users/{userId}/license-types", GetLicenseTypeForUserAsync)
                 .Description("Retrieves license type for User")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
@@ -282,6 +287,33 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 return await _userController.GetUserAsync(userId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("GetUserByIdBasic threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+
+        private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
+            string userName = input.userName;
+            try
+            {
+                return await _userController.GetUserByUserNameOrEmailAsync(userName);
             }
             catch (NotFoundException)
             {
