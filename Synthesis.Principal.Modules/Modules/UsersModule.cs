@@ -325,7 +325,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserByIdBasic threw an unhandled exception", ex);
+                Logger.Error("GetUserByUserNameOrEmailAsync threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
