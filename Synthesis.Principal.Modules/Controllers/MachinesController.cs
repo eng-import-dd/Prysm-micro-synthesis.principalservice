@@ -109,6 +109,25 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
+        public async Task<MachineResponse> GetMachineByKeyAsync(String machineKey, Guid tenantId)
+        {
+            var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(machineKey));
+            var machine = result.FirstOrDefault();
+            if (machine == null)
+            {
+                _logger.Error($"A Machine resource could not be found for id {machineKey}");
+                throw new NotFoundException($"A Machine resource could not be found for id {machineKey}");
+            }
+
+            var assignedTenantId = machine.TenantId;
+            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
+            {
+                _logger.Error($"Invalid operation. Machine {machineKey} does not belong to tenant {tenantId}.");
+                throw new InvalidOperationException();
+            }
+            return _mapper.Map<Machine, MachineResponse>(machine);
+        }
+
         public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId)
         {
             var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
@@ -205,6 +224,8 @@ namespace Synthesis.PrincipalService.Controllers
             existingMachine.Location = machine.Location;
             existingMachine.ModifiedBy = machine.ModifiedBy;
             existingMachine.SettingProfileId = machine.SettingProfileId;
+            existingMachine.SynthesisVersion = machine.SynthesisVersion;
+            existingMachine.LastOnline = machine.LastOnline;
 
             try
             {
@@ -324,7 +345,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
-            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id == machine.Id));
+            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
             return accountMachines.Any() == false;
         }
 

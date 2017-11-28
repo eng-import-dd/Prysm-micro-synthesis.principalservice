@@ -10,6 +10,7 @@ namespace Synthesis.PrincipalService.Controllers
     {
         Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId);
         Task<MachineResponse> GetMachineByIdAsync(Guid id, Guid tenantId);
+        Task<MachineResponse> GetMachineByKeyAsync(string machineKey, Guid tenantId);
         Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId);
         Task DeleteMachineAsync(Guid id, Guid tenantId);
         Task<MachineResponse> ChangeMachineAccountAsync(Guid machineId, Guid tenantId, Guid settingProfileId);

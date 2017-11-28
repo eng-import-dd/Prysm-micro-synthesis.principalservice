@@ -48,6 +48,11 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Machine.Example());
 
+            CreateRoute("GetMachineByKey", HttpMethod.Get, "/v1/machines/machinekey/{machinekey}", GetMachineByKeyAsync)
+                .Description("Get a machine by machine key")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .ResponseFormat(Machine.Example());
+
             CreateRoute("UpdateMachine", HttpMethod.Put, "/v1/machines/{id:guid}", UpdateMachineAsync)
                 .Description("Update a Principal resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
@@ -132,6 +137,32 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 Logger.Error("GetMachineById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
+            }
+        }
+
+        private async Task<object> GetMachineByKeyAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
+            var machinekey = input.machinekey;
+            try
+            {
+                return await _machineController.GetMachineByKeyAsync(machinekey, TenantId);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundMachine);
+            }
+            catch (InvalidOperationException)
+            {
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineByKey: No access to get machines!");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("GetMachineByKey threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }

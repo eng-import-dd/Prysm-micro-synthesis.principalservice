@@ -241,6 +241,51 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         }
 
         [Fact]
+        public async Task GetMachineByKeyReturnsMachineIfExists()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>()))
+                                  .ReturnsAsync(new List<Machine>
+                                  {
+                                      new Machine
+                                      {
+                                          TenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47")
+                                      }
+                                  });
+
+            var machineKey = Guid.NewGuid().ToString();
+            var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
+            var result = await _controller.GetMachineByKeyAsync(machineKey, tenantId);
+
+            Assert.IsType<MachineResponse>(result);
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyThrowsNotFoundExceptionIfMachineDoesNotExist()
+        {
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>()))
+                                  .ReturnsAsync(new List<Machine>
+                                  {
+                                      default(Machine)
+                                  });
+
+            var machineKey = Guid.NewGuid().ToString();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByKeyAsync(machineKey, tenantId));
+        }
+
+        [Fact]
+        public async Task GetMachineByKeyThrowsInvalidOperationException()
+        {
+            var errors = Enumerable.Empty<ValidationFailure>();
+            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>()))
+                                  .Throws(new InvalidOperationException());
+
+            var machineKey = Guid.NewGuid().ToString();
+            var tenantId = Guid.NewGuid();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByKeyAsync(machineKey, tenantId));
+        }
+
+        [Fact]
         public async Task UpdateMachineAsyncReturnsNewMachineIfSuccessful()
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
