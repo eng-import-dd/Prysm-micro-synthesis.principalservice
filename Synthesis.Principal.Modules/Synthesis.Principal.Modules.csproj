@@ -327,12 +327,10 @@
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
     <Compile Include="Controllers\Interfaces\IPrincipalsController.cs" />
-    <Compile Include="Controllers\Interfaces\IProjectApi.cs" />
     <Compile Include="Controllers\Interfaces\ITenantApi.cs" />
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
-    <Compile Include="Controllers\ProjectApi.cs" />
     <Compile Include="Controllers\TenantApi.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
     <Compile Include="Controllers\UsersController.cs" />

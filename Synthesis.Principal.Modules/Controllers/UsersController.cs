@@ -46,7 +46,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly string _deploymentType;
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
-        private readonly IProjectApi _projectApi;
         private readonly ITenantApi _tenantApi;
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -59,7 +58,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="emailUtility"></param>
         /// <param name="mapper"></param>
         /// <param name="deploymentType"></param>
-        /// <param name="projectApi"></param>
         /// <param name="tenantApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
@@ -70,7 +68,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             IEmailUtility emailUtility,
             IMapper mapper,
             string deploymentType,
-            IProjectApi projectApi,
             ITenantApi tenantApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -82,7 +79,6 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _emailUtility = emailUtility;
             _mapper = mapper;
             _deploymentType = deploymentType;
-            _projectApi = projectApi;
             _tenantApi = tenantApi;
         }
 

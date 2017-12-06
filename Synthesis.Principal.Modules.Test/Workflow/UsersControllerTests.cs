@@ -61,7 +61,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _emailUtilityMock.Object,
                 _mapper,
                 deploymentType,
-                _projectApiMock.Object,
                 _tenantApiMock.Object);
         }
 
@@ -75,7 +74,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
@@ -756,7 +754,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _emailUtilityMock.Object,
                 _mapper,
                 deploymentType,
-                _projectApiMock.Object,
                 _tenantApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
@@ -779,7 +776,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _emailUtilityMock.Object,
                 _mapper,
                 deploymentType,
-                _projectApiMock.Object,
                 _tenantApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
