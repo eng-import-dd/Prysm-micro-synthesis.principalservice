@@ -60,7 +60,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
                 _mapper,
-                deploymentType);
+                deploymentType,
+                _projectApiMock.Object,
+                _tenantApiMock.Object);
         }
 
         private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
@@ -73,6 +75,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
+        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
+        private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
         private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
@@ -751,7 +755,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
                 _mapper,
-                deploymentType);
+                deploymentType,
+                _projectApiMock.Object,
+                _tenantApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385");
@@ -772,7 +778,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
                 _mapper,
-                deploymentType);
+                deploymentType,
+                _projectApiMock.Object,
+                _tenantApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3");
