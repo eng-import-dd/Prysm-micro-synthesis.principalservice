@@ -12,9 +12,9 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IMicroserviceHttpClient _microserviceHttpClient;
         private readonly string _serviceUrl;
 
-        public TenantApi(IMicroserviceHttpClient microserviceHttpClient)
+        public TenantApi(IMicroserviceHttpClientResolver microserviceHttpClientresolver)
         {
-            _microserviceHttpClient = microserviceHttpClient;
+            _microserviceHttpClient = microserviceHttpClientresolver.Resolve();
             _serviceUrl = ConfigurationManager.AppSettings["TenantService.Url"];
         }
         /// <inheritdoc />
