@@ -1,8 +1,3 @@
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Lifetime;
@@ -36,23 +31,30 @@ using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
-using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Workflow.Controllers;
+using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 
 namespace Synthesis.PrincipalService
 {
     public class PrincipalServiceBootstrapper : AutofacNancyBootstrapper
     {
         public const string ServiceName = "Synthesis.PrincipalService";
+        public const string ServiceNameShort = "principal";
         public const string AuthorizationPassThroughKey = "AuthorizationPassThrough";
         public const string ServiceToServiceKey = "ServiceToService";
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
@@ -168,6 +170,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<ApplicationInsightsTrackingService>().As<ITrackingService>();
 
             // Register our custom OWIN Middleware
+            builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
 

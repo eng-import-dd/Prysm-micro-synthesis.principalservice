@@ -28,7 +28,7 @@ namespace Synthesis.PrincipalService.Modules
             ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
-            : base(PrincipalServiceBootstrapper.ServiceName, metadataRegistry, tokenValidator, policyEvaluator, loggerFactory)
+            : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _groupsController = groupsController;
 
