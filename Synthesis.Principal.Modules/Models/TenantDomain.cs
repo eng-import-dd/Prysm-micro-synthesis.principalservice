@@ -25,17 +25,5 @@ namespace Synthesis.PrincipalService.Models
 
         [DataMember(Name = "TenantId"), NullableSchema]
         public Guid TenantId { get; set; }
-
-        internal static TenantDomain Example()
-        {
-            return new TenantDomain()
-            {
-                CreatedDate = DateTime.MinValue,
-                Domain = "Tenant Domain",
-                Id = Guid.Empty,
-                LastAccessDate = DateTime.MinValue,
-                Name = "Domain Name"
-            };
-        }
     }
 }

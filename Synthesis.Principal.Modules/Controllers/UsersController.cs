@@ -595,9 +595,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
-            var hasMatchingTenantDomains = await GeTenantEmailDomains(tenantId);
+            var tenantEmailDomains = await GeTenantEmailDomains(tenantId);
 
-            return hasMatchingTenantDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
+            return tenantEmailDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
 
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
@@ -619,7 +619,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //Todo Get Tenant domains from tenant Micro service
             List<string> domainList = new List<string>();
             var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
-            if (result.ResponseCode != HttpStatusCode.OK)
+            if (result.ResponseCode != HttpStatusCode.OK || result.ResponseCode == HttpStatusCode.NotFound)
             {
                 throw new NotFoundException(result.ReasonPhrase);
             }
