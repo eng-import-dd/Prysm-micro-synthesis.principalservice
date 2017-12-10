@@ -183,7 +183,7 @@
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.4\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta007\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta009\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
@@ -196,10 +196,10 @@
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta004\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta006\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta005\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta006\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -218,7 +218,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta024\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta025\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -226,8 +226,14 @@
     <Reference Include="Synthesis.Owin.Host, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Owin.Host.2.0.0\lib\net452\Synthesis.Owin.Host.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.Owin.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta001\lib\net452\Synthesis.Owin.Security.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta004\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta006\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.3.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.3\lib\net452\Synthesis.Serialization.dll</HintPath>
