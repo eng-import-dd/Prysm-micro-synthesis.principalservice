@@ -9,7 +9,6 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public class TenantApi : ITenantApi
     {
-        private IMicroserviceHttpClient _microserviceHttpClient;
         private readonly IMicroserviceHttpClientResolver _microserviceHttpClientResolver;
         private readonly string _serviceUrl;
 
@@ -21,17 +20,17 @@ namespace Synthesis.PrincipalService.Controllers
         /// <inheritdoc />
         public Task<MicroserviceResponse<TenantDomain>> GetTenantDomainAsync(Guid tenantDomainId)
         {
-            _microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
             var get = string.Format(Routes.GetTenantDomainFormat,tenantDomainId);
-            return _microserviceHttpClient.GetAsync<TenantDomain>($"{_serviceUrl}{get}");
+            return microserviceHttpClient.GetAsync<TenantDomain>($"{_serviceUrl}{get}");
         }
 
         /// <inheritdoc />
         public Task<MicroserviceResponse<List<Guid>>> GetTenantDomainIdsAsync(Guid tenantId)
         {
-            _microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
             var get = string.Format(Routes.GetTenantDomainIdsFormat, tenantId);
-            return _microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
+            return microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
         }
 
         private static class Routes
