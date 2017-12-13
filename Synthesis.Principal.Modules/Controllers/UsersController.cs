@@ -619,14 +619,15 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             //Todo Get Tenant domains from tenant Micro service
             List<string> domainList = new List<string>();
             var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
-            if (result.ResponseCode != HttpStatusCode.OK)
-            {
-                throw new Exception(result.ReasonPhrase);
-            }
 
             if (result.ResponseCode == HttpStatusCode.NotFound)
             {
                 return new List<string>();
+            }
+
+            if (result.ResponseCode != HttpStatusCode.OK)
+            {
+                throw new Exception(result.ReasonPhrase);
             }
 
             if (result.Payload != null)
