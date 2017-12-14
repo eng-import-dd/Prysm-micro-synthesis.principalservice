@@ -25,6 +25,7 @@ using Synthesis.PrincipalService.Entity;
 using SimpleCrypto;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Utilities;
+using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace Synthesis.PrincipalService.Workflow.Controllers
 {
@@ -45,7 +46,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         private readonly string _deploymentType;
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
-
+        private readonly ITenantApi _tenantApi;
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
         /// </summary>
@@ -57,6 +58,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
         /// <param name="emailUtility"></param>
         /// <param name="mapper"></param>
         /// <param name="deploymentType"></param>
+        /// <param name="tenantApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -65,7 +67,8 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             ILicenseApi licenseApi,
             IEmailUtility emailUtility,
             IMapper mapper,
-            string deploymentType)
+            string deploymentType,
+            ITenantApi tenantApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
@@ -76,6 +79,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             _emailUtility = emailUtility;
             _mapper = mapper;
             _deploymentType = deploymentType;
+            _tenantApi = tenantApi;
         }
 
         public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
@@ -235,7 +239,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                     throw new NotFoundException("User not found with that email.");
                 }
 
-                var isValidForPromotion = IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+                var isValidForPromotion = await IsValidPromotionForTenant(existingUser, existingUser.TenantId);
                 if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
                 {
                     return new CanPromoteUserResponse
@@ -308,7 +312,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
             var user = await _userRepository.GetItemAsync(userId);
 
-            var isValidResult = IsValidPromotionForTenant(user, tenantId);
+            var isValidResult = await IsValidPromotionForTenant(user, tenantId);
             if (isValidResult != PromoteGuestResultCode.Success)
             {
                 if (isValidResult == PromoteGuestResultCode.UserAlreadyPromoted)
@@ -578,7 +582,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return item != null && item.TotalAvailable > 0;
         }
 
-        private PromoteGuestResultCode IsValidPromotionForTenant(User user, Guid tenantId)
+        private async Task<PromoteGuestResultCode> IsValidPromotionForTenant(User user, Guid tenantId)
         {
             if (user?.Email == null)
             {
@@ -591,9 +595,9 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
-            var hasMatchingTenantDomains = GeTenantEmailDomains(tenantId).Contains(domain);
+            var tenantEmailDomains = await GeTenantEmailDomains(tenantId);
 
-            return hasMatchingTenantDomains ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
+            return tenantEmailDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
 
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
@@ -610,10 +614,37 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             return PromoteGuestResultCode.Success;
         }
 
-        private List<string> GeTenantEmailDomains(Guid tenantId)
+        private async Task<List<string>> GeTenantEmailDomains(Guid tenantId)
         {
             //Todo Get Tenant domains from tenant Micro service
-            return new List<string> { "test.com", "prysm.com" };
+            List<string> domainList = new List<string>();
+            var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
+
+            if (result.ResponseCode == HttpStatusCode.NotFound)
+            {
+                return new List<string>();
+            }
+
+            if (result.ResponseCode != HttpStatusCode.OK)
+            {
+                throw new Exception(result.ReasonPhrase);
+            }
+
+            if (result.Payload != null)
+            {
+                foreach (var domainId in result.Payload)
+                {
+                    var tenantDomain = await _tenantApi.GetTenantDomainAsync(domainId);
+                    if (tenantDomain.ResponseCode != HttpStatusCode.OK || tenantDomain.Payload==null)
+                    {
+                        throw new Exception(tenantDomain.ReasonPhrase);
+                    }
+
+                    domainList.Add(tenantDomain.Payload.Domain);
+                }
+            }
+
+            return domainList;
         }
 
         public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)

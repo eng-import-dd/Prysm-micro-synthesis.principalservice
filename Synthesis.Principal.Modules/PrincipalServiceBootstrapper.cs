@@ -322,7 +322,7 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
-
+            builder.RegisterType<TenantApi>().As<ITenantApi>();
             return builder.Build();
         }
 

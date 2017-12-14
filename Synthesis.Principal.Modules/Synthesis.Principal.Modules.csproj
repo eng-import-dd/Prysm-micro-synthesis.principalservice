@@ -330,9 +330,11 @@
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
     <Compile Include="Controllers\Interfaces\IPrincipalsController.cs" />
+    <Compile Include="Controllers\Interfaces\ITenantApi.cs" />
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
+    <Compile Include="Controllers\TenantApi.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
@@ -345,6 +347,7 @@
     <Compile Include="Models\Group.cs" />
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Models\Principal.cs" />
+    <Compile Include="Models\TenantDomain.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserInvite.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
