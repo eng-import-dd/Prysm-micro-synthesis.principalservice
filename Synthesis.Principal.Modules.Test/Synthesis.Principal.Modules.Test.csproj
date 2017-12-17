@@ -271,11 +271,12 @@
     <Compile Include="Validators\UpdateGroupRequestValidatorTests.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidatorTests.cs" />
     <Compile Include="Validators\UpdateUserRequestValidatorTests.cs" />
+    <Compile Include="Validators\PasswordResetEmailRequestValidatorTests.cs" />
     <Compile Include="Validators\UserNameValidatorTests.cs" />
-    <Compile Include="Workflow\GroupsControllerTests.cs" />
-    <Compile Include="Workflow\MachinesControllerTests.cs" />
-    <Compile Include="Workflow\UserInvitesControllerTests.cs" />
-    <Compile Include="Workflow\UsersControllerTests.cs" />
+    <Compile Include="Cotrollers\GroupsControllerTests.cs" />
+    <Compile Include="Cotrollers\MachinesControllerTests.cs" />
+    <Compile Include="Cotrollers\UserInvitesControllerTests.cs" />
+    <Compile Include="Cotrollers\UsersControllerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">

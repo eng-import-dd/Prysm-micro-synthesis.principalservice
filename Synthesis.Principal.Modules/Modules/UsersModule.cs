@@ -11,6 +11,7 @@ using Synthesis.PrincipalService.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.Authentication;
@@ -27,6 +28,23 @@ namespace Synthesis.PrincipalService.Modules
     public sealed class UsersModule : SynthesisModule
     {
         private readonly IUsersController _userController;
+
+        //protected override Task<ClaimsPrincipal> ValidateBearerTokenAsync(string token)
+        //{
+        //    var identity = new ClaimsIdentity(
+        //        new[]
+        //        {
+        //            new Claim(ClaimTypes.Name, "Test User"),
+        //            new Claim(ClaimTypes.Email, "test@user.com"),
+        //            new Claim("tenant" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
+        //            new Claim("sub" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2"),
+        //            new Claim("IsGuest","false"),
+        //            new Claim("GuestProjectId","45411E97-03D4-4449-9EFE-552EA42C35C7")
+        //        },
+        //        AuthenticationTypes.Basic);
+        //    var principal = new ClaimsPrincipal(identity);
+        //    return Task.FromResult(principal);
+        //}
 
         public UsersModule(
             IUsersController userController,
@@ -138,6 +156,12 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Resend Welcome Email to the User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(ResendEmailRequest.Example())
+                .ResponseFormat(new bool());
+
+            CreateRoute("SendResetPasswordEmail", HttpMethod.Post, "/v1/users/sendresetpasswordemail", SendResetPasswordEmail)
+                .Description("Send reset paasword Email to the User")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(PasswordResetEmailRequest.Example())
                 .ResponseFormat(new bool());
 
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
@@ -433,7 +457,42 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to send email due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
             }
+        }
 
+        private async Task<object> SendResetPasswordEmail(dynamic input)
+        {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
+            PasswordResetEmailRequest emailRequest;
+            try
+            {
+                emailRequest = this.Bind<PasswordResetEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to update a User resource.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                var result = await _userController.SendResetPasswordEmail(emailRequest);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error("Error occured", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to send email due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
+            }
         }
 
         private async Task<object> UpdateUserAsync(dynamic input)

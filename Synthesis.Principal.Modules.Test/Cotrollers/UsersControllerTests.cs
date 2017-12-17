@@ -20,7 +20,6 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
-using Synthesis.PrincipalService.Workflow.Controllers;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Workflow
@@ -573,6 +572,26 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
 
             Assert.Equal(Guid.Empty, result);
+        }
+
+        [Trait("Send Reset Password Email", "Send Reset Password Email")]
+        [Fact]
+        public async Task SendResetPasswordEmailSuccess()
+        {
+            var request = new PasswordResetEmailRequest
+            {
+                Email = "a@b.com",
+                FirstName = "test",
+                Link = "http://test.com"
+            };
+
+            _emailUtilityMock.Setup(m => m.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link))
+                .ReturnsAsync(true);
+
+            var result = await _controller.SendResetPasswordEmail(request);
+
+            _emailUtilityMock.Verify(m => m.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link), Times.Once);
+            Assert.Equal(result, true);
         }
 
         /// <summary>
