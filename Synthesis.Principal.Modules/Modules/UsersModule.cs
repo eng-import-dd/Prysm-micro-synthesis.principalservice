@@ -29,23 +29,6 @@ namespace Synthesis.PrincipalService.Modules
     {
         private readonly IUsersController _userController;
 
-        //protected override Task<ClaimsPrincipal> ValidateBearerTokenAsync(string token)
-        //{
-        //    var identity = new ClaimsIdentity(
-        //        new[]
-        //        {
-        //            new Claim(ClaimTypes.Name, "Test User"),
-        //            new Claim(ClaimTypes.Email, "test@user.com"),
-        //            new Claim("tenant" , "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3"),
-        //            new Claim("sub" , "16367A84-65E7-423C-B2A5-5C42F8F1D5F2"),
-        //            new Claim("IsGuest","false"),
-        //            new Claim("GuestProjectId","45411E97-03D4-4449-9EFE-552EA42C35C7")
-        //        },
-        //        AuthenticationTypes.Basic);
-        //    var principal = new ClaimsPrincipal(identity);
-        //    return Task.FromResult(principal);
-        //}
-
         public UsersModule(
             IUsersController userController,
             IMetadataRegistry metadataRegistry,
