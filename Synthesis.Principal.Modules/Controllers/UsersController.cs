@@ -229,7 +229,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
                 var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
-                var existingUser = userList.ToList().FirstOrDefault();
+                var existingUser = userList.FirstOrDefault();
                 if (existingUser==null)
                 {
                     _logger.Error("User not found with that email.");
