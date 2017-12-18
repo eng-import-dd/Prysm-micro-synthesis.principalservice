@@ -616,8 +616,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
 
         private async Task<List<string>> GeTenantEmailDomains(Guid tenantId)
         {
-            //Todo Get Tenant domains from tenant Micro service
-            List<string> domainList = new List<string>();
+            var domainList = new List<string>();
             var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
 
             if (result.ResponseCode == HttpStatusCode.NotFound)
