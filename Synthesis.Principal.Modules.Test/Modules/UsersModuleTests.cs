@@ -494,6 +494,40 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
+        public async Task SendResetPasswordEmailReturnsOk()
+        {
+            _controllerMock.Setup(m => m.SendResetPasswordEmail(It.IsAny<PasswordResetEmailRequest>()))
+                .Returns(Task.FromResult(true));
+
+            var response = await UserTokenBrowser.Post("/v1/users/sendresetpasswordemail", ctx => BuildRequest(ctx, new ResendEmailRequest()));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendResetPasswordEmailReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.SendResetPasswordEmail(It.IsAny<PasswordResetEmailRequest>()))
+                .Throws(new Exception());
+
+            var response = await UserTokenBrowser.Post("/v1/users/sendresetpasswordemail", ctx => BuildRequest(ctx, new ResendEmailRequest()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendResetPasswordEmailReturnsBadRequestDuetoBinding()
+        {
+            _controllerMock.Setup(m => m.SendResetPasswordEmail(It.IsAny<PasswordResetEmailRequest>()))
+                .Throws(new Exception());
+
+            var response = await UserTokenBrowser.Post("/v1/users/sendresetpasswordemail", ctx => BuildRequest(ctx, "invlaid body"));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+
+        [Fact]
         public async Task CreateUserGroupReturnsCreated()
         {
             var response = await UserTokenBrowser.Post("/v1/usergroups", ctx => BuildRequest(ctx, new CreateUserGroupRequest()));
