@@ -38,7 +38,6 @@ using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
-using Synthesis.PrincipalService.Workflow.Controllers;
 using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;

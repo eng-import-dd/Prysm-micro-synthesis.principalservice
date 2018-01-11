@@ -140,6 +140,12 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(ResendEmailRequest.Example())
                 .ResponseFormat(new bool());
 
+            CreateRoute("SendResetPasswordEmail", HttpMethod.Post, "/v1/users/sendresetpasswordemail", SendResetPasswordEmail)
+                .Description("Send reset paasword Email to the User")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(PasswordResetEmailRequest.Example())
+                .ResponseFormat(new bool());
+
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
@@ -433,7 +439,42 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to send email due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
             }
+        }
 
+        private async Task<object> SendResetPasswordEmail(dynamic input)
+        {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
+            PasswordResetEmailRequest emailRequest;
+            try
+            {
+                emailRequest = this.Bind<PasswordResetEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to update a User resource.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                var result = await _userController.SendResetPasswordEmail(emailRequest);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error("Error occured", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to send email due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
+            }
         }
 
         private async Task<object> UpdateUserAsync(dynamic input)

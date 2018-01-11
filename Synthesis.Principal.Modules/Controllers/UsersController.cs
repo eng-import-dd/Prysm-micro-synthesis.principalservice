@@ -1,6 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
+using SimpleCrypto;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
@@ -9,25 +16,15 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
-using Synthesis.PrincipalService.Validators;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Azure.Documents.SystemFunctions;
-using Nancy;
-using Synthesis.PrincipalService.Entity;
-using SimpleCrypto;
-using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Validators;
 using HttpStatusCode = System.Net.HttpStatusCode;
 
-namespace Synthesis.PrincipalService.Workflow.Controllers
+namespace Synthesis.PrincipalService.Controllers
 {
     /// <summary>
     /// Represents a controller for User resources.
@@ -232,7 +229,7 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
             }
 
                 var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
-                var existingUser = userList.ToList().FirstOrDefault();
+                var existingUser = userList.FirstOrDefault();
                 if (existingUser==null)
                 {
                     _logger.Error("User not found with that email.");
@@ -548,22 +545,31 @@ namespace Synthesis.PrincipalService.Workflow.Controllers
                 throw new ValidationException("Email is either empty or invalid");
             }
 
-                var userMailed =  await _emailUtility.SendWelcomeEmailAsync(email, firstName);
+            return await _emailUtility.SendWelcomeEmailAsync(email, firstName);
+        }
 
-                return userMailed;
+        public async Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest request)
+        {
+            var validationResult = _validatorLocator.Validate<PasswordResetEmailRequestValidator>(request);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Validation failed.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            return await _emailUtility.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link);
         }
 
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)
         {
             var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
-            IEnumerable<User> userList;
             if (!unameValidationResult.IsValid)
             {
                 _logger.Error("Email/UserName is either empty or invalid.");
                 throw new ValidationException("Email/UserName is either empty or invalid");
             }
 
-            userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.UserName.Equals(username));
+            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.UserName.Equals(username));
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
             {
