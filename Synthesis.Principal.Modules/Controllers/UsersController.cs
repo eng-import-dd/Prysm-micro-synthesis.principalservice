@@ -620,38 +620,6 @@ namespace Synthesis.PrincipalService.Controllers
             return PromoteGuestResultCode.Success;
         }
 
-        private async Task<List<string>> GeTenantEmailDomains(Guid tenantId)
-        {
-            var domainList = new List<string>();
-            var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
-
-            if (result.ResponseCode == HttpStatusCode.NotFound)
-            {
-                return new List<string>();
-            }
-
-            if (result.ResponseCode != HttpStatusCode.OK)
-            {
-                throw new Exception(result.ReasonPhrase);
-            }
-
-            if (result.Payload != null)
-            {
-                foreach (var domainId in result.Payload)
-                {
-                    var tenantDomain = await _tenantApi.GetTenantDomainAsync(domainId);
-                    if (tenantDomain.ResponseCode != HttpStatusCode.OK || tenantDomain.Payload==null)
-                    {
-                        throw new Exception(tenantDomain.ReasonPhrase);
-                    }
-
-                    domainList.Add(tenantDomain.Payload.Domain);
-                }
-            }
-
-            return domainList;
-        }
-
         public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
