@@ -462,7 +462,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         {
             _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
                 .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "", Items = new List<User>() });
+            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
 
+            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
             var tenantId = Guid.NewGuid();
             var getGuestUserParams = new GetUsersParams();
 
@@ -481,7 +485,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
             var tenantId = Guid.NewGuid();
             var getGuestUserParams = new GetUsersParams();
+            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
 
+            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
             var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
 
             Assert.Equal(3, result.List.Count);

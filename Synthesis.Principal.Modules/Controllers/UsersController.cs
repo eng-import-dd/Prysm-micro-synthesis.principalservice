@@ -601,7 +601,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
-            var tenantEmailDomains = await GeTenantEmailDomains(tenantId);
+            var tenantEmailDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
 
             return tenantEmailDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
@@ -620,39 +620,6 @@ namespace Synthesis.PrincipalService.Controllers
             return PromoteGuestResultCode.Success;
         }
 
-        private async Task<List<string>> GeTenantEmailDomains(Guid tenantId)
-        {
-            //Todo Get Tenant domains from tenant Micro service
-            List<string> domainList = new List<string>();
-            var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
-
-            if (result.ResponseCode == HttpStatusCode.NotFound)
-            {
-                return new List<string>();
-            }
-
-            if (result.ResponseCode != HttpStatusCode.OK)
-            {
-                throw new Exception(result.ReasonPhrase);
-            }
-
-            if (result.Payload != null)
-            {
-                foreach (var domainId in result.Payload)
-                {
-                    var tenantDomain = await _tenantApi.GetTenantDomainAsync(domainId);
-                    if (tenantDomain.ResponseCode != HttpStatusCode.OK || tenantDomain.Payload==null)
-                    {
-                        throw new Exception(tenantDomain.ReasonPhrase);
-                    }
-
-                    domainList.Add(tenantDomain.Payload.Domain);
-                }
-            }
-
-            return domainList;
-        }
-
         public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
@@ -666,8 +633,7 @@ namespace Synthesis.PrincipalService.Controllers
             Expression<Func<User, string>> orderBy;
             criteria.Add(u => u.TenantId == Guid.Empty);
 
-            //TODO get the tenantDomains from tenant matching tenantId
-            var tenantemailDomain = new List<string>{"yopmail.com", "dispostable.com"};
+            var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantApi,tenantId);
 
 
             criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));

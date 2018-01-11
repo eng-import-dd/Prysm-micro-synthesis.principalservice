@@ -14,6 +14,7 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
+using System.Net;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -25,13 +26,15 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IEmailUtility _emailUtility;
         private readonly IMapper _mapper;
         private readonly IValidator _tenantIdValidator;
+        private readonly ITenantApi _tenantApi;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
             ILoggerFactory loggerFactory,
             IEmailUtility emailUtility,
             IMapper mapper,
-            IValidatorLocator validatorLocator)
+            IValidatorLocator validatorLocator,
+            ITenantApi tenantApi)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -39,6 +42,7 @@ namespace Synthesis.PrincipalService.Controllers
             _emailUtility = emailUtility;
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
+            _tenantApi = tenantApi;
         }
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
@@ -47,13 +51,12 @@ namespace Synthesis.PrincipalService.Controllers
             var validUsers = new List<UserInviteResponse>();
             var inValidDomainUsers = new List<UserInviteResponse>();
             var inValidEmailFormatUsers = new List<UserInviteResponse>();
-            //TODO Get Valid and invalid Tenant domain
-            //var validTenantDomains = _collaborationService.GetTenantById(tenantId).Payload.TenantDomains;
-            //var inValidFreeDomains = await _collaborationService.GetFreeEmailDomainsAsync();
+            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
+            if (validTenantDomains.Count == 0)
+            {
+                throw  new Exception("Couldn't fetch tenant domains");
+            }
 
-            List<String> validTenantDomains = new List<string> { "dispostable.com", "yopmail.com" };
-            List<String> inValidFreeDomains = new List<string> { "aol.com", "gmail.com", "hotmail.com" } ;
-            
             var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
 
             foreach (var newUserInvite in userInviteEntityList)
@@ -67,16 +70,10 @@ namespace Synthesis.PrincipalService.Controllers
 
                 var host = new MailAddress(newUserInvite.Email).Host;
 
-                var isFreeEmailDomain = inValidFreeDomains.Contains(host);
 
                 var isUserEmailDomainAllowed = validTenantDomains.Contains(host);
 
-                if (isFreeEmailDomain)
-                {
-                    newUserInvite.Status = InviteUserStatus.UserEmailDomainFree;
-                    inValidDomainUsers.Add(newUserInvite);
-                }
-                else if (!isUserEmailDomainAllowed)
+                if (!isUserEmailDomainAllowed)
                 {
                     newUserInvite.Status = InviteUserStatus.UserEmailNotDomainAllowed;
                     inValidDomainUsers.Add(newUserInvite);
@@ -253,6 +250,7 @@ namespace Synthesis.PrincipalService.Controllers
             };
             return returnMetaData;
         }
+
     }
 
     public static class ListBatchExtensions
@@ -264,4 +262,6 @@ namespace Synthesis.PrincipalService.Controllers
                         .Select(g => g.Select(x => x.item));
         }
     }
+
+  
 }
