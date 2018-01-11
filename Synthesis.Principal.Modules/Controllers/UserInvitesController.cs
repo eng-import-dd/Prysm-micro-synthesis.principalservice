@@ -51,7 +51,7 @@ namespace Synthesis.PrincipalService.Controllers
             var validUsers = new List<UserInviteResponse>();
             var inValidDomainUsers = new List<UserInviteResponse>();
             var inValidEmailFormatUsers = new List<UserInviteResponse>();
-            var validTenantDomains = await GeTenantDomains(tenantId);
+            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
             if (validTenantDomains.Count == 0)
             {
                 throw  new Exception("Couldn't fetch tenant domains");
@@ -251,38 +251,6 @@ namespace Synthesis.PrincipalService.Controllers
             return returnMetaData;
         }
 
-        private async Task<List<string>> GeTenantDomains(Guid tenantId)
-        {
-
-            var domainList = new List<string>();
-            var result = await _tenantApi.GetTenantDomainIdsAsync(tenantId);
-
-            if (result.ResponseCode == HttpStatusCode.NotFound)
-            {
-                return new List<string>();
-            }
-
-            if (result.ResponseCode != HttpStatusCode.OK)
-            {
-                throw new Exception(result.ReasonPhrase);
-            }
-
-            if (result.Payload != null)
-            {
-                foreach (var domainId in result.Payload)
-                {
-                    var tenantDomain = await _tenantApi.GetTenantDomainAsync(domainId);
-                    if (tenantDomain.ResponseCode != HttpStatusCode.OK || tenantDomain.Payload == null)
-                    {
-                        throw new Exception(tenantDomain.ReasonPhrase);
-                    }
-
-                    domainList.Add(tenantDomain.Payload.Domain);
-                }
-            }
-
-            return domainList;
-        }
     }
 
     public static class ListBatchExtensions

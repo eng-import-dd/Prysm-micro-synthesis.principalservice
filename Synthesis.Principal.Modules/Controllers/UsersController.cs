@@ -601,7 +601,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
-            var tenantEmailDomains = await GeTenantEmailDomains(tenantId);
+            var tenantEmailDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
 
             return tenantEmailDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
         }
@@ -665,8 +665,7 @@ namespace Synthesis.PrincipalService.Controllers
             Expression<Func<User, string>> orderBy;
             criteria.Add(u => u.TenantId == Guid.Empty);
 
-            //TODO get the tenantDomains from tenant matching tenantId
-            var tenantemailDomain = new List<string>{"yopmail.com", "dispostable.com"};
+            var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantApi,tenantId);
 
 
             criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
