@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
@@ -149,6 +150,11 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+
+            CreateRoute("CreateGuest", HttpMethod.Post, "v1/guestsessions/createguest", CreateGuestAsync)
+                .Description("Creates a Guest user from a guest session.")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(GuestCreationRequest.Example());
 
             CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userIdzzz}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
@@ -571,6 +577,32 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Unhandled exception encountered while determining a User can be promoted", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
+            }
+        }
+
+        public async Task<object> CreateGuestAsync(dynamic input)
+        {
+            // This route is being deleted. No reason to add auth.
+            GuestCreationRequest request;
+
+            try
+            {
+                request = this.Bind<GuestCreationRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a guest.", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                return await _userController.CreateGuestAsync(request);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestUser);
             }
         }
 

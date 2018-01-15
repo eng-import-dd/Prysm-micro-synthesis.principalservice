@@ -318,6 +318,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiWrappers\BaseApiWrapper.cs" />
+    <Compile Include="ApiWrappers\Interfaces\ISettingsApiWrapper.cs" />
+    <Compile Include="ApiWrappers\Interfaces\IProjectApiWrapper.cs" />
+    <Compile Include="ApiWrappers\ProjectApiWrapper.cs" />
+    <Compile Include="ApiWrappers\SettingsApiWrapper.cs" />
     <Compile Include="Constants\ErrorMessages.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
@@ -339,6 +344,8 @@
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
+    <Compile Include="Enums\CreateGuestResponseCode.cs" />
+    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
@@ -347,6 +354,7 @@
     <Compile Include="Models\Group.cs" />
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Models\Principal.cs" />
+    <Compile Include="Models\Project.cs" />
     <Compile Include="Models\TenantDomain.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserInvite.cs" />
@@ -362,6 +370,9 @@
     <Compile Include="Requests\CreateUserGroupRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Requests\GetUserParams.cs" />
+    <Compile Include="Requests\GuestCreationRequest.cs" />
+    <Compile Include="Responses\GuestVerificationEmailRequest.cs" />
+    <Compile Include="Requests\GuestVerificationResponse.cs" />
     <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\PromoteGuestRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
@@ -371,9 +382,11 @@
     <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\CanPromoteUserResponse.cs" />
+    <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
+    <Compile Include="Responses\SettingsResponse.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
@@ -381,6 +394,8 @@
     <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
+    <Compile Include="Utilities\IPasswordUtility.cs" />
+    <Compile Include="Utilities\PasswordUtility.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
@@ -392,6 +407,7 @@
     <Compile Include="Validators\PrincipalIdValidator.cs" />
     <Compile Include="Validators\PrincipalValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
+    <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />

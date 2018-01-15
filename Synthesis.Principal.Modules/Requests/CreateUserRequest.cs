@@ -16,6 +16,7 @@ namespace Synthesis.PrincipalService.Requests
         public string LastName { get; set; }
         public string LdapId { get; set; }
         public LicenseType? LicenseType { get; set; }
+        public string Password { get; set; }
         public Guid TenantId { get; set; }
         public string UserName { get; set; }
 
@@ -29,6 +30,7 @@ namespace Synthesis.PrincipalService.Requests
                 LastName = "ExampleLastname",
                 Email = "example@email.com",
                 UserName = "ExampleUsername",
+                Password = "SomeSecurePassword1234",
                 LdapId = "ExampleLdapId",
                 IsIdpUser = false,
                 LicenseType = License.Manager.Models.LicenseType.Default

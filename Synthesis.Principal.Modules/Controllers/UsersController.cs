@@ -15,8 +15,10 @@ using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.ApiWrappers.Interfaces;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -44,6 +46,10 @@ namespace Synthesis.PrincipalService.Controllers
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
+        private readonly IPasswordUtility _passwordUtility;
+        private readonly IProjectApiWrapper _projectApi;
+        private readonly ISettingsApiWrapper _settingsApi;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
         /// </summary>
@@ -53,9 +59,12 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi"></param>
         /// <param name="emailUtility"></param>
+        /// <param name="passwordUtility"></param>
         /// <param name="mapper"></param>
         /// <param name="deploymentType"></param>
         /// <param name="tenantApi"></param>
+        /// <param name="projectApi"></param>
+        /// <param name="settingsApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -63,9 +72,12 @@ namespace Synthesis.PrincipalService.Controllers
             ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailUtility emailUtility,
+            IPasswordUtility passwordUtility,
             IMapper mapper,
             string deploymentType,
-            ITenantApi tenantApi)
+            ITenantApi tenantApi,
+            IProjectApiWrapper projectApi,
+            ISettingsApiWrapper settingsApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
@@ -74,9 +86,12 @@ namespace Synthesis.PrincipalService.Controllers
             _logger = loggerFactory.GetLogger(this);
             _licenseApi = licenseApi;
             _emailUtility = emailUtility;
+            _passwordUtility = passwordUtility;
             _mapper = mapper;
             _deploymentType = deploymentType;
             _tenantApi = tenantApi;
+            _projectApi = projectApi;
+            _settingsApi = settingsApi;
         }
 
         public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
@@ -277,6 +292,160 @@ namespace Synthesis.PrincipalService.Controllers
                 // We don't really care if it's not found.
                 // The resource not being there is what we wanted.
             }
+        }
+
+        public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request, Guid tenantId, Guid createdBy)
+        {
+            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(request.Email);
+            if (!emailValidationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the email address while attempting to create a new guest.");
+                throw new ValidationFailedException(emailValidationResult.Errors);
+            }
+
+            var response = new GuestCreationResponse
+            {
+                SynthesisUser = null,
+                ResultCode = CreateGuestResponseCode.Failed
+            };
+
+            var guestVerificationResponse = await VerifyGuestAsync(request.Email, request.ProjectAccessCode);
+            if (!(guestVerificationResponse.ResultCode == VerifyGuestResponseCode.Success || guestVerificationResponse.ResultCode == VerifyGuestResponseCode.SuccessNoUser))
+            {
+                response.ResultCode = guestVerificationResponse.ResultCode == VerifyGuestResponseCode.EmailVerificationNeeded ? CreateGuestResponseCode.UserExists : CreateGuestResponseCode.Unauthorized;
+                return response;
+            }
+
+            request.FirstName = request.FirstName?.Trim();
+            request.LastName = request.LastName?.Trim();
+            if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+            {
+                response.ResultCode = CreateGuestResponseCode.FirstOrLastNameIsNull;
+                return response;
+            }
+
+            if (!EmailValidator.IsValid(request.Email))
+            {
+                response.ResultCode = CreateGuestResponseCode.InvalidEmail;
+                return response;
+            }
+
+            if (request.IsIdpUser)
+            {
+                var throwAwayPassword = _passwordUtility.GenerateRandomPassword(64);
+                request.Password = throwAwayPassword;
+                request.PasswordConfirmation = throwAwayPassword;
+            }
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                Password = request.Password,
+                IsIdpUser = request.IsIdpUser
+            };
+
+            var provisionGuestUserResult = await CreateUserAsync(createUserRequest, tenantId, createdBy);
+            if (provisionGuestUserResult.ProvisionReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
+            {
+                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
+
+                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmailRequest
+                {
+                    FirstName = request.FirstName,
+                    Email = request.Email,
+                    ProjectAccessCode = request.ProjectAccessCode,
+                    LastName = request.LastName
+                });
+
+                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.MessageSentRecently)
+                {
+                    response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
+                }
+            }
+
+            response.ResultCode = CreateGuestResponseCode.Success;
+            return response;
+        }
+
+        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
+        {
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(EmailValidator), username },
+                { typeof(ProjectAccessCodeValidator), projectAccessCode }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the guest verification request.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var response = new GuestVerificationResponse();
+            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
+            if (projectResponse == null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var project = projectResponse.Payload;
+
+            response.AccountId = project.TenantId;
+            response.AssociatedProject = project;
+            response.ProjectAccessCode = projectAccessCode;
+            response.ProjectName = project.Name;
+            response.UserId = project.OwnerId;
+            response.Username = username;
+
+            if (project.IsGuestModeEnabled != true)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var userResponse = await _userApi.GetUserAsync(new UserRequest { UserName = username });
+            if (userResponse == null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.Failed;
+                return response;
+            }
+
+            var user = userResponse.Payload;
+
+            if (user.IsLocked)
+            {
+                response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
+                return response;
+            }
+
+            if (user.IsEmailVerified != true)
+            {
+                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
+                return response;
+            }
+
+            if (user.TenantId != null)
+            {
+                response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
+                return response;
+            }
+
+            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id);
+            if (settingsResponse != null)
+            {
+                var settings = settingsResponse.Payload;
+                if (settings.IsGuestModeEnabled != true)
+                {
+                    response.ResultCode = VerifyGuestResponseCode.Failed;
+                    return response;
+                }
+            }
+
+            response.ResultCode = VerifyGuestResponseCode.Success;
+            return response;
         }
 
         public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
