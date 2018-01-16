@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
-using Synthesis.PrincipalService.ApiWrappers.Interfaces;
+using Synthesis.PrincipalService.Apis.Interfaces;
 using Synthesis.PrincipalService.Models;
 
-namespace Synthesis.PrincipalService.ApiWrappers
+namespace Synthesis.PrincipalService.Apis
 {
-    public class ProjectApiWrapper : BaseApiWrapper, IProjectApiWrapper
+    public class ProjectApi : BaseApi, IProjectApi
     {
-        public ProjectApiWrapper(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
+        public ProjectApi(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
         {
         }
 

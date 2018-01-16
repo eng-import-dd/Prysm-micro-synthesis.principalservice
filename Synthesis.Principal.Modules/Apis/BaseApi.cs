@@ -1,13 +1,13 @@
 ﻿using Synthesis.Http.Microservice;
 
-namespace Synthesis.PrincipalService.ApiWrappers
+namespace Synthesis.PrincipalService.Apis
 {
-    public abstract class BaseApiWrapper
+    public abstract class BaseApi
     {
         protected readonly IMicroserviceHttpClient HttpClient;
         protected readonly string ServiceUrl;
 
-        protected BaseApiWrapper(IMicroserviceHttpClientResolver httpClientResolver, string serviceUrl)
+        protected BaseApi(IMicroserviceHttpClientResolver httpClientResolver, string serviceUrl)
         {
             HttpClient = httpClientResolver.Resolve();
             ServiceUrl = serviceUrl;

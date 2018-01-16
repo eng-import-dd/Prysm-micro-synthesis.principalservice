@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
-using Synthesis.PrincipalService.ApiWrappers.Interfaces;
+using Synthesis.PrincipalService.Apis.Interfaces;
 using Synthesis.PrincipalService.Responses;
 
-namespace Synthesis.PrincipalService.ApiWrappers
+namespace Synthesis.PrincipalService.Apis
 {
-    public class SettingsApiWrapper : BaseApiWrapper, ISettingsApiWrapper
+    public class SettingsApi : BaseApi, ISettingsApi
     {
-        public SettingsApiWrapper(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
+        public SettingsApi(IMicroserviceHttpClientResolver httpClient, string serviceUrl) : base(httpClient, serviceUrl)
         {
         }
 
