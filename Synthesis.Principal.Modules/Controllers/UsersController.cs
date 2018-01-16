@@ -307,7 +307,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the guest verification request.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
