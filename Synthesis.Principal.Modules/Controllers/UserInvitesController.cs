@@ -14,7 +14,6 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
-using System.Net;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -27,6 +26,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IMapper _mapper;
         private readonly IValidator _tenantIdValidator;
         private readonly ITenantApi _tenantApi;
+        private readonly IValidatorLocator _validatorLocator;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
@@ -43,6 +43,7 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _tenantApi = tenantApi;
+            _validatorLocator = validatorLocator;
         }
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
@@ -57,11 +58,11 @@ namespace Synthesis.PrincipalService.Controllers
                 throw  new Exception("Couldn't fetch tenant domains");
             }
 
+            var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();
             var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
-
             foreach (var newUserInvite in userInviteEntityList)
             {
-                if (!EmailValidator.IsValidForBulkUpload(newUserInvite.Email))
+                if (validator.Validate(newUserInvite.Email).Errors.Any())
                 {
                     newUserInvite.Status = InviteUserStatus.UserEmailFormatInvalid;
                     inValidEmailFormatUsers.Add(newUserInvite);
@@ -95,16 +96,22 @@ namespace Synthesis.PrincipalService.Controllers
                 //Mail newly created users
                 var usersMailed = await _emailUtility.SendUserInviteAsync(validUsers);
 
-                
+
                 if (usersMailed)
+                {
                     await UpdateUserInviteAsync(validUsers);
+                }
             }
 
             if (inValidEmailFormatUsers.Count > 0)
+            {
                 userInviteServiceResult.AddRange(inValidEmailFormatUsers);
+            }
 
             if (inValidDomainUsers.Count > 0)
+            {
                 userInviteServiceResult.AddRange(inValidDomainUsers);
+            }
 
             return userInviteServiceResult;
         }
@@ -135,8 +142,10 @@ namespace Synthesis.PrincipalService.Controllers
                 var userReinvited = await _emailUtility.SendUserInviteAsync(validUsers);
 
                 if (userReinvited)
+                {
                     await UpdateUserInviteAsync(validUsers);
-                
+                }
+
                 return userInvites;
             }
             return new List<UserInviteResponse>();

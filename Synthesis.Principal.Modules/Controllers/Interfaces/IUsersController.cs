@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUsersController
     {
-        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy);
+        Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId, Guid createdBy);
 
         Task<UserResponse> GetUserAsync(Guid userId);
 
@@ -53,6 +53,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<User> GetUserByUserNameOrEmailAsync(string username);
 
-        Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request);
+        Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request, Guid tenantId, Guid createdBy);
     }
 }

@@ -2,7 +2,7 @@
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class PasswordResetEmailRequestValidatorTests
     {

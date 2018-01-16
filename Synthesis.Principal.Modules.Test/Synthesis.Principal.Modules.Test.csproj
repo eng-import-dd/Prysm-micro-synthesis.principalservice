@@ -8,8 +8,8 @@
     <ProjectGuid>{0DB124A2-CBBD-11E7-9AD0-CB8175E23A37}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Synthesis.PrincipalService.Modules.Test</RootNamespace>
-    <AssemblyName>Synthesis.PrincipalService.Modules.Test</AssemblyName>
+    <RootNamespace>Synthesis.Principal.Modules.Test</RootNamespace>
+    <AssemblyName>Synthesis.Principal.Modules.Test</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>

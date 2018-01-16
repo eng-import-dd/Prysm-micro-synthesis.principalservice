@@ -17,9 +17,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Modules;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Modules
+namespace Synthesis.Principal.Modules.Test.Modules
 {
     public class UsersModuleTests : BaseModuleTests<UsersModule>
     {
@@ -36,7 +37,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var response = await UnauthenticatedBrowser.Get("/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        }
+        } 
 
         [Fact]
         public async Task RespondWithOkAsync()
@@ -54,7 +55,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new CreateUserRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new UserRequest()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -62,10 +63,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<UserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new CreateUserRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new UserRequest()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -82,10 +83,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<UserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new CreateUserRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new UserRequest()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -94,11 +95,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReadsTenantIdFromUserClaimAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new CreateUserRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new UserRequest()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            _controllerMock.Verify(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), TenantId, PrincipalId));
+            _controllerMock.Verify(m => m.CreateUserAsync(It.IsAny<UserRequest>(), TenantId, PrincipalId));
         }
 
         [Fact]

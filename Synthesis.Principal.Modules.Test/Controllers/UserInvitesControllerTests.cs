@@ -22,7 +22,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Workflow
+namespace Synthesis.Principal.Modules.Test.Controllers
 {
     public class UserInvitesControllerTests
     {

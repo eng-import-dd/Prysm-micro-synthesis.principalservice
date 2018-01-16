@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
-using SimpleCrypto;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.License.Manager.Interfaces;
@@ -15,16 +13,15 @@ using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.ApiWrappers.Interfaces;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
+using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
-using HttpStatusCode = System.Net.HttpStatusCode;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -47,8 +44,7 @@ namespace Synthesis.PrincipalService.Controllers
         private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
         private readonly IPasswordUtility _passwordUtility;
-        private readonly IProjectApiWrapper _projectApi;
-        private readonly ISettingsApiWrapper _settingsApi;
+        private readonly IRepository<UserInvite> _userInviteRepository;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController"/> class.
@@ -63,8 +59,6 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="mapper"></param>
         /// <param name="deploymentType"></param>
         /// <param name="tenantApi"></param>
-        /// <param name="projectApi"></param>
-        /// <param name="settingsApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -75,12 +69,11 @@ namespace Synthesis.PrincipalService.Controllers
             IPasswordUtility passwordUtility,
             IMapper mapper,
             string deploymentType,
-            ITenantApi tenantApi,
-            IProjectApiWrapper projectApi,
-            ISettingsApiWrapper settingsApi)
+            ITenantApi tenantApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
+            _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -90,11 +83,9 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _deploymentType = deploymentType;
             _tenantApi = tenantApi;
-            _projectApi = projectApi;
-            _settingsApi = settingsApi;
         }
 
-        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
+        public async Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
 
@@ -105,7 +96,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var user = _mapper.Map<CreateUserRequest, User>(model);
+            var user = _mapper.Map<UserRequest, User>(model);
 
             if (IsBuiltInOnPremTenant(tenantId))
             {
@@ -204,7 +195,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
-
             TrimNameOfUser(userModel);
             var errors=new List<ValidationFailure>();
             if (!await IsUniqueUsername(userId, userModel.UserName))
@@ -236,36 +226,35 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
         {
-            var isValidEmail = EmailValidator.IsValid(email);
-            if (!isValidEmail)
+            var validationResult = _validatorLocator.Validate<EmailValidator>(email);
+            if (!validationResult.IsValid)
             {
-                _logger.Error("Email is either empty or invalid.");
-                throw new ValidationException("Email is either empty or invalid");
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
-                var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
-                var existingUser = userList.FirstOrDefault();
-                if (existingUser==null)
-                {
-                    _logger.Error("User not found with that email.");
-                    throw new NotFoundException("User not found with that email.");
-                }
+            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
+            var existingUser = userList.FirstOrDefault();
+            if (existingUser==null)
+            {
+                _logger.Error("User not found with that email.");
+                throw new NotFoundException("User not found with that email.");
+            }
 
-                var isValidForPromotion = await IsValidPromotionForTenant(existingUser, existingUser.TenantId);
-                if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
-                {
-                    return new CanPromoteUserResponse
-                    {
-                        ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
-                        UserId = existingUser.Id
-                    };
-                }
-
-                _logger.Error("User already in an account");
+            var isValidForPromotion = await IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+            if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
+            {
                 return new CanPromoteUserResponse
                 {
-                    ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                    ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
+                    UserId = existingUser.Id
                 };
+            }
+
+            _logger.Error("User already in an account");
+            return new CanPromoteUserResponse
+            {
+                ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+            };
         }
 
         public async Task DeleteUserAsync(Guid id)
@@ -293,43 +282,14 @@ namespace Synthesis.PrincipalService.Controllers
                 // The resource not being there is what we wanted.
             }
         }
-
+        
         public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request, Guid tenantId, Guid createdBy)
         {
-            var emailValidationResult = _validatorLocator.Validate<EmailValidator>(request.Email);
-            if (!emailValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the email address while attempting to create a new guest.");
-                throw new ValidationFailedException(emailValidationResult.Errors);
-            }
-
-            var response = new GuestCreationResponse
-            {
-                SynthesisUser = null,
-                ResultCode = CreateGuestResponseCode.Failed
-            };
-
-            var guestVerificationResponse = await VerifyGuestAsync(request.Email, request.ProjectAccessCode);
-            if (!(guestVerificationResponse.ResultCode == VerifyGuestResponseCode.Success || guestVerificationResponse.ResultCode == VerifyGuestResponseCode.SuccessNoUser))
-            {
-                response.ResultCode = guestVerificationResponse.ResultCode == VerifyGuestResponseCode.EmailVerificationNeeded ? CreateGuestResponseCode.UserExists : CreateGuestResponseCode.Unauthorized;
-                return response;
-            }
-
+            // Trim up the names
             request.FirstName = request.FirstName?.Trim();
             request.LastName = request.LastName?.Trim();
-            if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
-            {
-                response.ResultCode = CreateGuestResponseCode.FirstOrLastNameIsNull;
-                return response;
-            }
 
-            if (!EmailValidator.IsValid(request.Email))
-            {
-                response.ResultCode = CreateGuestResponseCode.InvalidEmail;
-                return response;
-            }
-
+            // IDP users need special password setup
             if (request.IsIdpUser)
             {
                 var throwAwayPassword = _passwordUtility.GenerateRandomPassword(64);
@@ -337,44 +297,12 @@ namespace Synthesis.PrincipalService.Controllers
                 request.PasswordConfirmation = throwAwayPassword;
             }
 
-            var createUserRequest = new CreateUserRequest
-            {
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Email = request.Email,
-                Password = request.Password,
-                IsIdpUser = request.IsIdpUser
-            };
-
-            var provisionGuestUserResult = await CreateUserAsync(createUserRequest, tenantId, createdBy);
-            if (provisionGuestUserResult.ProvisionReturnCode == ProvisionGuestUserReturnCode.SucessEmailVerificationNeeded)
-            {
-                response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
-
-                var sendVerificationEmailResponse = await SendVerificationEmailAsync(new GuestVerificationEmailRequest
-                {
-                    FirstName = request.FirstName,
-                    Email = request.Email,
-                    ProjectAccessCode = request.ProjectAccessCode,
-                    LastName = request.LastName
-                });
-
-                if (!sendVerificationEmailResponse.IsEmailVerified || sendVerificationEmailResponse.MessageSentRecently)
-                {
-                    response.ResultCode = CreateGuestResponseCode.SucessEmailVerificationNeeded;
-                }
-            }
-
-            response.ResultCode = CreateGuestResponseCode.Success;
-            return response;
-        }
-
-        public async Task<GuestVerificationResponse> VerifyGuestAsync(string username, string projectAccessCode)
-        {
+            // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
-                { typeof(EmailValidator), username },
-                { typeof(ProjectAccessCodeValidator), projectAccessCode }
+                { typeof(GuestCreationRequestValidator), request },
+                { typeof(TenantIdValidator), tenantId },
+                { typeof(UserIdValidator), createdBy }
             });
 
             if (!validationResult.IsValid)
@@ -383,71 +311,57 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var response = new GuestVerificationResponse();
-            var projectResponse = await _projectApi.GetProjectByAccessCodeAsync(projectAccessCode);
-            if (projectResponse == null)
+            // TODO: Use password policy to verify password is valid
+            var guestCreationValidationResult = _validatorLocator.Validate<GuestCreationRequestValidator>(request);
+            var tenantValidationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
+            var createdByValidationResult = _validatorLocator.Validate<UserIdValidator>(createdBy);
+            var errors = GetAllErrors(guestCreationValidationResult, tenantValidationResult, createdByValidationResult);
+            if (errors.Any())
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                return response;
+                throw new ValidationFailedException(errors);
             }
 
-            var project = projectResponse.Payload;
-
-            response.AccountId = project.TenantId;
-            response.AssociatedProject = project;
-            response.ProjectAccessCode = projectAccessCode;
-            response.ProjectName = project.Name;
-            response.UserId = project.OwnerId;
-            response.Username = username;
-
-            if (project.IsGuestModeEnabled != true)
+            // Does a user already exist that uses email or has a username equal to the email?
+            var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.UserName == request.Email);
+            if (existingUser != null)
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                return response;
+                return new GuestCreationResponse { ResultCode = CreateGuestResponseCode.UserExists };
             }
 
-            var userResponse = await _userApi.GetUserAsync(new UserRequest { UserName = username });
-            if (userResponse == null)
+            // TODO: Can there be more than one invite??  If so, changes this line and deal with dupes if needed
+            // Has an invite been sent to this user?
+            var invite = await _userInviteRepository.GetItemAsync(x => x.Email == request.Email);
+            if (invite != null)
             {
-                response.ResultCode = VerifyGuestResponseCode.Failed;
-                return response;
+                return new GuestCreationResponse { ResultCode = CreateGuestResponseCode.UserNotInvited };
             }
 
-            var user = userResponse.Payload;
-
-            if (user.IsLocked)
+            // Create a new user for the guest
+            var user = new User
             {
-                response.ResultCode = VerifyGuestResponseCode.UserIsLocked;
-                return response;
-            }
+                CreatedBy = createdBy,
+                CreatedDate = DateTime.UtcNow,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                Groups = new List<Guid>(),
+                IsIdpUser = request.IsIdpUser,
+                IsLocked = false,
+                LastAccessDate = DateTime.UtcNow,
+                LastName = request.LastName,
+                TenantId = tenantId,
+                UserName = request.Email
+            };
+            var result = await _userRepository.CreateItemAsync(user);
+            await _eventService.PublishAsync(EventNames.UserCreated, result);
 
-            if (user.IsEmailVerified != true)
+            // Done
+            return new GuestCreationResponse
             {
-                response.ResultCode = VerifyGuestResponseCode.EmailVerificationNeeded;
-                return response;
-            }
-
-            if (user.TenantId != null)
-            {
-                response.ResultCode = VerifyGuestResponseCode.InvalidNotGuest;
-                return response;
-            }
-
-            var settingsResponse = await _settingsApi.GetSettingsAsync(user.Id);
-            if (settingsResponse != null)
-            {
-                var settings = settingsResponse.Payload;
-                if (settings.IsGuestModeEnabled != true)
-                {
-                    response.ResultCode = VerifyGuestResponseCode.Failed;
-                    return response;
-                }
-            }
-
-            response.ResultCode = VerifyGuestResponseCode.Success;
-            return response;
+                ResultCode = CreateGuestResponseCode.Success,
+                SynthesisUser = result
+            };
         }
-
+        
         public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
@@ -613,11 +527,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
-            //We will create a long random password for the user and throw it away so that the Idp users can't login using local credentials
-            var tempPassword = GenerateRandomPassword(64);
-            var hash = HashAndSalt(tempPassword, out var salt);
-
-            var user = new CreateUserRequest()
+            var user = new UserRequest
             {
                 Email = model.EmailId,
                 UserName = model.EmailId,
@@ -630,11 +540,11 @@ namespace Synthesis.PrincipalService.Controllers
             var result = await CreateUserAsync(user, tenantId, createddBy);
             if (result != null && model.Groups !=null)
             {
-                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.Value, model);
+                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.ToGuid(), model);
                 if (groupResult == null)
                 {
-                    _logger.Error($"An error occurred updating user groups for user {result.Id.Value}");
-                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.Value}");
+                    _logger.Error($"An error occurred updating user groups for user {result.Id.ToGuid()}");
+                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.ToGuid()}");
                 }
             }
 
@@ -660,19 +570,19 @@ namespace Synthesis.PrincipalService.Controllers
                 if (model.Groups.Contains(accountGroup.Name))
                 {
                     //Add the user to the group
-                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.Value))
+                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.ToGuid()))
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
 
-                    currentGroupsResult.Groups.Add(accountGroup.Id.Value);
+                    currentGroupsResult.Groups.Add(accountGroup.Id.ToGuid());
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
                 else
                 {
                     //remove the user from the group
-                    currentGroupsResult.Groups.Remove(accountGroup.Id.Value);
+                    currentGroupsResult.Groups.Remove(accountGroup.Id.ToGuid());
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
@@ -680,38 +590,19 @@ namespace Synthesis.PrincipalService.Controllers
 
             return currentGroupsResult;
         }
-
-        private static string GenerateRandomPassword(int length)
-        {
-            const string valid = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890~!@#$%^&*()_+-={}|:<>?[]\;',./'";
-            StringBuilder res = new StringBuilder();
-            Random rnd = new Random();
-            while (0 < length--)
-            {
-                res.Append(valid[rnd.Next(valid.Length)]);
-            }
-            return res.ToString();
-        }
-
-        private static string HashAndSalt(string pass, out string salt)
-        {
-            //hashing parameters
-            const int saltSize = 64;
-            const int hashIterations = 10000;
-
-            ICryptoService cryptoService = new SimpleCrypto.PBKDF2();
-            var hash = cryptoService.Compute(pass, saltSize, hashIterations);
-            salt = cryptoService.Salt;
-            return hash;
-        }
-
+        
         public async Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName)
         {
-            var isValidEmail = EmailValidator.IsValid(email);
-            if (!isValidEmail)
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
-                _logger.Error("Email is either empty or invalid.");
-                throw new ValidationException("Email is either empty or invalid");
+                { typeof(EmailValidator), email },
+                { typeof(NameValidator), firstName }
+            });
+
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the guest verification request.");
+                throw new ValidationFailedException(validationResult.Errors);
             }
 
             return await _emailUtility.SendWelcomeEmailAsync(email, firstName);
@@ -778,12 +669,12 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
         {
             user.TenantId = tenantId;
-            await _userRepository.UpdateItemAsync(user.Id.Value, user);
+            await _userRepository.UpdateItemAsync(user.Id.ToGuid(), user);
 
             _eventService.Publish(new ServiceBusEvent<Guid>
             {
                 Name = EventNames.UserPromoted,
-                Payload = user.Id.Value
+                Payload = user.Id.ToGuid()
             });
 
             return PromoteGuestResultCode.Success;
@@ -869,7 +760,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             return returnMetaData;
         }
-
 
         private bool IsBuiltInOnPremTenant(Guid tenantId)
         {
@@ -1162,7 +1052,7 @@ namespace Synthesis.PrincipalService.Controllers
             //TODO: Access Checks - Yusuf
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
-            return result.Select(user => user.Id.Value).ToList();
+            return result.Select(user => user.Id.ToGuid()).ToList();
         }
 
         public async Task<List<Guid>> GetGroupsForUserAsync(Guid userId)
@@ -1235,6 +1125,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await _userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty));
         }
 
+        // ReSharper disable once UnusedParameter.Local
         private bool IsSuperAdmin(Guid userId)
         {
             //var userGroups = GetUserGroupsForUser(userId).Payload;
@@ -1506,6 +1397,20 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 user.LastName = user.LastName.Trim();
             }
+        }
+
+        public static IList<ValidationFailure> GetAllErrors(params ValidationResult[] validationResults)
+        {
+            var allErrors = new List<ValidationFailure>();
+            foreach (var validationResult in validationResults)
+            {
+                if (!validationResult.IsValid && validationResult.Errors != null)
+                {
+                    allErrors.AddRange(validationResult.Errors);
+                }
+            }
+
+            return allErrors;
         }
     }
 }

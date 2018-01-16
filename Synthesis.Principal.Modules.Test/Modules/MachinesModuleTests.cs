@@ -10,11 +10,12 @@ using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Models;
+using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Modules
+namespace Synthesis.Principal.Modules.Test.Modules
 {
     public class MachinesModuleTests : BaseModuleTests<MachinesModule>
     {

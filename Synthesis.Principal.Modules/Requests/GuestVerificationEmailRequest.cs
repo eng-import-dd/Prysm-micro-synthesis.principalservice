@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace Synthesis.PrincipalService.Responses
+﻿namespace Synthesis.PrincipalService.Requests
 {
     public class GuestVerificationEmailRequest
     {

@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, "/v1/users", CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(CreateUserRequest.Example())
+                .RequestFormat(UserRequest.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForAccount", HttpMethod.Get, "/v1/users/", GetUsersForAccountAsync)
@@ -151,8 +151,8 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("CreateGuest", HttpMethod.Post, "v1/guestsessions/createguest", CreateGuestAsync)
-                .Description("Creates a Guest user from a guest session.")
+            CreateRoute("CreateGuest", HttpMethod.Post, "v1/users/createguest", CreateGuestAsync)
+                .Description("Creates a Guest user.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(GuestCreationRequest.Example());
 
@@ -215,10 +215,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateUserRequest newUser;
+            UserRequest newUser;
             try
             {
-                newUser = this.Bind<CreateUserRequest>();
+                newUser = this.Bind<UserRequest>();
             }
             catch (Exception ex)
             {
@@ -597,7 +597,11 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.CreateGuestAsync(request);
+                return await _userController.CreateGuestAsync(request, TenantId, PrincipalId);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {

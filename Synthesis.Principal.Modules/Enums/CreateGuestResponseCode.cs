@@ -5,13 +5,12 @@
         Failed,
         Unauthorized,
         FirstOrLastNameIsNull,
-        EmailIsNotUnique,
         InvalidEmail,
         UserExists,
-        UsernameIsNotUnique,
         InvalidPassword,
         PasswordConfirmationError,
         SucessEmailVerificationNeeded,
+        UserNotInvited,
         Success
     }
 }

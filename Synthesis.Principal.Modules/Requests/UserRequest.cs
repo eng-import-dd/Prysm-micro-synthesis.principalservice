@@ -4,7 +4,7 @@ using Synthesis.License.Manager.Models;
 
 namespace Synthesis.PrincipalService.Requests
 {
-    public class CreateUserRequest
+    public class UserRequest
     {
         public string Email { get; set; }
         public string FirstName { get; set; }
@@ -20,9 +20,9 @@ namespace Synthesis.PrincipalService.Requests
         public Guid TenantId { get; set; }
         public string UserName { get; set; }
 
-        public static CreateUserRequest Example()
+        public static UserRequest Example()
         {
-            return new CreateUserRequest
+            return new UserRequest
             {
                 Id = Guid.NewGuid(),
                 TenantId = Guid.NewGuid(),

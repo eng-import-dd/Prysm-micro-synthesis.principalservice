@@ -24,7 +24,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Workflow
+namespace Synthesis.Principal.Modules.Test.Controllers
 {
     public class UsersControllerTests
     {
@@ -60,6 +60,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
+                _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantApiMock.Object);
@@ -80,6 +81,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly IMapper _mapper;
         private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
         private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
+        private readonly Mock<IPasswordUtility> _passwordUtilityMock = new Mock<IPasswordUtility>();
 
         [Fact]
         public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
@@ -347,7 +349,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
@@ -368,7 +370,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { new User() });
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -382,7 +384,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { new User() });
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -405,7 +407,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
@@ -444,7 +446,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
 
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
@@ -795,11 +797,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
+                _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantApiMock.Object);
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385");
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -817,11 +820,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailUtilityMock.Object,
+                _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantApiMock.Object);
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new UserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3");
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));

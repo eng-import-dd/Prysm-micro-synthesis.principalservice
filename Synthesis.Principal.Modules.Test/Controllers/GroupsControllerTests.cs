@@ -16,7 +16,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Models;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Workflow
+namespace Synthesis.Principal.Modules.Test.Controllers
 {
     public class GroupsControllerTests
     {

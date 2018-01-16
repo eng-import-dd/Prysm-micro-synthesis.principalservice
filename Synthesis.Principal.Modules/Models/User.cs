@@ -9,7 +9,7 @@ namespace Synthesis.PrincipalService.Models
     [DataContract]
     public class User
     {
-        // The EmailDomain property is a calculated value that we want ot be persisted in the documentdb.
+        // The EmailDomain property is a calculated value that we want to be persisted in documentdb.
         // We use JsonProperty attribute instead of DataMember attribute as Avro has trouble deserialzing
         // read only properties marked with DataMember attribute when the object is sent to Kafka.
         [JsonProperty]

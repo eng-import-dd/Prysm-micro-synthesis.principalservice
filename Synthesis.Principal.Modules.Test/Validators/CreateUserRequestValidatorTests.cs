@@ -2,7 +2,7 @@
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class CreateUserRequestValidatorTests
     {
@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfFirstNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UserRequest
             {
                 LastName = "Test",
                  Email ="a@b.com",
@@ -26,7 +26,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLastNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UserRequest
             {
 
                 FirstName = "Test",
@@ -42,7 +42,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfEmailIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UserRequest
             {
                 FirstName = "Test",
                 LastName ="User",
@@ -58,7 +58,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfUserNameIsEmpty()
         {
-            var request = new CreateUserRequest
+            var request = new UserRequest
             {
                 FirstName = "Test",
                 LastName = "User",
@@ -73,7 +73,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassIfValid()
         {
-            var request = new CreateUserRequest
+            var request = new UserRequest
             {
                 FirstName = "Test",
                 LastName = "User",
