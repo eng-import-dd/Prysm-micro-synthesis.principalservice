@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Validators
                 .EmailAddress().WithMessage("Invalid email address");
 
             RuleFor(request => request.UserName)
-                .NotEmpty().WithMessage("The Email property must not be empty")
+                .NotEmpty().WithMessage("The UserName property must not be empty")
                 .MaximumLength(100).WithMessage("The UserName must be less than 100 characters long")
                 .Matches(@"^[0-9a-zA-Z@\-\._]{1,100}$").WithMessage("Username may only contain alpha-numeric characters as well . @ _ -");
         }

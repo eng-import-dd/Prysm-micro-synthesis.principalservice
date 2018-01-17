@@ -48,7 +48,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
         {
-            var userInviteServiceResult =new List<UserInviteResponse>();
+            var userInviteServiceResult = new List<UserInviteResponse>();
             var validUsers = new List<UserInviteResponse>();
             var inValidDomainUsers = new List<UserInviteResponse>();
             var inValidEmailFormatUsers = new List<UserInviteResponse>();
@@ -62,6 +62,11 @@ namespace Synthesis.PrincipalService.Controllers
             var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
             foreach (var newUserInvite in userInviteEntityList)
             {
+                if (newUserInvite.Email == null)
+                {
+                    continue;
+                }
+
                 if (validator.Validate(newUserInvite.Email).Errors.Any())
                 {
                     newUserInvite.Status = InviteUserStatus.UserEmailFormatInvalid;

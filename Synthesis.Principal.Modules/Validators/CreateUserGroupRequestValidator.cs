@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using System;
+using FluentValidation;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
@@ -8,10 +9,10 @@ namespace Synthesis.PrincipalService.Validators
         public CreateUserGroupRequestValidator()
         {
             RuleFor(request => request.UserId)
-                .NotEmpty().WithMessage("User Id must not be empty.");
+                .NotEqual(Guid.Empty).WithMessage("User Id must not be empty.");
 
             RuleFor(request => request.GroupId)
-                .NotEmpty().WithMessage("Group Id must not be empty.");
+                .NotEqual(Guid.Empty).WithMessage("Group Id must not be empty.");
         }
     }
 }

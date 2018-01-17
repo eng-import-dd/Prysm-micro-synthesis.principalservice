@@ -19,7 +19,7 @@
                 Email = "example@email.com",
                 Password = "SecurePassword123",
                 PasswordConfirmation = "SecurePassword123",
-                ProjectAccessCode = "1234",
+                ProjectAccessCode = "1234567890",
                 IsIdpUser = false
             };
         }

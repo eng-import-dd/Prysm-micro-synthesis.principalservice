@@ -19,7 +19,7 @@ namespace Synthesis.PrincipalService.Validators
         }
 
         private void InitializeRules()
-        { 
+        {
             RuleFor(request => request)
                 .NotEmpty().WithMessage($"The {_titleOfNameProperty} property must not be empty")
                 .MaximumLength(100).WithMessage($"The {_titleOfNameProperty} must be less than 100 characters long");

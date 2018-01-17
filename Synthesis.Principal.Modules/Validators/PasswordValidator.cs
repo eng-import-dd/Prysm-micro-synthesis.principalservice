@@ -8,9 +8,6 @@ namespace Synthesis.PrincipalService.Validators
 
         public PasswordValidator()
         {
-            RuleFor(password => password)
-                .NotNull().WithMessage("Password cannot be null");
-
             RuleFor(password => password.Length)
                 .GreaterThanOrEqualTo(MinPasswordLength).WithMessage($"The Password must be at least {MinPasswordLength} characters long");
         }

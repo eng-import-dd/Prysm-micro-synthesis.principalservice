@@ -402,6 +402,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Error("Validation failed while attempting to GetUsersByIds.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)

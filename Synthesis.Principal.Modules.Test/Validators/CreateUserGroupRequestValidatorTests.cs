@@ -12,10 +12,8 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfUserIdIsEmpty()
         {
-           var request = new CreateUserGroupRequest
-            {
-                GroupId = Guid.NewGuid()
-            };
+            var request = CreateUserGroupRequest.Example();
+            request.UserId = Guid.Empty;
 
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
@@ -24,10 +22,8 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfGroupIdIsEmpty()
         {
-            var request = new CreateUserGroupRequest
-            {
-                UserId = Guid.NewGuid()
-            };
+            var request = CreateUserGroupRequest.Example();
+            request.GroupId = Guid.Empty;
 
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
@@ -44,11 +40,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [Fact]
         public void ShouldPassIfValidRequestObject()
         {
-            var request = new CreateUserGroupRequest
-            {
-                UserId = Guid.NewGuid(),
-                GroupId = Guid.NewGuid()
-            };
+            var request = CreateUserGroupRequest.Example();
 
             var result = _validator.Validate(request);
             Assert.True(result.IsValid);

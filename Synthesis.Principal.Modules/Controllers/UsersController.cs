@@ -1110,12 +1110,9 @@ namespace Synthesis.PrincipalService.Controllers
         /// <inheritdoc />
         public async Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds)
         {
-
             var validationResult = _validatorLocator.Validate<GetUsersByIdValidator>(userIds);
-
             if (!validationResult.IsValid)
             {
-                _logger.Error("GetUsersByIds threw a ValidationFailedException");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
