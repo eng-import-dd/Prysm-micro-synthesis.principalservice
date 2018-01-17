@@ -1202,5 +1202,8 @@ namespace Synthesis.Principal.Modules.Test.Controllers
                                .ThrowsAsync(new NotFoundException("Not found"));
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserByUserNameOrEmailAsync(validEmail));
         }
+
+        [Fact]
+
     }
 }

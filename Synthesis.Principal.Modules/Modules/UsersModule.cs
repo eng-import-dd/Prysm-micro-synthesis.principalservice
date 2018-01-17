@@ -598,7 +598,10 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.CreateGuestAsync(request, TenantId, PrincipalId);
+                var response =  await _userController.CreateGuestAsync(request, TenantId, PrincipalId);
+                return Negotiate
+                    .WithModel(response)
+                    .WithStatusCode(HttpStatusCode.Created);
             }
             catch (ValidationFailedException ex)
             {

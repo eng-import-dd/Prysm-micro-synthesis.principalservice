@@ -310,16 +310,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            // TODO: Use password policy to verify password is valid
-            var guestCreationValidationResult = _validatorLocator.Validate<GuestCreationRequestValidator>(request);
-            var tenantValidationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
-            var createdByValidationResult = _validatorLocator.Validate<UserIdValidator>(createdBy);
-            var errors = GetAllErrors(guestCreationValidationResult, tenantValidationResult, createdByValidationResult);
-            if (errors.Any())
-            {
-                throw new ValidationFailedException(errors);
-            }
-
             // Does a user already exist that uses email or has a username equal to the email?
             var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.UserName == request.Email);
             if (existingUser != null)
@@ -327,7 +317,6 @@ namespace Synthesis.PrincipalService.Controllers
                 return new GuestCreationResponse { ResultCode = CreateGuestResponseCode.UserExists };
             }
 
-            // TODO: Can there be more than one invite??  If so, changes this line and deal with dupes if needed
             // Has an invite been sent to this user?
             var invite = await _userInviteRepository.GetItemAsync(x => x.Email == request.Email);
             if (invite != null)
@@ -1393,20 +1382,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 user.LastName = user.LastName.Trim();
             }
-        }
-
-        public static IList<ValidationFailure> GetAllErrors(params ValidationResult[] validationResults)
-        {
-            var allErrors = new List<ValidationFailure>();
-            foreach (var validationResult in validationResults)
-            {
-                if (!validationResult.IsValid && validationResult.Errors != null)
-                {
-                    allErrors.AddRange(validationResult.Errors);
-                }
-            }
-
-            return allErrors;
         }
     }
 }

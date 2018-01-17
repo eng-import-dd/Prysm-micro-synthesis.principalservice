@@ -37,7 +37,7 @@ namespace Synthesis.Principal.Modules.Test.Modules
             var response = await UnauthenticatedBrowser.Get("/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55", BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        } 
+        }
 
         [Fact]
         public async Task RespondWithOkAsync()
@@ -52,6 +52,7 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
+        #region CreateUser
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()
         {
@@ -101,7 +102,61 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             _controllerMock.Verify(m => m.CreateUserAsync(It.IsAny<UserRequest>(), TenantId, PrincipalId));
         }
+        #endregion
 
+        #region CreateGuestUser
+        [Fact]
+        public async Task CreateGuestUserReturnsCreatedAsync()
+        {
+            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, GuestCreationRequest.Example()));
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new Exception());
+
+            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestUserReturnsItemWithInvalidBodyReturnsBadRequest()
+        {
+            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, "invalid body"));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateGuestUserReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateGuestUserReadsTenantIdFromUserClaimAsync()
+        {
+            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            _controllerMock.Verify(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), TenantId, PrincipalId));
+        }
+        #endregion
+
+        #region GetUserById
         [Fact]
         public async Task GetUserByIdBasicReturnsOk()
         {
@@ -162,7 +217,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+        #endregion
 
+        #region GetUsersForAccount
         [Fact]
         public async Task GetUsersForAccountReturnsOk()
         {
@@ -213,7 +270,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region PromoteGuest
         [Fact]
         public async Task PromoteGuestRespondWithUnauthorizedNoBearerAsync()
         {
@@ -303,7 +362,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             _controllerMock.Verify(m => m.PromoteGuestUserAsync(expectedId, TenantId, expectedLicense, false));
         }
+        #endregion
 
+        #region UpdateUser
         [Fact]
         public async Task UpdateUserReturnsOk()
         {
@@ -368,7 +429,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region LockUser
         [Fact]
         public async Task LockUserReturnsSuccess()
         {
@@ -416,7 +479,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region CanPromoteUser
         [Fact]
         public async Task CanPromoteuserReturnsSuccess()
         {
@@ -460,7 +525,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+        #endregion
 
+        #region ResendWelcomeEmail
         [Fact]
         public async Task ResendWelcomeEmailReturnsOk()
         {
@@ -493,7 +560,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
+        #endregion
 
+        #region SendResetPasswordEmail
         [Fact]
         public async Task SendResetPasswordEmailReturnsOk()
         {
@@ -526,8 +595,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
+        #endregion
 
-
+        #region CreateUserGroup
         [Fact]
         public async Task CreateUserGroupReturnsCreated()
         {
@@ -567,7 +637,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
         }
+        #endregion
 
+        #region GetUsersForGroup
         [Fact]
         [Trait("User Group","User Group Tests")]
         public async Task GetUsersForGroupReturnFound()
@@ -637,7 +709,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region GetGroupsForUser
         [Fact]
         public async Task GetGroupsForUserReturnsFound()
         {
@@ -727,7 +801,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
+        #endregion
 
+        #region GetGuestUsersForTenant
         [Fact]
         public async Task GetGuestUsersForTenantSuccess()
         {
@@ -754,7 +830,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region AutoProvisionRefreshGroups
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnUser()
         {
@@ -785,7 +863,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
         }
+        #endregion
 
+        #region RemoveUserfromPermissionGroup
         [Fact]
         public async Task RemoveUserfromPermissionGroupReturnsSuccess()
         {
@@ -843,7 +923,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region GetTenantIdByUserEmail
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
         [Fact]
         public async Task GetTenantIdByUserEmailSuccess()
@@ -877,7 +959,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
         }
+        #endregion
 
+        #region GetUsersByIds
         [Fact]
         public async Task GetUsersByIdsReturnsOkIfSuccessful()
         {
@@ -910,7 +994,9 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
 
+        #region GetLicenseTypeForUse
         [Trait("GetLicenseTypeForUser", "Get License Type For User")]
         [Fact]
         public async Task GetLicenseTypeForUserReturnsOk()
@@ -967,5 +1053,6 @@ namespace Synthesis.Principal.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
+        #endregion
     }
 }
