@@ -9,7 +9,6 @@ namespace Synthesis.PrincipalService.Constants
     {
         // Internal server errors
         public const string InternalServerErrorCreateUser = "An error occurred while creating the User";
-        public const string InternalServerErrorCreateGuestUser = "An error occurred while creating the guest User";
 
         public const string InternalServerErrorDeleteUser = "An error occurred deleting the User";
         public const string InternalServerErrorGetUser = "An error occurred retrieving the User";
