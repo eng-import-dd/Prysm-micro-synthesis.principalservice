@@ -275,7 +275,6 @@
     <Compile Include="Validators\CreateUserGroupRequestValidatorTests.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />
     <Compile Include="Validators\GetUsersByIdValidatorTests.cs" />
-    <Compile Include="Validators\GuestVerificationEmailRequestValidatorTests.cs" />
     <Compile Include="Validators\GuestCreationRequestValidatorTests.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidatorTests.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidatorTests.cs" />
