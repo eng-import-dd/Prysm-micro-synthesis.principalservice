@@ -583,6 +583,10 @@ namespace Synthesis.PrincipalService.Modules
 
         public async Task<object> CreateGuestAsync(dynamic input)
         {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
             // This route is being deleted. No reason to add auth.
             GuestCreationRequest request;
 
