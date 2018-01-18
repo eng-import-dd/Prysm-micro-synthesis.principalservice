@@ -390,7 +390,6 @@
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
-    <Compile Include="Utilities\EmailValidator2.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
     <Compile Include="Utilities\IPasswordUtility.cs" />
