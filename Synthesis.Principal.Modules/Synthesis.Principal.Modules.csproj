@@ -340,8 +340,6 @@
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
-    <Compile Include="Enums\ProvisionGuestUserReturnCode.cs" />
-    <Compile Include="Enums\VerifyGuestResponseCode.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
