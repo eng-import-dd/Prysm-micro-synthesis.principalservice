@@ -91,7 +91,6 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
         private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
         private readonly Mock<IPasswordUtility> _passwordUtilityMock = new Mock<IPasswordUtility>();
-        private readonly Mock<IValidator> _validatorSucceedsMock = new Mock<IValidator>();
         private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         [Fact]
