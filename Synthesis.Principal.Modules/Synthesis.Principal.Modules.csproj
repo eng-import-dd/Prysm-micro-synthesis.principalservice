@@ -318,11 +318,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Apis\BaseApi.cs" />
-    <Compile Include="Apis\Interfaces\ISettingsApi.cs" />
-    <Compile Include="Apis\Interfaces\IProjectApi.cs" />
-    <Compile Include="Apis\ProjectApi.cs" />
-    <Compile Include="Apis\SettingsApi.cs" />
     <Compile Include="Constants\ErrorMessages.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />

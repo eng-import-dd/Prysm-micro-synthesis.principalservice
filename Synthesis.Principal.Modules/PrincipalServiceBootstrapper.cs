@@ -47,8 +47,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using Synthesis.PrincipalService.Apis;
-using Synthesis.PrincipalService.Apis.Interfaces;
 
 namespace Synthesis.PrincipalService
 {
@@ -325,18 +323,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
-
-            builder.RegisterType<ProjectApi>()
-                .As<IProjectApi>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("ProjectService.Url")));
-
-            builder.RegisterType<SettingsApi>()
-                .As<ISettingsApi>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(string) && p.Name == "serviceUrl",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("SynthesisCloud.Url")));
 
             return builder.Build();
         }
