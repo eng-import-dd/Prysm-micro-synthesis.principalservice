@@ -20,6 +20,7 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Validators;
 using Xunit;
 
 namespace Synthesis.Principal.Modules.Test.Controllers
@@ -36,11 +37,17 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
                 .Returns(_userRepositoryMock.Object);
 
+            _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult());
+
             _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
                 .ReturnsAsync(new ValidationResult());
 
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
+
+            _validatorFailsMock.Setup(m => m.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<UserInvite>>()));
@@ -68,6 +75,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
+        private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         [Fact]
         public async Task CreateUserInviteListDuplicateInvite()
@@ -149,6 +157,9 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserInviteListInvalidEmailFormate()
         {
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(BulkUploadEmailValidator)))
+                .Returns(_validatorFailsMock.Object);
+
             var createUserInviteRequest = new List<UserInviteRequest>();
             createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc.com" });
             var tenantId = Guid.NewGuid();

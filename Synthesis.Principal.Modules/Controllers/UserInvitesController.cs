@@ -67,7 +67,8 @@ namespace Synthesis.PrincipalService.Controllers
                     continue;
                 }
 
-                if (validator.Validate(newUserInvite.Email).Errors.Any())
+                var result = validator.Validate(newUserInvite.Email);
+                if (!result.IsValid)
                 {
                     newUserInvite.Status = InviteUserStatus.UserEmailFormatInvalid;
                     inValidEmailFormatUsers.Add(newUserInvite);
