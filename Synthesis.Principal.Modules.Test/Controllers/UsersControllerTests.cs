@@ -22,7 +22,9 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.PrincipalService.Validators;
 using Xunit;
+using Synthesis.PrincipalService.Enums;
 
 namespace Synthesis.Principal.Modules.Test.Controllers
 {
@@ -39,11 +41,17 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())
                 .Returns(_groupRepositoryMock.Object);
 
+            _repositoryFactoryMock.Setup(m => m.CreateRepository<UserInvite>())
+                .Returns(_userInviteRepositoryMock.Object);
+
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
 
             _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
                 .Returns(new ValidationResult());
+
+            _validatorFailsMock.Setup(m => m.Validate(It.IsAny<object>()))
+                .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
             // validator mock
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
@@ -73,6 +81,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
+        private readonly Mock<IRepository<UserInvite>> _userInviteRepositoryMock = new Mock<IRepository<UserInvite>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
         private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
@@ -82,6 +91,8 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
         private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
         private readonly Mock<IPasswordUtility> _passwordUtilityMock = new Mock<IPasswordUtility>();
+        private readonly Mock<IValidator> _validatorSucceedsMock = new Mock<IValidator>();
+        private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         [Fact]
         public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
@@ -182,10 +193,13 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CanPromoteUserIfEmailIsEmpty()
+        public async Task CanPromoteUserIfEmailIsEmptyThrowsValidationException()
         {
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(EmailValidator)))
+                .Returns(_validatorFailsMock.Object);
+
             var email = "";
-            await Assert.ThrowsAsync<ValidationException>(() => _controller.CanPromoteUserAsync(email));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CanPromoteUserAsync(email));
         }
 
         [Fact]
@@ -1204,6 +1218,123 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateGuestGeneratesPasswordForIdpUsers()
+        {
+            var request = GuestCreationRequest.Example();
+            request.IsIdpUser = true;
+            var tenantId = Guid.NewGuid();
+            var createdById = Guid.NewGuid();
 
+            await _controller.CreateGuestAsync(request, tenantId, createdById);
+
+            _passwordUtilityMock.Verify(x => x.GenerateRandomPassword(It.IsAny<int>()));
+        }
+
+        [Fact]
+        public async Task CreateGuestBadRequestThrowsValidationfailed()
+        {
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(GuestCreationRequestValidator)))
+                .Returns(_validatorFailsMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task CreateGuestBadTenantIdThrowsValidationfailed()
+        {
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(TenantIdValidator)))
+                .Returns(_validatorFailsMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task CreateGuestBadCreatedByIdThrowsValidationfailed()
+        {
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(UserIdValidator)))
+                .Returns(_validatorFailsMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task CreateGuestForExistingUserReturnsUserExists()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>() ))
+                .ReturnsAsync(new List<User> { User.Example() } );
+
+            var result = await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+            Assert.Equal(CreateGuestResponseCode.UserExists, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestForUninvitedUserReturnsUserNotInvited()
+        {
+            _userInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+                .ReturnsAsync(new List<UserInvite> { UserInvite.Example() });
+
+            var result = await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+            Assert.Equal(CreateGuestResponseCode.UserNotInvited, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestCreatesUser()
+        {
+            await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+
+            _userRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<User>()));
+        }
+
+        [Fact]
+        public async Task CreateGuestSendsEvent()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .ReturnsAsync(User.Example());
+
+            await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+
+            _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
+        }
+
+        [Fact]
+        public async Task CreateGuestReturnsSuccess()
+        {
+            var result = await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+
+            Assert.Equal(CreateGuestResponseCode.Success, result.ResultCode);
+        }
+
+        [Fact]
+        public async Task CreateGuestReturnsUser()
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .ReturnsAsync(User.Example());
+
+            var result = await _controller.CreateGuestAsync(GuestCreationRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
+
+            Assert.NotNull(result.SynthesisUser);
+        }
+
+        [Fact]
+        public async Task CreateGuestTrimsWhiteSpaceInName()
+        {
+            var firstName = "  FirstName  ";
+            var lastName = "  LastName  ";
+
+            var request = GuestCreationRequest.Example();
+            request.FirstName = firstName;
+            request.LastName = lastName;
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .Returns<User>(u =>
+                {
+                    return Task.FromResult(u);
+                });
+
+            var result = await _controller.CreateGuestAsync(request, Guid.NewGuid(), Guid.NewGuid());
+
+            Assert.Equal(firstName.Trim(), result.SynthesisUser.FirstName);
+            Assert.Equal(lastName.Trim(), result.SynthesisUser.LastName);
+        }
     }
 }

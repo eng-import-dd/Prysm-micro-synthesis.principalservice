@@ -340,7 +340,7 @@ namespace Synthesis.PrincipalService.Controllers
                 UserName = request.Email
             };
             var result = await _userRepository.CreateItemAsync(user);
-            await _eventService.PublishAsync(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, result);
 
             // Done
             return new GuestCreationResponse
