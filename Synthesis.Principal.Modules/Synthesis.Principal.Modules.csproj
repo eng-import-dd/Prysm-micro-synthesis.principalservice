@@ -380,12 +380,9 @@
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\CanPromoteUserResponse.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
-    <Compile Include="Responses\GuestVerificationEmailResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
-    <Compile Include="Responses\ProvisionGuestUserResponse.cs" />
-    <Compile Include="Responses\SettingsResponse.cs" />
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
