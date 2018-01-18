@@ -3,24 +3,24 @@ using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public class CreateUserRequestValidator : AbstractValidator<UserRequest>
+    public class CreateUserRequestValidator : AbstractValidator<CreateUserRequest>
     {
         public CreateUserRequestValidator()
         {
             RuleFor(request => request.FirstName)
-                .NotNull().WithMessage($"{nameof(UserRequest.FirstName)} cannot be null")
-                .SetValidator(new NameValidator(nameof(UserRequest.FirstName)));
+                .NotNull().WithMessage($"{nameof(CreateUserRequest.FirstName)} cannot be null")
+                .SetValidator(new NameValidator(nameof(CreateUserRequest.FirstName)));
 
             RuleFor(request => request.LastName)
-                .NotNull().WithMessage($"{nameof(UserRequest.LastName)} cannot be null")
-                .SetValidator(new NameValidator(nameof(UserRequest.LastName)));
+                .NotNull().WithMessage($"{nameof(CreateUserRequest.LastName)} cannot be null")
+                .SetValidator(new NameValidator(nameof(CreateUserRequest.LastName)));
 
             RuleFor(request => request.Email)
-                .NotNull().WithMessage($"{nameof(UserRequest.Email)} cannot be null")
-                .SetValidator(new EmailValidator(nameof(UserRequest.Email)));
+                .NotNull().WithMessage($"{nameof(CreateUserRequest.Email)} cannot be null")
+                .SetValidator(new EmailValidator(nameof(CreateUserRequest.Email)));
 
             RuleFor(request => request.UserName)
-                .NotNull().WithMessage($"{nameof(UserRequest.UserName)} cannot be null")
+                .NotNull().WithMessage($"{nameof(CreateUserRequest.UserName)} cannot be null")
                 .SetValidator(new UserNameValidator());
         }
     }

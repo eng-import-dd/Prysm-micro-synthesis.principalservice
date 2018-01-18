@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, "/v1/users", CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(UserRequest.Example())
+                .RequestFormat(CreateUserRequest.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForAccount", HttpMethod.Get, "/v1/users/", GetUsersForAccountAsync)
@@ -215,10 +215,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            UserRequest newUser;
+            CreateUserRequest newUser;
             try
             {
-                newUser = this.Bind<UserRequest>();
+                newUser = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {

@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUsersController
     {
-        Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId, Guid createdBy);
+        Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<UserResponse> GetUserAsync(Guid userId);
 

@@ -10,8 +10,8 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserProfile()
         {
-            CreateMap<UserRequest, User>();
-            CreateMap<User, UserRequest>();
+            CreateMap<CreateUserRequest, User>();
+            CreateMap<User, CreateUserRequest>();
             CreateMap<UpdateUserRequest, User>();
             CreateMap<User, UserResponse>();
             CreateMap<User, BasicUserResponse>();

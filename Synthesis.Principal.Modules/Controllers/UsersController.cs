@@ -85,7 +85,7 @@ namespace Synthesis.PrincipalService.Controllers
             _tenantApi = tenantApi;
         }
 
-        public async Task<UserResponse> CreateUserAsync(UserRequest model, Guid tenantId, Guid createdBy)
+        public async Task<UserResponse> CreateUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
 
@@ -96,7 +96,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var user = _mapper.Map<UserRequest, User>(model);
+            var user = _mapper.Map<CreateUserRequest, User>(model);
 
             if (IsBuiltInOnPremTenant(tenantId))
             {
@@ -515,7 +515,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
-            var user = new UserRequest
+            var user = new CreateUserRequest
             {
                 Email = model.EmailId,
                 UserName = model.EmailId,

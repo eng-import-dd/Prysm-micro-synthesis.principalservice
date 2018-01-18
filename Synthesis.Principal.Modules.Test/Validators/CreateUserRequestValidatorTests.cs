@@ -13,7 +13,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [InlineData(null)]
         public void ShouldFailIfFirstNameIsInvalid(string name)
         {
-            var request = UserRequest.Example();
+            var request = CreateUserRequest.Example();
             request.FirstName = name;
 
             var result = _validator.Validate(request);
@@ -26,7 +26,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [InlineData(null)]
         public void ShouldFailIfLastNameIsInvalid(string name)
         {
-            var request = UserRequest.Example();
+            var request = CreateUserRequest.Example();
             request.LastName = name;
 
             var result = _validator.Validate(request);
@@ -39,7 +39,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [InlineData(null)]
         public void ShouldFailIfEmailIsInvalid(string name)
         {
-            var request = UserRequest.Example();
+            var request = CreateUserRequest.Example();
             request.Email = name;
 
             var result = _validator.Validate(request);
@@ -53,7 +53,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [InlineData(null)]
         public void ShouldFailIfUserNameIsInvalid(string name)
         {
-            var request = UserRequest.Example();
+            var request = CreateUserRequest.Example();
             request.UserName = name;
 
             var result = _validator.Validate(request);
@@ -64,7 +64,7 @@ namespace Synthesis.Principal.Modules.Test.Validators
         [Fact]
         public void ShouldPassIfValid()
         {
-            var request = UserRequest.Example();
+            var request = CreateUserRequest.Example();
 
             var result = _validator.Validate(request);
 
