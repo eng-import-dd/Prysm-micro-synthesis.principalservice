@@ -192,7 +192,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CanPromoteUserIfEmailIsEmptyThrowsValidationException()
+        public async Task CanPromoteUserThrowsValidationExceptionIfEmailIsEmpty()
         {
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(EmailValidator)))
                 .Returns(_validatorFailsMock.Object);
