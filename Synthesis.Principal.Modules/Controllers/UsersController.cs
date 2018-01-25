@@ -868,7 +868,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
             catch (Exception ex)
             {
-                _logger.Error("Erro assigning license to user", ex);
+                _logger.Error("Error assigning license to user", ex);
             }
             /* If a license could not be obtained lock the user that was just created. */
             await LockUser(user.Id.Value, true);

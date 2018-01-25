@@ -9,10 +9,10 @@ namespace Synthesis.PrincipalService.Validators
         public CreateUserGroupRequestValidator()
         {
             RuleFor(request => request.UserId)
-                .NotEqual(Guid.Empty).WithMessage("User Id must not be empty.");
+                .NotEmpty().WithMessage("User Id must not be empty.");
 
             RuleFor(request => request.GroupId)
-                .NotEqual(Guid.Empty).WithMessage("Group Id must not be empty.");
+                .NotEmpty().WithMessage("Group Id must not be empty.");
         }
     }
 }

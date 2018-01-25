@@ -7,7 +7,7 @@ namespace Synthesis.PrincipalService.Validators
     {
         protected GuidValidator(string name)
         {
-            RuleFor(guid => guid).NotEqual(Guid.Empty).WithMessage($"The {name} must not be empty");
+            RuleFor(guid => guid).NotEmpty().WithMessage($"The {name} must not be empty");
         }
     }
 }

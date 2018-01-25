@@ -14,7 +14,7 @@ namespace Synthesis.PrincipalService.Validators
                 .WithMessage("A minimum of 1 Guid must be provided");
 
             RuleForEach(model => model.AsEnumerable())
-                .NotEqual(Guid.Empty)
+                .NotEmpty()
                 .WithMessage("None of the Guids may be empty.")
                 .OverridePropertyName("Id");
         }
