@@ -16,7 +16,6 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
-using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -528,11 +527,11 @@ namespace Synthesis.PrincipalService.Controllers
             var result = await CreateUserAsync(user, tenantId, createddBy);
             if (result != null && model.Groups !=null)
             {
-                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.ToGuid(), model);
+                var groupResult = await UpdateIdpUserGroupsAsync(result.Id.GetValueOrDefault(), model);
                 if (groupResult == null)
                 {
-                    _logger.Error($"An error occurred updating user groups for user {result.Id.ToGuid()}");
-                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.ToGuid()}");
+                    _logger.Error($"An error occurred updating user groups for user {result.Id.GetValueOrDefault()}");
+                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.GetValueOrDefault()}");
                 }
             }
 
@@ -558,19 +557,19 @@ namespace Synthesis.PrincipalService.Controllers
                 if (model.Groups.Contains(accountGroup.Name))
                 {
                     //Add the user to the group
-                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.ToGuid()))
+                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.GetValueOrDefault()))
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
 
-                    currentGroupsResult.Groups.Add(accountGroup.Id.ToGuid());
+                    currentGroupsResult.Groups.Add(accountGroup.Id.GetValueOrDefault());
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
                 else
                 {
                     //remove the user from the group
-                    currentGroupsResult.Groups.Remove(accountGroup.Id.ToGuid());
+                    currentGroupsResult.Groups.Remove(accountGroup.Id.GetValueOrDefault());
                     var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                     return result;
                 }
@@ -657,12 +656,12 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
         {
             user.TenantId = tenantId;
-            await _userRepository.UpdateItemAsync(user.Id.ToGuid(), user);
+            await _userRepository.UpdateItemAsync(user.Id.GetValueOrDefault(), user);
 
             _eventService.Publish(new ServiceBusEvent<Guid>
             {
                 Name = EventNames.UserPromoted,
-                Payload = user.Id.ToGuid()
+                Payload = user.Id.GetValueOrDefault()
             });
 
             return PromoteGuestResultCode.Success;
@@ -1040,7 +1039,7 @@ namespace Synthesis.PrincipalService.Controllers
             //TODO: Access Checks - Yusuf
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
-            return result.Select(user => user.Id.ToGuid()).ToList();
+            return result.Select(user => user.Id.GetValueOrDefault()).ToList();
         }
 
         public async Task<List<Guid>> GetGroupsForUserAsync(Guid userId)
