@@ -16,6 +16,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Enums;
+using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -282,14 +283,14 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
         
-        public async Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request, Guid tenantId, Guid createdBy)
+        public async Task<UserResponse> CreateGuestAsync(CreateUserRequest request, Guid tenantId, Guid createdBy)
         {
             // Trim up the names
             request.FirstName = request.FirstName?.Trim();
             request.LastName = request.LastName?.Trim();
 
             // IDP users need special password setup
-            if (request.IsIdpUser)
+            if (request.IsIdpUser.GetValueOrDefault())
             {
                 var throwAwayPassword = _passwordUtility.GenerateRandomPassword(64);
                 request.Password = throwAwayPassword;
@@ -313,14 +314,14 @@ namespace Synthesis.PrincipalService.Controllers
             var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.UserName == request.Email);
             if (existingUser != null)
             {
-                return new GuestCreationResponse { ResultCode = CreateGuestResponseCode.UserExists };
+                throw new UserExistsException($"A user already exists for email = {request.Email}");
             }
 
             // Has an invite been sent to this user?
             var invite = await _userInviteRepository.GetItemAsync(x => x.Email == request.Email);
             if (invite != null)
             {
-                return new GuestCreationResponse { ResultCode = CreateGuestResponseCode.UserNotInvited };
+                throw new UserNotInvitedException("The user has not been invited yet");
             }
 
             // Create a new user for the guest
@@ -342,11 +343,7 @@ namespace Synthesis.PrincipalService.Controllers
             _eventService.Publish(EventNames.UserCreated, result);
 
             // Done
-            return new GuestCreationResponse
-            {
-                ResultCode = CreateGuestResponseCode.Success,
-                SynthesisUser = result
-            };
+            return _mapper.Map<User, UserResponse>(result);
         }
         
         public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)

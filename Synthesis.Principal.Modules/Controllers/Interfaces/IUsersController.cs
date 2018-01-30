@@ -53,6 +53,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<User> GetUserByUserNameOrEmailAsync(string username);
 
-        Task<GuestCreationResponse> CreateGuestAsync(GuestCreationRequest request, Guid tenantId, Guid createdBy);
+        Task<UserResponse> CreateGuestAsync(CreateUserRequest request, Guid tenantId, Guid createdBy);
     }
 }

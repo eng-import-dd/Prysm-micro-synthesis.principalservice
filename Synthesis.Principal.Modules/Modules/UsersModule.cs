@@ -21,6 +21,8 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Exceptions;
+using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
@@ -151,11 +153,6 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("CreateGuest", HttpMethod.Post, "v1/users/createguest", CreateGuestAsync)
-                .Description("Creates a Guest user.")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .ResponseFormat(GuestCreationRequest.Example());
-
             CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userIdzzz}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -215,10 +212,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateUserRequest newUser;
+            CreateUserRequest createUserRequest;
             try
             {
-                newUser = this.Bind<CreateUserRequest>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -228,10 +225,29 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.CreateUserAsync(newUser, TenantId, PrincipalId);
+                UserResponse userResponse;
+                if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
+                {
+                    userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
+                }
+                else
+                {
+                    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
+                }
+
                 return Negotiate
-                    .WithModel(result)
+                    .WithModel(userResponse)
                     .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (UserExistsException ex)
+            {
+                Logger.Error("Failed to create user because a user already exists.", ex);
+                return Response.UserExists(ex.Message);
+            }
+            catch (UserNotInvitedException ex)
+            {
+                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
+                return Response.UserNotInvited(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
@@ -578,44 +594,6 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Unhandled exception encountered while determining a User can be promoted", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorDeleteUser);
-            }
-        }
-
-        public async Task<object> CreateGuestAsync(dynamic input)
-        {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            // This route is being deleted. No reason to add auth.
-            GuestCreationRequest request;
-
-            try
-            {
-                request = this.Bind<GuestCreationRequest>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to create a guest.", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            try
-            {
-                var response =  await _userController.CreateGuestAsync(request, TenantId, PrincipalId);
-                return Negotiate
-                    .WithModel(response)
-                    .WithStatusCode(HttpStatusCode.Created);
-            }
-            catch (ValidationFailedException ex)
-            {
-                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Unhandled exception encountered while attempting to create a guest", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateGuestUser);
             }
         }
 

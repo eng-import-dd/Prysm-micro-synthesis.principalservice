@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Modules;
 using Xunit;
 
@@ -45,7 +46,7 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
 
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
-                           .ReturnsAsync(new UserResponse() { Id = currentUserId });
+                           .ReturnsAsync(new UserResponse { Id = currentUserId });
 
             var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}", BuildRequest);
 
@@ -57,8 +58,21 @@ namespace Synthesis.Principal.Modules.Test.Modules
         public async Task CreateUserReturnsCreatedAsync()
         {
             var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new CreateUserRequest()));
-
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserWithNoProjectAccessCodeCreatesFullUserAsync()
+        {
+            await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, CreateUserRequest.Example()));
+            _controllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+        }
+
+        [Fact]
+        public async Task CreateUserWithProjectAccessCodeCreatesGuestUserAsync()
+        {
+            await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, CreateUserRequest.GuestExample()));
+            _controllerMock.Verify(x => x.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
         }
 
         [Fact]
@@ -73,12 +87,34 @@ namespace Synthesis.Principal.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task CreateUserReturnsItemWithInvalidBodyReturnsBadRequest()
+        public async Task CreateUserWithInvalidRequestReturnsBadRequest()
         {
             var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateUserReturnsConflictIfUserNotInvitedExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new UserNotInvitedException());
+
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, CreateUserRequest.GuestExample()));
+
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserReturnsConflictIfUserExistsExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Throws(new UserExistsException());
+
+            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, CreateUserRequest.GuestExample()));
+
+            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
 
         [Fact]
@@ -101,58 +137,6 @@ namespace Synthesis.Principal.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
             _controllerMock.Verify(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), TenantId, PrincipalId));
-        }
-        #endregion
-
-        #region CreateGuestUser
-        [Fact]
-        public async Task CreateGuestUserReturnsCreatedAsync()
-        {
-            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, GuestCreationRequest.Example()));
-
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
-        {
-            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Throws(new Exception());
-
-            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateGuestUserReturnsItemWithInvalidBodyReturnsBadRequest()
-        {
-            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, "invalid body"));
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
-        }
-
-        [Fact]
-        public async Task CreateGuestUserReturnsBadRequestIfValidationFails()
-        {
-            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
-
-            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
-        }
-
-        [Fact]
-        public async Task CreateGuestUserReadsTenantIdFromUserClaimAsync()
-        {
-            var response = await UserTokenBrowser.Post("/v1/users/createguest", ctx => BuildRequest(ctx, new GuestCreationRequest()));
-
-            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-            _controllerMock.Verify(m => m.CreateGuestAsync(It.IsAny<GuestCreationRequest>(), TenantId, PrincipalId));
         }
         #endregion
 
