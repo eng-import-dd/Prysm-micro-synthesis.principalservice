@@ -20,9 +20,6 @@ namespace Synthesis.PrincipalService.Models
         [DataMember(Name = "LastAccessDate"), NullableSchema]
         public DateTime? LastAccessDate { get; set; }
 
-        [DataMember(Name = "Name"), NullableSchema]
-        public string Name { get; set; }
-
         [DataMember(Name = "TenantId"), NullableSchema]
         public Guid TenantId { get; set; }
     }
