@@ -1306,11 +1306,6 @@ namespace Synthesis.PrincipalService.Controllers
                 ContinuationToken = getUsersParams.ContinuationToken ?? ""
             };
             var usersInAccountsResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-            if (!usersInAccountsResult.Items.Any())
-            {
-                _logger.Error($"Could not find users for account {tenantId}");
-                throw new NotFoundException("Users for this account could not be found");
-            }
 
             var usersInAccounts = usersInAccountsResult.Items.ToList();
             var filteredUserCount = usersInAccounts.Count;

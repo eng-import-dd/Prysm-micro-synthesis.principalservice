@@ -638,7 +638,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetGroupsForUserReturnsFound()
+        public async Task GetGroupsForUserReturnsOk()
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var currentUserId);
 
@@ -650,7 +650,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}/groups", BuildRequest);
 
-            Assert.Equal(HttpStatusCode.Found, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
