@@ -782,7 +782,7 @@ namespace Synthesis.PrincipalService.Modules
                 var result = await _userController.GetGroupsForUserAsync(userId);
                 return Negotiate
                     .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.Found);
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (NotFoundException)
             {
