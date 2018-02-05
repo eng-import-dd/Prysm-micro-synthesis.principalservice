@@ -63,7 +63,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Machine>> _machineRepositoryMock = new Mock<IRepository<Machine>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly IMachineController _controller;
+        private readonly MachinesController _controller;
 
         [Fact]
         public async Task ChangeMachineAccountAsyncNotFoundException()
@@ -287,7 +287,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
 
-            var newMachine = new UpdateMachineRequest();
+            var newMachine = new UpdateMachineRequest() { Id = Guid.NewGuid() };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var result = await _controller.UpdateMachineAsync(newMachine, tenantId);
             Assert.NotNull(result);

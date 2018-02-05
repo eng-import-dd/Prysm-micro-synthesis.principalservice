@@ -1,5 +1,4 @@
-﻿using System;
-using FluentValidation;
+﻿using FluentValidation;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators

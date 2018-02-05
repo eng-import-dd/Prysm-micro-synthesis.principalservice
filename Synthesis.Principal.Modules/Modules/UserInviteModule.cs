@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Synthesis.Authentication;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
@@ -28,7 +27,6 @@ namespace Synthesis.PrincipalService.Modules
         public UserInviteModule(
             IUserInvitesController userInvitesController,
             IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
             : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)

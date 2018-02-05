@@ -75,7 +75,7 @@ namespace Synthesis.PrincipalService.Controllers
             machine.DateModified = DateTime.UtcNow;
             machine.Id = Guid.NewGuid();
 
-            var result = await CreateMachineInDB(machine);
+            var result = await CreateMachineInDb(machine);
 
             await _eventService.PublishAsync(EventNames.MachineCreated);
 
@@ -155,7 +155,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        private async Task<Machine> CreateMachineInDB(Machine machine)
+        private async Task<Machine> CreateMachineInDb(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -184,7 +184,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if (machine.Id == null)
+            if (machine.Id == Guid.Empty)
             {
                 validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Id was not provided."));
             }
@@ -277,7 +277,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var existingMachine = await _machineRepository.GetItemAsync(machineId);
 
-            if (settingProfileId == null || settingProfileId == Guid.Empty)
+            if (settingProfileId == Guid.Empty)
             {
                 _logger.Error("An error occurred changing the account. settingProfileId must not be null or empty");
                 throw new BadRequestException("Setting Profile Id cannot be null");
@@ -339,7 +339,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private bool IsUserASuperAdmin(Guid id)
         {
-            // To be replaced by a call to Settings Service(?) determining if the user is a superadmin user.
+            // TODO - CU-476 - this should be obtainable from the policyevaluator
             return true;
         }
 
@@ -357,7 +357,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private bool IsValidSettingProfile(Guid settingProfileId)
         {
-            // To be replaced by a call to Settings Service(?) determining if the SettingProfile is valid.
+            // TODO - CU-476 - Settings are not part of the inital decomp effort, we will need to go back to the monolith to get this data.
             return true;
         }
     }

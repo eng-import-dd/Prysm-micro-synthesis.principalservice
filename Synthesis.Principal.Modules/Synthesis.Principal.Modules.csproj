@@ -330,6 +330,7 @@
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
     <Compile Include="Exceptions\UserNotInvitedException.cs" />
+    <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
