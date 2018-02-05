@@ -2,7 +2,7 @@
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class UpdateUserRequestValidatorTests
     {
@@ -11,46 +11,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfFirstNameIsEmpty()
         {
-            var request = new UpdateUserRequest
-            {
-                LastName = "Test",
-                Email = "a@b.com",
-                UserName = "User"
-            };
+            var request = UpdateUserRequest.Example();
+            request.FirstName = "";
 
             var result = _validator.Validate(request);
-
             Assert.False(result.IsValid);
         }
 
         [Fact]
         public void ShouldFailIfLastNameIsEmpty()
         {
-            var request = new UpdateUserRequest
-            {
-
-                FirstName = "Test",
-                Email = "a@b.com",
-                UserName = "User"
-            };
+            var request = UpdateUserRequest.Example();
+            request.LastName = "";
 
             var result = _validator.Validate(request);
-
             Assert.False(result.IsValid);
         }
 
         [Fact]
         public void ShouldFailIfEmailIsEmpty()
         {
-            var request = new UpdateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                UserName = "User"
-            };
+            var request = UpdateUserRequest.Example();
+            request.Email = "";
 
             var result = _validator.Validate(request);
-
             Assert.False(result.IsValid);
         }
 
@@ -58,34 +42,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfUserNameIsEmpty()
         {
-            var request = new UpdateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "a@b.com"
-            };
+            var request = UpdateUserRequest.Example();
+            request.UserName = "";
 
             var result = _validator.Validate(request);
-
             Assert.False(result.IsValid);
         }
-
 
         [Fact]
         public void ShouldPassIfValid()
         {
-            var request = new UpdateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "a@b.com",
-                UserName = "User"
-            };
-
+            var request = UpdateUserRequest.Example();
             var result = _validator.Validate(request);
-
             Assert.True(result.IsValid);
         }
-
     }
 }

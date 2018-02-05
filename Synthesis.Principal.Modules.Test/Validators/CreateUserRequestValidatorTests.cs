@@ -2,52 +2,45 @@
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class CreateUserRequestValidatorTests
     {
         private readonly CreateUserRequestValidator _validator = new CreateUserRequestValidator();
 
-        [Fact]
-        public void ShouldFailIfFirstNameIsEmpty()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldFailIfFirstNameIsInvalid(string name)
         {
-            var request = new CreateUserRequest
-            {
-                LastName = "Test",
-                 Email ="a@b.com",
-                 UserName ="User"
-            };
+            var request = CreateUserRequest.Example();
+            request.FirstName = name;
 
             var result = _validator.Validate(request);
 
             Assert.False(result.IsValid);
         }
 
-        [Fact]
-        public void ShouldFailIfLastNameIsEmpty()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldFailIfLastNameIsInvalid(string name)
         {
-            var request = new CreateUserRequest
-            {
-
-                FirstName = "Test",
-                Email = "a@b.com",
-                UserName = "User"
-            };
+            var request = CreateUserRequest.Example();
+            request.LastName = name;
 
             var result = _validator.Validate(request);
 
             Assert.False(result.IsValid);
         }
 
-        [Fact]
-        public void ShouldFailIfEmailIsEmpty()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldFailIfEmailIsInvalid(string name)
         {
-            var request = new CreateUserRequest
-            {
-                FirstName = "Test",
-                LastName ="User",
-                UserName = "User"
-            };
+            var request = CreateUserRequest.Example();
+            request.Email = name;
 
             var result = _validator.Validate(request);
 
@@ -55,15 +48,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         }
 
 
-        [Fact]
-        public void ShouldFailIfUserNameIsEmpty()
+        [Theory]
+        [InlineData("")]
+        [InlineData(null)]
+        public void ShouldFailIfUserNameIsInvalid(string name)
         {
-            var request = new CreateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "a@b.com"
-            };
+            var request = CreateUserRequest.Example();
+            request.UserName = name;
 
             var result = _validator.Validate(request);
 
@@ -73,13 +64,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassIfValid()
         {
-            var request = new CreateUserRequest
-            {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "a@b.com",
-                UserName = "User"
-            };
+            var request = CreateUserRequest.Example();
 
             var result = _validator.Validate(request);
 

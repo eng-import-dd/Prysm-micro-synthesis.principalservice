@@ -21,7 +21,7 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Workflow
+namespace Synthesis.Principal.Modules.Test.Controllers
 {
     public class MachinesControllerTests
     {
@@ -47,12 +47,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
                 .Returns(_loggerMock.Object);
 
             // Mapper Mock
-            _mapper = new MapperConfiguration(cfg => { cfg.AddProfile<MachineProfile>(); }).CreateMapper();
+            var mapper = new MapperConfiguration(cfg => { cfg.AddProfile<MachineProfile>(); }).CreateMapper();
 
             _controller = new MachinesController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
                 loggerFactoryMock.Object,
-                _mapper,
+                mapper,
                 _eventServiceMock.Object
             );
         }
@@ -63,7 +63,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Machine>> _machineRepositoryMock = new Mock<IRepository<Machine>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly IMapper _mapper;
         private readonly IMachineController _controller;
 
         [Fact]
@@ -180,7 +179,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task GetMachineByIdThrowsInvalidOperationException()
         {
-            var errors = Enumerable.Empty<ValidationFailure>();
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Throws(new InvalidOperationException());
 
@@ -276,7 +274,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Workflow
         [Fact]
         public async Task GetMachineByKeyThrowsInvalidOperationException()
         {
-            var errors = Enumerable.Empty<ValidationFailure>();
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>()))
                                   .Throws(new InvalidOperationException());
 

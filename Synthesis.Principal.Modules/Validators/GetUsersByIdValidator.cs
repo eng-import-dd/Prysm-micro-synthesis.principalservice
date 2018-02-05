@@ -9,18 +9,12 @@ namespace Synthesis.PrincipalService.Validators
     {
         public GetUsersByIdValidator()
         {
-            const string minimumMessage = "A minimum of 1 Guid must be provided";
-
-            RuleFor(model => model)
-                .NotNull()
-                .WithMessage(minimumMessage);
-
             RuleFor(model => model.Any())
                 .Equal(true)
-                .WithMessage(minimumMessage);
+                .WithMessage("A minimum of 1 Guid must be provided");
 
             RuleForEach(model => model.AsEnumerable())
-                .NotEqual(Guid.Empty)
+                .NotEmpty()
                 .WithMessage("None of the Guids may be empty.")
                 .OverridePropertyName("Id");
         }

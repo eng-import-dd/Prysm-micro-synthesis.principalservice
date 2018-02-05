@@ -1,7 +1,7 @@
 ﻿using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class UserNameValidatorTests
     {
@@ -16,10 +16,27 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             Assert.False(result.IsValid);
         }
 
-       
         [Trait("User Name Test", "User Name Test")]
         [Fact]
-        public void ShouldPassIfValidEmailAddress()
+        public void ShouldFailIfTooLong()
+        {
+            var request = new string('*', 101);
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("User Name Test", "User Name Test")]
+        [Fact]
+        public void ShouldFailIfContainsSpecialCharacters()
+        {
+            var request = "UsernameForTheWin@!!!#$";
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("User Name Test", "User Name Test")]
+        [Fact]
+        public void ShouldPassIfValid()
         {
             var request = "username";
             var result = _validator.Validate(request);

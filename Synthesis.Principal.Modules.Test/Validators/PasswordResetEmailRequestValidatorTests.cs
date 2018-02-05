@@ -2,7 +2,7 @@
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class PasswordResetEmailRequestValidatorTests
     {
@@ -10,13 +10,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
 
         [Trait("PasswordResetEmailRequest Test", "PasswordResetEmailRequest Test")]
         [Fact]
-        public void ShouldFailIfFirstNameIsEmpty()
+        public void ShouldFailOnInvalidFirstName()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                Link = "http://test.com"
-            };
+            var request = PasswordResetEmailRequest.Example();
+            request.FirstName = "";
+
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
@@ -25,11 +23,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfEmailIsEmpty()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                FirstName = "Test",
-                Link = "http://test.com"
-            };
+            var request = PasswordResetEmailRequest.Example();
+            request.Email = "";
+
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
@@ -38,12 +34,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfEmailIsInvalid()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "ab.com",
-                FirstName = "Test",
-                Link = "http://test.com"
-            };
+            var request = PasswordResetEmailRequest.Example();
+            request.Email = "ab.com";
+
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("PasswordResetEmailRequest Test", "PasswordResetEmailRequest Test")]
+        [Fact]
+        public void ShouldFailIfEmailIsNull()
+        {
+            var request = PasswordResetEmailRequest.Example();
+            request.Email = null;
+
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
@@ -52,11 +56,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLinkIsEmpty()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                FirstName = "Test"
-            };
+            var request = PasswordResetEmailRequest.Example();
+            request.Link = "";
+
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("PasswordResetEmailRequest Test", "PasswordResetEmailRequest Test")]
+        [Fact]
+        public void ShouldFailIfLinkIsNull()
+        {
+            var request = PasswordResetEmailRequest.Example();
+            request.Link = null;
+
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
@@ -65,28 +78,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLinkIsInvalid()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                FirstName = "Test",
-                Link = "test.com"
-            };
+            var request = PasswordResetEmailRequest.Example();
+            request.Link = "test.com";
+
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
-
-
 
         [Trait("User Name Test", "User Name Test")]
         [Fact]
         public void ShouldPassIfValidRequest()
         {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                FirstName = "Test",
-                Link = "http://test.com"
-            };
+            var request = PasswordResetEmailRequest.Example();
+
             var result = _validator.Validate(request);
             Assert.True(result.IsValid);
         }

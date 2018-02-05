@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Synthesis.Authentication;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
@@ -20,6 +21,8 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.Exceptions;
+using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
@@ -209,10 +212,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateUserRequest newUser;
+            CreateUserRequest createUserRequest;
             try
             {
-                newUser = this.Bind<CreateUserRequest>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -222,10 +225,29 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.CreateUserAsync(newUser, TenantId, PrincipalId);
+                UserResponse userResponse;
+                if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
+                {
+                    userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
+                }
+                else
+                {
+                    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
+                }
+
                 return Negotiate
-                    .WithModel(result)
+                    .WithModel(userResponse)
                     .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (UserExistsException ex)
+            {
+                Logger.Error("Failed to create user because a user already exists.", ex);
+                return Response.UserExists(ex.Message);
+            }
+            catch (UserNotInvitedException ex)
+            {
+                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
+                return Response.UserNotInvited(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
@@ -396,6 +418,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Error("Validation failed while attempting to GetUsersByIds.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)

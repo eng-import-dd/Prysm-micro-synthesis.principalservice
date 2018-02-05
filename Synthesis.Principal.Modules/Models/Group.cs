@@ -7,7 +7,6 @@ namespace Synthesis.PrincipalService.Models
     {
         [JsonProperty("id")]
         public Guid? Id { get; set; }
-
         public bool IsLocked { get; set; }
         public string Name { get; set; }
         public Guid TenantId { get; set; }

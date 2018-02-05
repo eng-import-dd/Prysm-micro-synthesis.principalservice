@@ -3,7 +3,7 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.PrincipalService.Modules.Test.Validators
+namespace Synthesis.Principal.Modules.Test.Validators
 {
     public class UpdateGroupRequestValidatorTests
     {
@@ -13,12 +13,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfGroupIdIsEmpty()
         {
-            var request = new Group
-            {
-                Id = Guid.NewGuid()
-            };
+            var group = Group.Example();
+            group.Id = Guid.Empty;
 
-            var result = _validator.Validate(request);
+            var result = _validator.Validate(group);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public void ShouldFailIfGroupIdIsNull()
+        {
+            var group = Group.Example();
+            group.Id = null;
+
+            var result = _validator.Validate(group);
             Assert.False(result.IsValid);
         }
 
@@ -26,14 +35,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfGroupNameIsEmpty()
         {
-            var request = new Group
-            {
-                Id = Guid.NewGuid(),
-                TenantId = Guid.NewGuid(),
-                Name = string.Empty
-            };
+            var group = Group.Example();
+            group.Name = "";
 
-            var result = _validator.Validate(request);
+            var result = _validator.Validate(group);
+            Assert.False(result.IsValid);
+        }
+
+        [Trait("Update Group", "Update Group Test Cases")]
+        [Fact]
+        public void ShouldFailIfGroupNameIsNull()
+        {
+            var group = Group.Example();
+            group.Name = null;
+
+            var result = _validator.Validate(group);
             Assert.False(result.IsValid);
         }
 
@@ -41,13 +57,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfTenantIdIsEmpty()
         {
-            var request = new Group
-            {
-                Id = Guid.NewGuid(),
-                TenantId = Guid.Empty
-            };
+            var group = Group.Example();
+            group.TenantId = Guid.Empty;
 
-            var result = _validator.Validate(request);
+            var result = _validator.Validate(group);
             Assert.False(result.IsValid);
         }
 
@@ -55,14 +68,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassIfValidRequestObject()
         {
-            var request = new Group
-            {
-                Id = Guid.NewGuid(),
-                TenantId = Guid.NewGuid(),
-                Name = "PrysmGroup"
-            };
+            var group = Group.Example();
 
-            var result = _validator.Validate(request);
+            var result = _validator.Validate(group);
             Assert.True(result.IsValid);
         }
     }

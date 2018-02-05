@@ -318,6 +318,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants\ErrorCodes.cs" />
     <Compile Include="Constants\ErrorMessages.cs" />
     <Compile Include="Constants\EventNames.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
@@ -339,6 +340,10 @@
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Entity\PagingMetaData.cs" />
     <Compile Include="Entity\ServerSidePagingParams.cs" />
+    <Compile Include="Enums\CreateGuestResponseCode.cs" />
+    <Compile Include="Exceptions\UserNotInvitedException.cs" />
+    <Compile Include="Exceptions\UserExistsException.cs" />
+    <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
@@ -371,6 +376,7 @@
     <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\CanPromoteUserResponse.cs" />
+    <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
@@ -378,20 +384,27 @@
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\EmailUtility.cs" />
-    <Compile Include="Utilities\EmailValidator.cs" />
     <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
-    <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Utilities\IPasswordUtility.cs" />
+    <Compile Include="Utilities\PasswordUtility.cs" />
+    <Compile Include="Validators\GroupValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
+    <Compile Include="Validators\BulkUploadEmailValidator.cs" />
+    <Compile Include="Validators\GuestCreationRequestValidator.cs" />
+    <Compile Include="Validators\NameValidator.cs" />
+    <Compile Include="Validators\EmailValidator.cs" />
     <Compile Include="Validators\PasswordResetEmailRequestValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\PrincipalIdValidator.cs" />
+    <Compile Include="Validators\PasswordValidator.cs" />
     <Compile Include="Validators\PrincipalValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
+    <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />

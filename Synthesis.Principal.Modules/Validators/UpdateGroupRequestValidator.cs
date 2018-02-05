@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using System;
+using FluentValidation;
 using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Validators
@@ -8,12 +9,12 @@ namespace Synthesis.PrincipalService.Validators
         public UpdateGroupRequestValidator()
         {
             RuleFor(request => request.Id)
-                .NotEmpty().WithMessage("The Group Id property must not be empty")
-                .NotNull().WithMessage("The Group Id property must not be null");
+                .NotNull().WithMessage("The Group Id property must not be null")
+                .NotEqual(Guid.Empty).WithMessage("The Group Id property must not be empty");
 
             RuleFor(request => request.TenantId)
-                .NotEmpty().WithMessage("The Tenant Id property must not be empty")
-                .NotNull().WithMessage("The Tenant Id property must not be null");
+                .NotNull().WithMessage("The Tenant Id property must not be null")
+                .NotEmpty().WithMessage("The Tenant Id property must not be empty");
 
             RuleFor(request => request.Name)
                 .NotEmpty().WithMessage("The Group Name property must not be empty")

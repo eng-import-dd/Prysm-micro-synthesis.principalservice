@@ -321,7 +321,9 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
+            builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+
             return builder.Build();
         }
 

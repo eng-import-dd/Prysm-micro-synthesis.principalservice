@@ -18,6 +18,9 @@ namespace Synthesis.PrincipalService.Requests
         public LicenseType? LicenseType { get; set; }
         public Guid TenantId { get; set; }
         public string UserName { get; set; }
+        public string Password { get; set; }
+        public string PasswordConfirmation { get; set; }
+        public string ProjectAccessCode { get; set; }
 
         public static CreateUserRequest Example()
         {
@@ -31,6 +34,22 @@ namespace Synthesis.PrincipalService.Requests
                 UserName = "ExampleUsername",
                 LdapId = "ExampleLdapId",
                 IsIdpUser = false,
+                LicenseType = License.Manager.Models.LicenseType.Default
+            };
+        }
+
+        public static CreateUserRequest GuestExample()
+        {
+            return new CreateUserRequest
+            {
+                FirstName = "ExampleFirstname",
+                LastName = "ExampleLastname",
+                Email = "example@email.com",
+                LdapId = "ExampleLdapId",
+                Password = "SecurePassword123",
+                PasswordConfirmation = "SecurePassword123",
+                IsIdpUser = false,
+                ProjectAccessCode = "1234567890",
                 LicenseType = License.Manager.Models.LicenseType.Default
             };
         }
