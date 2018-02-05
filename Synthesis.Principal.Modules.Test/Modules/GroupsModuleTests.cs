@@ -13,7 +13,7 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Modules;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Modules
+namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     public class GroupsModuleTests : BaseModuleTests<GroupsModule>
     {

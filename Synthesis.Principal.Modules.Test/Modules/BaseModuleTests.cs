@@ -12,7 +12,7 @@ using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
 using ClaimTypes = Synthesis.Authentication.Jwt.ClaimTypes;
 
-namespace Synthesis.Principal.Modules.Test.Modules
+namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     public abstract class BaseModuleTests<TModule> where TModule : SynthesisModule
     {
