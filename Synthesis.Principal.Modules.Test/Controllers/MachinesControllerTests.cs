@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel;
 using System.Linq;
@@ -21,7 +21,7 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Controllers
+namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
     public class MachinesControllerTests
     {
@@ -115,7 +115,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var newMachineRequest = new CreateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
-            Assert.NotEqual(ex.Errors.ToList().Count, 0);
+            Assert.NotEmpty(ex.Errors.ToList());
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var newMachineRequest = new CreateMachineRequest { MachineKey = "machinekey" };
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
-            Assert.NotEqual(ex.Errors.ToList().Count, 0);
+            Assert.NotEmpty(ex.Errors.ToList());
         }
 
         [Fact]
@@ -235,7 +235,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
 
             var result = await _controller.GetTenantMachinesAsync(It.IsAny<Guid>());
 
-            Assert.Equal(0, result.Count);
+            Assert.Empty(result);
         }
 
         [Fact]
@@ -314,7 +314,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var newMachineRequest = new UpdateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
-            Assert.NotEqual(ex.Errors.ToList().Count, 0);
+            Assert.NotEmpty(ex.Errors.ToList());
         }
 
         [Fact]
@@ -326,7 +326,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var newMachineRequest = new UpdateMachineRequest { MachineKey = "machinekey" };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId));
-            Assert.NotEqual(ex.Errors.ToList().Count, 0);
+            Assert.NotEmpty(ex.Errors.ToList());
         }
     }
 }

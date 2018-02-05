@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -17,6 +17,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
@@ -24,9 +25,8 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
-using Synthesis.PrincipalService.Exceptions;
 
-namespace Synthesis.Principal.Modules.Test.Controllers
+namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
     public class UsersControllerTests
     {
@@ -288,7 +288,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
                 .Returns(Task.FromResult(new User()));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
-            Assert.Equal(ex.Errors.ToList().Count, 1);
+            Assert.Single(ex.Errors.ToList());
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -302,7 +302,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
                 .Returns(Task.FromResult<User>(null));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
-            Assert.Equal(ex.Errors.ToList().Count, 1);
+            Assert.Single(ex.Errors.ToList());
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -346,7 +346,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
                 .Returns(Task.FromResult(new User()));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new CreateUserGroupRequest(), It.IsAny<Guid>(), It.IsAny<Guid>()));
-            Assert.Equal(ex.Errors.ToList().Count, 1);
+            Assert.Single(ex.Errors.ToList());
         }
 
         [Fact]
@@ -374,7 +374,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
             Assert.Equal(user.CreatedBy, createdBy);
-            Assert.Equal(user.IsLocked, false);
+            Assert.False(user.IsLocked);
         }
 
         [Fact]
@@ -388,7 +388,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
-            Assert.Equal(ex.Errors.ToList().Count, 2); //Duplidate Email & Duplicate username errors
+            Assert.Equal(2, ex.Errors.ToList().Count); //Duplidate Email & Duplicate username errors
         }
 
         [Fact]
@@ -402,7 +402,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
-            Assert.Equal(ex.Errors.ToList().Count, 3); //Duplidate Email, Duplicate Ldap & Duplicate username errors
+            Assert.Equal(3, ex.Errors.ToList().Count); //Duplidate Email, Duplicate Ldap & Duplicate username errors
         }
 
         [Fact]
@@ -427,7 +427,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
 
-            Assert.Equal(user.IsLocked, true);
+            Assert.True(user.IsLocked);
         }
 
         [Fact]
@@ -469,7 +469,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             Assert.NotNull(user);
             Assert.Equal(user.TenantId, tenantId);
             Assert.Equal(user.CreatedBy, createdBy);
-            Assert.Equal(user.IsLocked, true);
+            Assert.True(user.IsLocked);
         }
 
         [Fact]
@@ -488,7 +488,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var result = await _controller.GetGuestUsersForTenantAsync(tenantId, getGuestUserParams);
             Assert.Empty(result.List);
             Assert.Equal(0, result.CurrentCount);
-            Assert.Equal(true, result.IsLastChunk);
+            Assert.True(result.IsLastChunk);
             Assert.Null(result.SearchValue);
             Assert.Null(result.SortColumn);
         }
@@ -510,7 +510,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             Assert.Equal(3, result.List.Count);
             Assert.Equal(3, result.CurrentCount);
             Assert.Equal("test", result.ContinuationToken);
-            Assert.Equal(false, result.IsLastChunk);
+            Assert.False(result.IsLastChunk);
         }
 
         [Trait("GetLicenseTypeForUser", "Get License Type For User")]
@@ -630,7 +630,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var result = await _controller.SendResetPasswordEmail(request);
 
             _emailUtilityMock.Verify(m => m.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link), Times.Once);
-            Assert.Equal(result, true);
+            Assert.True(result);
         }
 
         /// <summary>
@@ -797,7 +797,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
 
             var result = await _controller.GetGroupUsersAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
 
-            Assert.Equal(0, result.Count);
+            Assert.Empty(result);
         }
 
         [Fact]
@@ -820,7 +820,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
-            Assert.Equal(ex.Errors.ToList().Count, 1);
+            Assert.Single(ex.Errors.ToList());
         }
 
         [Fact]
@@ -843,7 +843,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
 
-            Assert.Equal(ex.Errors.ToList().Count, 1);
+            Assert.Single(ex.Errors.ToList());
         }
 
         [Fact]
@@ -876,7 +876,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userId = Guid.NewGuid();
             var result = await _controller.LockOrUnlockUserAsync(userId, false);
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
-            Assert.Equal(result, true);
+            Assert.True(result);
         }
 
         [Fact]
@@ -890,7 +890,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserAsync(userId));
             var result = await _controller.LockOrUnlockUserAsync(userId, false);
-            Assert.Equal(result, false);
+            Assert.False(result);
         }
 
         [Fact]
@@ -945,7 +945,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse.ResultCode);
         }
 
         [Fact]
@@ -978,7 +978,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.UserAlreadyPromoted);
+            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse.ResultCode);
         }
 
         [Fact]
@@ -1049,7 +1049,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Once);
             _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()));
 
-            Assert.Equal(promoteResponse.ResultCode, PromoteGuestResultCode.Success);
+            Assert.Equal(PromoteGuestResultCode.Success, promoteResponse.ResultCode);
         }
 
         [Fact]
@@ -1075,7 +1075,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
                 .Returns(Task.FromResult(new User()));
 
             var result = await _controller.RemoveUserFromPermissionGroupAsync(userId, groupId, userId);
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
 
         [Fact]
@@ -1147,7 +1147,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
         {
             _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
             var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
 
         [Fact]
@@ -1192,7 +1192,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _validatorMock.Setup(m => m.Validate(user))
                 .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user));
-            Assert.Equal(ex.Errors.ToList().Count, 3);
+            Assert.Equal(3, ex.Errors.ToList().Count);
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -16,7 +16,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Models;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Controllers
+namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
     public class GroupsControllerTests
     {
@@ -83,7 +83,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var groupId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var result = await _controller.DeleteGroupAsync(groupId, userId);
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
 
         [Fact]
@@ -168,7 +168,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
 
             var result = await _controller.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>());
 
-            Assert.Equal(0, result.Count());
+            Assert.Empty(result);
         }
 
         [Trait("Update Group", "Update Group Test Cases")]

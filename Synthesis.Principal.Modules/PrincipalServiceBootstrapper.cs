@@ -1,3 +1,8 @@
+using System;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using System.Reflection;
 using Autofac;
 using Autofac.Core;
 using Autofac.Core.Lifetime;
@@ -15,6 +20,7 @@ using Synthesis.Cache;
 using Synthesis.Cache.Redis;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Infrastructure;
+using Synthesis.Configuration.Shared;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
@@ -22,7 +28,6 @@ using Synthesis.EventBus.Kafka;
 using Synthesis.Http;
 using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
-using Synthesis.KeyManager;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
@@ -36,17 +41,14 @@ using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
+using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
-using Synthesis.Serialization.Json;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
+using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
+using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 
 namespace Synthesis.PrincipalService
 {
@@ -54,15 +56,11 @@ namespace Synthesis.PrincipalService
     {
         public const string ServiceName = "Synthesis.PrincipalService";
         public const string ServiceNameShort = "principal";
-        public const string AuthorizationPassThroughKey = "AuthorizationPassThrough";
-        public const string ServiceToServiceKey = "ServiceToService";
+        private const int RedisConnectRetryTimes = 30;
+        private const int RedisConnectTimeoutInMilliseconds = 10 * 1000;
+        private const int RedisSyncTimeoutInMilliseconds = 15 * 1000;
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
-
-        private const int RedisSyncTimeoutInMilliseconds = 15 * 1000;
-        private const int RedisConnectTimeoutInMilliseconds = 10 * 1000;
-        private const int RedisConnectRetryTimes = 30;
-
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
 
         public PrincipalServiceBootstrapper()
@@ -71,28 +69,22 @@ namespace Synthesis.PrincipalService
         }
 
         /// <summary>
-        /// Gets the root injection container for this service.
-        /// </summary>
-        /// <value>
-        /// The root injection container for this service.
-        /// </value>
-        public static ILifetimeScope RootContainer => LazyRootContainer.Value;
-
-        /// <summary>
-        /// Gets container for this bootstrapper instance.
+        ///     Gets container for this bootstrapper instance.
         /// </summary>
         public new ILifetimeScope ApplicationContainer { get; }
+
+        /// <summary>
+        ///     Gets the root injection container for this service.
+        /// </summary>
+        /// <value>
+        ///     The root injection container for this service.
+        /// </value>
+        public static ILifetimeScope RootContainer => LazyRootContainer.Value;
 
         /// <inheritdoc />
         protected override Func<ITypeCatalog, NancyInternalConfiguration> InternalConfiguration
         {
-            get
-            {
-                return NancyInternalConfiguration.WithOverrides(config =>
-                {
-                    config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) };
-                });
-            }
+            get { return NancyInternalConfiguration.WithOverrides(config => { config.Serializers = new[] { typeof(DefaultXmlSerializer), typeof(SynthesisJsonSerializer) }; }); }
         }
 
         protected override void ConfigureApplicationContainer(ILifetimeScope container)
@@ -127,7 +119,7 @@ namespace Synthesis.PrincipalService
                 MatchingScopeLifetimeTags.RequestLifetimeScopeTag,
                 bldr =>
                 {
-                    bldr.Register(c => new Http.Microservice.RequestHeaders(context.Request.Headers))
+                    bldr.Register(c => new RequestHeaders(context.Request.Headers))
                         .As<IRequestHeaders>()
                         .InstancePerLifetimeScope();
                 });
@@ -154,41 +146,35 @@ namespace Synthesis.PrincipalService
         {
             var builder = new ContainerBuilder();
 
-            var settingsReader = new DefaultAppSettingsReader();
-            var loggerFactory = new LoggerFactory();
-            var defaultLogger = loggerFactory.Get(DefaultLogTopic);
+            builder.RegisterType<DefaultAppSettingsReader>()
+                .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
 
-            builder.RegisterInstance(settingsReader).As<IAppSettingsReader>();
+            builder.RegisterType<SharedAppSettingsReader>()
+                .As<IAppSettingsReader>()
+                .As<ISharedAppSettingsReader>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "configurationServiceUrl",
+                    (p, c) => c.ResolveKeyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader)).GetValue<string>("Configuration.Url")))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "httpClient",
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClient>(nameof(ServiceToServiceClient))))
+                .SingleInstance();
 
-            // Logging
-            builder.RegisterInstance(CreateLogLayout(settingsReader));
-            builder.RegisterInstance(defaultLogger);
-            builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
+            RegisterLogging(builder);
 
             // Tracking
             builder.RegisterType<ApplicationInsightsTrackingService>().As<ITrackingService>();
 
             // Register our custom OWIN Middleware
-            builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
-
-            // Event Service registration.
-            builder.Register(
-                c =>
-                {
-                    var connectionString = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server");
-                    return EventBus.Kafka.EventBus.Create(connectionString);
-                });
-
-            // IEventPublisher
-            builder.Register(c => c.Resolve<IEventBus>().CreateEventPublisher());
-
-            builder.Register(c => new EventServiceContext { ServiceName = ServiceName, ConsumerGroup = ServiceName });
-            builder.RegisterType<EventService>().As<IEventService>().SingleInstance()
+            builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
+            builder
+                .RegisterType<ImpersonateTenantMiddleware>()
                 .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "logger",
-                    (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)));
+                    (p, c) => p.Name == "tenantUrl",
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Tenant.Url")))
+                .InstancePerRequest();
 
             // DocumentDB registration.
             builder.Register(c =>
@@ -196,8 +182,8 @@ namespace Synthesis.PrincipalService
                 var settings = c.Resolve<IAppSettingsReader>();
                 return new DocumentDbContext
                 {
-                    AuthKey = settings.GetValue<string>("DocumentDB.AuthKey"),
-                    Endpoint = settings.GetValue<string>("DocumentDB.Endpoint"),
+                    AuthKey = settings.GetValue<string>("Principal.DocumentDB.AuthKey"),
+                    Endpoint = settings.GetValue<string>("Principal.DocumentDB.Endpoint"),
                     DatabaseName = settings.GetValue<string>("Principal.DocumentDB.DatabaseName")
                 };
             });
@@ -205,42 +191,28 @@ namespace Synthesis.PrincipalService
 
             builder.Register(c =>
             {
-                var reader = c.Resolve<IAppSettingsReader>();
+                var reader = c.ResolveKeyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
                 return new ServiceToServiceClientConfiguration
                 {
-                    AuthenticationRoute = reader.GetValue<string>("ServiceAuthenticationRoute"),
-                    ClientId = reader.GetValue<string>("Principal.ClientId"),
-                    ClientSecret = reader.GetValue<string>("Principal.ClientSecret")
+                    AuthenticationRoute = $"{reader.GetValue<string>("Identity.Url").TrimEnd('/')}/{reader.GetValue<string>("Identity.AccessTokenRoute").TrimStart('/')}",
+                    ClientId = reader.GetValue<string>("Principal.Synthesis.ClientId"),
+                    ClientSecret = reader.GetValue<string>("Principal.Synthesis.ClientSecret")
                 };
             });
 
-            // Key Vault
-            builder.RegisterType<KeyVault>().As<IKeyVault>().SingleInstance();
-            builder.Register(c =>
-            {
-                var reader = c.Resolve<IAppSettingsReader>();
-                var config = KeyVaultConfiguration.FromApplicationKeyFile();
-                var keyVaultClientId = reader.GetValue<string>("KeyVault.ClientId");
-                if (!string.IsNullOrEmpty(keyVaultClientId))
-                {
-                    config.AzureConfiguration = new AzureKeyVaultConfiguration
-                    {
-                        ClientId = keyVaultClientId,
-                        ClientSecret = reader.GetValue<string>("KeyVault.ClientSecret"),
-                        SecretBaseUri = reader.GetValue<string>("KeyVault.SecretBaseUri")
-                    };
-                }
-                return config;
-            });
-            builder.RegisterType<KeyVaultCertificateProvider>()
+            // Certificate provider that provides the JWT validation key to the token validator.
+            builder.RegisterType<IdentityServiceCertificateProvider>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "identityUrl",
+                    (p, c) => c.ResolveKeyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader)).GetValue<string>("Identity.Url")))
                 .As<ICertificateProvider>();
 
             // Microservice HTTP Clients
             builder.RegisterType<AuthorizationPassThroughClient>()
-                .Keyed<IMicroserviceHttpClient>(AuthorizationPassThroughKey);
+                .Keyed<IMicroserviceHttpClient>(nameof(AuthorizationPassThroughClient));
 
             builder.RegisterType<ServiceToServiceClient>()
-                .Keyed<IMicroserviceHttpClient>(ServiceToServiceKey)
+                .Keyed<IMicroserviceHttpClient>(nameof(ServiceToServiceClient))
                 .AsSelf();
 
             builder.RegisterType<SynthesisHttpClient>()
@@ -249,41 +221,31 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<HttpClientConfiguration>()
                 .As<IHttpClientConfiguration>();
 
-            //Mapper
-            var mapper = new MapperConfiguration(cfg => {
-                cfg.AddProfile<UserProfile>();
-                cfg.AddProfile<UserInviteProfile>();
-                cfg.AddProfile<MachineProfile>();
-                cfg.AddProfile<UserInviteProfile>();
-            }).CreateMapper();
-            builder.RegisterInstance(mapper).As<IMapper>();
-
             // Object serialization
             builder.RegisterType<JsonObjectSerializer>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.ParameterType == typeof(JsonSerializer),
                     (p, c) => new JsonSerializer()))
-                .As<Serialization.IObjectSerializer>();
+                .As<IObjectSerializer>();
 
             // JWT Token Validator
             builder.RegisterType<JwtTokenValidator>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(ICertificateProvider),
-                    (p, c) => c.Resolve<ICertificateProvider>(new ResolvedParameter(
-                        (p2, c2) => p2.Name == "keyName",
-                        (p2, c2) => c2.Resolve<IAppSettingsReader>().GetValue<string>("TokenValidator.CertificateKeyName")))))
                 .As<ITokenValidator>()
                 .SingleInstance();
 
-                builder.RegisterType<MicroserviceHttpClientResolver>()
-                    .As<IMicroserviceHttpClientResolver>()
-                    .WithParameter(new ResolvedParameter(
-                        (p, c) => p.Name == "passThroughKey",
-                        (p, c) => AuthorizationPassThroughKey))
-                    .WithParameter(new ResolvedParameter(
-                        (p, c) => p.Name == "serviceToServiceKey",
-                        (p, c) => ServiceToServiceKey));
-               builder.RegisterPolicyEvaluatorComponents();
+            // Microservice HTTP client resolver that will select the proper implementation of
+            // IMicroserviceHttpClient for calling other microservices.
+            builder.RegisterType<MicroserviceHttpClientResolver>()
+                .As<IMicroserviceHttpClientResolver>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "passThroughKey",
+                    (p, c) => nameof(AuthorizationPassThroughClient)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceKey",
+                    (p, c) => nameof(ServiceToServiceClient)));
+
+            // Policy Evaluator components
+            builder.RegisterPolicyEvaluatorComponents();
 
             // Redis cache
             builder.RegisterType<RedisCache>()
@@ -294,21 +256,42 @@ namespace Synthesis.PrincipalService
                         var reader = c.Resolve<IAppSettingsReader>();
                         var redisOptions = new ConfigurationOptions
                         {
-                            Password = reader.GetValue<string>("Redis.Key"),
+                            Password = reader.GetValue<string>("Redis.General.Key"),
                             AbortOnConnectFail = false,
                             SyncTimeout = RedisSyncTimeoutInMilliseconds,
                             ConnectTimeout = RedisConnectTimeoutInMilliseconds,
                             ConnectRetry = RedisConnectRetryTimes
                         };
-                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.Endpoint"));
+                        redisOptions.EndPoints.Add(reader.GetValue<string>("Redis.General.Endpoint"));
                         return ConnectionMultiplexer.Connect(redisOptions);
                     }))
                 .As<ICache>()
                 .SingleInstance();
 
             // Validation
-            builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
-            RegisterValidators(builder);
+            RegisterValidation(builder);
+
+            RegisterEvents(builder);
+
+            RegisterServiceSpecificRegistrations(builder);
+
+            return builder.Build();
+        }
+
+        /// <summary>
+        ///     The point of this method is to ease updating services.  Any registrations that a service needs can go into this
+        ///     method and then when updating to the latest template, this can just be copied forward.
+        /// </summary>
+        /// <param name="builder"></param>
+        private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
+        {
+            var mapper = new MapperConfiguration(cfg => {
+                cfg.AddProfile<UserProfile>();
+                cfg.AddProfile<UserInviteProfile>();
+                cfg.AddProfile<MachineProfile>();
+                cfg.AddProfile<UserInviteProfile>();
+            }).CreateMapper();
+            builder.RegisterInstance(mapper).As<IMapper>();
 
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
@@ -323,8 +306,19 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+        }
 
-            return builder.Build();
+        private static void RegisterLogging(ContainerBuilder builder)
+        {
+            builder.Register(c =>
+            {
+                var reader = c.Resolve<IAppSettingsReader>();
+                return CreateLogLayout(reader);
+            }).SingleInstance();
+            var loggerFactory = new LoggerFactory();
+            var defaultLogger = loggerFactory.Get(DefaultLogTopic);
+            builder.RegisterInstance(defaultLogger);
+            builder.RegisterInstance(loggerFactory).As<ILoggerFactory>();
         }
 
         private static ILogLayout CreateLogLayout(IAppSettingsReader settingsReader)
@@ -337,7 +331,7 @@ namespace Synthesis.PrincipalService
             var messageContent = logLayout.Get<LogLayoutMetadata>();
             messageContent.LocalIP = localIpHostEntry.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? string.Empty;
             messageContent.ApplicationName = ServiceName;
-            messageContent.Environment = settingsReader.GetValue<string>("Principal.Environment");
+            messageContent.Environment = settingsReader.GetValue<string>("Environment");
             messageContent.Facility = settingsReader.GetValue<string>("Principal.Facility");
             messageContent.Host = Environment.MachineName;
             messageContent.RemoteIP = string.Empty;
@@ -348,8 +342,10 @@ namespace Synthesis.PrincipalService
             return logLayout;
         }
 
-        private static void RegisterValidators(ContainerBuilder builder)
+        private static void RegisterValidation(ContainerBuilder builder)
         {
+            builder.RegisterType<ValidatorLocator>().As<IValidatorLocator>();
+
             // Use reflection to register all the IValidators in the Synthesis.PrincipalService.Validators namespace
             var assembly = Assembly.GetAssembly(typeof(UsersModule));
             var types = assembly.GetTypes().Where(x => string.Equals(x.Namespace, "Synthesis.PrincipalService.Validators", StringComparison.Ordinal)).ToArray();
@@ -360,6 +356,55 @@ namespace Synthesis.PrincipalService
                     builder.RegisterType(type).AsSelf().As<IValidator>();
                 }
             }
+        }
+
+        private static void RegisterEvents(ContainerBuilder builder)
+        {
+            // Event Service registration.
+            builder.RegisterType<EventServiceFactory>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "logger",
+                    (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "context",
+                    (p, c) => new EventServiceContext
+                    {
+                        ServiceName = ServiceName,
+                        KafkaConnection = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server"),
+                        SchemaConnection = c.Resolve<IAppSettingsReader>().GetValue<string>("SchemaRegistry.Server")
+                    }))
+                .As<IEventServiceFactory>()
+                .SingleInstance();
+
+            builder.Register(c => c.Resolve<IEventServiceFactory>().CreateEventService(ServiceName))
+                .As<IEventService>()
+                .SingleInstance();
+
+            builder
+                .RegisterType<EventHandlerLocator>()
+                .As<IEventHandlerLocator>()
+                .SingleInstance()
+                .AutoActivate();
+
+            // Use reflection to register all the IEventHandlers in the Synthesis.PrincipalService.EventHandlers namespace
+            var assembly = Assembly.GetAssembly(typeof(UsersModule));
+            var types = assembly.GetTypes().Where(x => string.Equals(x.Namespace, "Synthesis.PrincipalService.EventHandlers", StringComparison.Ordinal)).ToArray();
+            foreach (var type in types)
+            {
+                if (!type.IsAbstract && typeof(IEventHandlerBase).IsAssignableFrom(type))
+                {
+                    builder.RegisterType(type).AsSelf().As<IEventHandlerBase>();
+                }
+            }
+
+            // register event service for events to be handled for every instance of this service
+            builder
+                .Register(c => new EventHandlerLocator(
+                    c.Resolve<IEventServiceFactory>().CreateEventService(ServiceName + Guid.NewGuid()),
+                    new IEventHandlerBase[] { new SettingsInvalidateCacheEventHandler(c.Resolve<ISharedAppSettingsReader>()) }))
+                .Keyed<IEventHandlerLocator>("PerServiceEventServiceKey")
+                .SingleInstance()
+                .AutoActivate();
         }
     }
 }

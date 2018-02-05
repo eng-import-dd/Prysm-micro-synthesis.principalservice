@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using Synthesis.Http.Microservice;
 
 namespace Synthesis.PrincipalService

@@ -18,12 +18,13 @@ namespace Synthesis.PrincipalService
             // Enables IoC for OwinMiddlware implementations. This method allows us to control
             // the order of our middleware.
             app.UseAutofacLifetimeScopeInjector(PrincipalServiceBootstrapper.RootContainer);
-            
+
             app.UseMiddlewareFromContainer<GlobalExceptionHandlerMiddleware>();
             app.UseMiddlewareFromContainer<CorrelationScopeMiddleware>();
-            
+
             // This middleware performs our authentication and populates the user principal.
             app.UseMiddlewareFromContainer<SynthesisAuthenticationMiddleware>();
+            app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
             app.UseStageMarker(PipelineStage.Authenticate);
 
             app.UseNancy(options =>
