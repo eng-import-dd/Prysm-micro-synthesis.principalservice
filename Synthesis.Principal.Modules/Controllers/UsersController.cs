@@ -15,7 +15,6 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;

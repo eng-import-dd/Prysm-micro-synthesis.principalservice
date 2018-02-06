@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -23,7 +23,7 @@ using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Controllers
+namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
     public class UserInvitesControllerTests
     {
@@ -89,17 +89,16 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(default(User));
 
-           
             var createUserInviteRequest = new List<UserInviteRequest>();
             createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
-           
+
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "yopmail.com" }));
             _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>{Guid.NewGuid()}));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.DuplicateUserEmail);
+            Assert.Equal(InviteUserStatus.DuplicateUserEmail, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -123,7 +122,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(1).Status, InviteUserStatus.DuplicateUserEntry);
+            Assert.Equal(InviteUserStatus.DuplicateUserEntry, userInvite.ElementAt(1).Status);
         }
 
         [Fact]
@@ -137,7 +136,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserEmailNotDomainAllowed);
+            Assert.Equal(InviteUserStatus.UserEmailNotDomainAllowed, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -151,7 +150,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
+            Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -168,7 +167,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserEmailFormatInvalid);
+            Assert.Equal(InviteUserStatus.UserEmailFormatInvalid, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -194,7 +193,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _emailUtilityMock.Verify(m => m.SendUserInviteAsync(It.IsAny<List<UserInviteResponse>>()));
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
+            Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -229,7 +228,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.UserNotExist);
+            Assert.Equal(InviteUserStatus.UserNotExist, userInvite.ElementAt(0).Status);
         }
 
         [Fact]
@@ -250,7 +249,7 @@ namespace Synthesis.Principal.Modules.Test.Controllers
             _emailUtilityMock.Verify(m => m.SendUserInviteAsync(It.IsAny<List<UserInviteResponse>>()));
 
             Assert.NotNull(userInvite);
-            Assert.Equal(userInvite.ElementAt(0).Status, InviteUserStatus.Success);
+            Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);
         }
 
         [Fact]

@@ -3,7 +3,7 @@ using Synthesis.PrincipalService.Validators;
 using System;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Validators
+namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
     public class CreateMachineRequestValidatorTests
     {

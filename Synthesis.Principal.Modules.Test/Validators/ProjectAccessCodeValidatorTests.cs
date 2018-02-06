@@ -1,7 +1,7 @@
-﻿using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Validators
+namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
     public class ProjectAccessCodeValidatorTests
     {
@@ -14,21 +14,17 @@ namespace Synthesis.Principal.Modules.Test.Validators
             Assert.False(result.IsValid);
         }
 
-        [Theory]
-        [InlineData("123")]
-        [InlineData("123456789")]
-        public void ShouldFailOnShortCode(string accessCode)
+        [Fact]
+        public void ShouldFailOnShortCode()
         {
             var result = _validator.Validate("123456789");
             Assert.False(result.IsValid);
         }
 
-        [Theory]
-        [InlineData("1234567890")]
-        [InlineData("1234567890123")]
-        public void ShouldFailOnLongCode(string accessCode)
+        [Fact]
+        public void ShouldFailOnLongCode()
         {
-            var result = _validator.Validate("123456789");
+            var result = _validator.Validate("12345678901");
             Assert.False(result.IsValid);
         }
 

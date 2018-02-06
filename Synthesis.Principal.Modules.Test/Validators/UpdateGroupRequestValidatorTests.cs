@@ -3,7 +3,7 @@ using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
-namespace Synthesis.Principal.Modules.Test.Validators
+namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
     public class UpdateGroupRequestValidatorTests
     {

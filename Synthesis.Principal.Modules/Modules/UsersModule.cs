@@ -13,8 +13,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Synthesis.Authentication;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PrincipalService.Requests;
@@ -34,7 +32,6 @@ namespace Synthesis.PrincipalService.Modules
         public UsersModule(
             IUsersController userController,
             IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
             : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)

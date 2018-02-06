@@ -28,7 +28,7 @@ namespace Synthesis.License.Manager
             LoggingService = loggerFactory.GetLogger(this);
             ApiBaseUrl = ConfigurationManager.AppSettings["BaseLicenseEndpoint"];
         }
-        
+
         /// <inheritdoc />
         public async Task<LicenseResponse> AssignLicenseToTenantUsersAsync(BulkLicenseDto dto)
         {

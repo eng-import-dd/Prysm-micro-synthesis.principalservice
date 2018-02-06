@@ -10,6 +10,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 
@@ -152,7 +153,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.Value);
+            var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.ToGuid());
             if (existingGroupInDb.Result != null)
             {
                 if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
@@ -172,7 +173,7 @@ namespace Synthesis.PrincipalService.Controllers
             // Replace any fields in the DTO that shouldn't be changed here
             model.TenantId = tenantId;
 
-            var result = await _groupRepository.UpdateItemAsync(model.Id.Value, model);
+            var result = await _groupRepository.UpdateItemAsync(model.Id.ToGuid(), model);
 
             _eventService.Publish(EventNames.GroupUpdated, result);
 

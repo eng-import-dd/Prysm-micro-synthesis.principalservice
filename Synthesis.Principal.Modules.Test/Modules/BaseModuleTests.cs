@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,7 +12,7 @@ using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
 using ClaimTypes = Synthesis.Authentication.Jwt.ClaimTypes;
 
-namespace Synthesis.Principal.Modules.Test.Modules
+namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     public abstract class BaseModuleTests<TModule> where TModule : SynthesisModule
     {
@@ -60,7 +60,7 @@ namespace Synthesis.Principal.Modules.Test.Modules
                             new Claim(JwtRegisteredClaimNames.Aud, authenticatedAs == AuthenticatedAs.Service ? Audiences.SynthesisMicroservice : Audiences.Synthesis),
                             new Claim(JwtRegisteredClaimNames.Sub, PrincipalId.ToString()),
                             new Claim(ClaimTypes.Tenant, TenantId.ToString()),
-                            new Claim(ClaimTypes.Groups, string.Join(",", Guid.NewGuid().ToString(), Guid.NewGuid().ToString()))
+                            new Claim(ClaimTypes.Group, string.Join(",", Guid.NewGuid().ToString(), Guid.NewGuid().ToString()))
                         };
                         var identity = new ClaimsIdentity(
                             claims,

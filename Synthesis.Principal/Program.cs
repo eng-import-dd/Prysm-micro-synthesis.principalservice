@@ -23,13 +23,13 @@ namespace Synthesis.PrincipalService
 
             if (args == null || args.Length == 0)
             {
-                var instrumentationKey = settingsReader.GetValue<string>("Principal.AI.InstrumentationKey");
+                var instrumentationKey = settingsReader.GetValue<string>("AI.InstrumentationKey");
                 if (!string.IsNullOrWhiteSpace(instrumentationKey))
                 {
                     // Initialize the micro-service telemetry context (Application Insights)
                     MicroServiceTelemetryInitializer.Initialize(new MicroServiceTelemetryConfiguration
                     {
-                        DeploymentName = settingsReader.GetValue<string>("Principal.AI.DeploymentName"),
+                        DeploymentName = settingsReader.GetValue<string>("AI.DeploymentName"),
                         InstrumentationKey = instrumentationKey,
                         ServiceName = "PrincipalService",
                         ServiceVersion = typeof(Program).Assembly.GetName().Version.ToString(),

@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Nancy;
 using Nancy.ModelBinding;
 using Nancy.Security;
-using Synthesis.Authentication;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -25,7 +24,6 @@ namespace Synthesis.PrincipalService.Modules
         public GroupsModule(
             IGroupsController groupsController,
             IMetadataRegistry metadataRegistry,
-            ITokenValidator tokenValidator,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
             : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)

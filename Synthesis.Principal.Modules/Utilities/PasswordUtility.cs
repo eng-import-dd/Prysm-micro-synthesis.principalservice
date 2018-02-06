@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using SimpleCrypto;
 
 namespace Synthesis.PrincipalService.Utilities
 {
@@ -21,23 +20,6 @@ namespace Synthesis.PrincipalService.Utilities
             }
 
             return res.ToString();
-        }
-
-        /// <summary>
-        ///     Calculates the hash and salt of a password
-        /// </summary>
-        /// <param name="password">The password to get the hash and salt for</param>
-        /// <param name="hash">Param to output the hash of the password</param>
-        /// <param name="salt">Param to outptu the salt of the password</param>
-        private static void HashAndSalt(string password, out string hash, out string salt)
-        {
-            //hashing parameters
-            const int saltSize = 64;
-            const int hashIterations = 10000;
-
-            ICryptoService cryptoService = new SimpleCrypto.PBKDF2();
-            hash = cryptoService.Compute(password, saltSize, hashIterations);
-            salt = cryptoService.Salt;
         }
     }
 }
