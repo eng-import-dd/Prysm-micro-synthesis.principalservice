@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -17,6 +18,15 @@ namespace Synthesis.PrincipalService.Controllers
             _microserviceHttpClientResolver = microserviceHttpClientResolver;
             _serviceUrl = ConfigurationManager.AppSettings["TenantService.Url"];
         }
+
+        public Task<MicroserviceResponse<bool>> AddUserToTenantAsync(Guid tenantId, Guid userId)
+        {
+
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var route = string.Format(Routes.AddUserToTenantFormat,tenantId);
+            return microserviceHttpClient.PutAsync<Guid,bool>(route, userId);
+        }
+
         /// <inheritdoc />
         public Task<MicroserviceResponse<TenantDomain>> GetTenantDomainAsync(Guid tenantDomainId)
         {
@@ -33,11 +43,31 @@ namespace Synthesis.PrincipalService.Controllers
             return microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
         }
 
+        public Task<MicroserviceResponse<List<Guid?>>> GetTenantIdsByUserIdAsync(Guid userId)
+        {
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var get = string.Format(Routes.GetTenantIdsByUserIdFormat, userId);
+            return microserviceHttpClient.GetAsync<List<Guid?>>($"{_serviceUrl}{get}");
+        }
+
+        public Task<MicroserviceResponse<List<Guid?>>> GetUserIdsByTenantIdAsync(Guid tenantId)
+        {
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var get = string.Format(Routes.GetUserIdsByTenantIdFormat, tenantId);
+            return microserviceHttpClient.GetAsync<List<Guid?>>($"{_serviceUrl}{get}");
+        }
+
         private static class Routes
         {
             public static string GetTenantDomainFormat => "/v1/tenantsdomain/{0}";
 
             public static string GetTenantDomainIdsFormat => "/v1/tenantsdomain/domainIds/{0}";
+
+            public static string GetUserIdsByTenantIdFormat => "/v1/tenants/{0}/users";
+
+            public static string GetTenantIdsByUserIdFormat => "/v1/tenants/{0}/ids";
+
+            public static string AddUserToTenantFormat => "/v1/tenants/{0}/adduser";
         }
     }
 }

@@ -13,5 +13,11 @@ namespace Synthesis.PrincipalService.Controllers
         Task<MicroserviceResponse<TenantDomain>> GetTenantDomainAsync(Guid tenantDomainId);
 
         Task<MicroserviceResponse<List<Guid>>> GetTenantDomainIdsAsync(Guid tenantId);
+
+        Task<MicroserviceResponse<List<Guid?>>> GetTenantIdsByUserIdAsync(Guid userId);
+
+        Task<MicroserviceResponse<List<Guid?>>> GetUserIdsByTenantIdAsync(Guid tenantId);
+
+        Task<MicroserviceResponse<bool>> AddUserToTenantAsync(Guid tenantId, Guid userId);
     }
 }
