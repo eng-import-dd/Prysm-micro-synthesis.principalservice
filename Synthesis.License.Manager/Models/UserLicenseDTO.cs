@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 
@@ -14,7 +15,7 @@ namespace Synthesis.License.Manager.Models
 
         [DataMember]
         [Required]
-        public string AccountId { get; set; }
+        public List<Guid> AccountId { get; set; }
 
         [DataMember]
         public string Version { get; set; }

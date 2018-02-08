@@ -84,7 +84,7 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Guid> { new Guid() });
 
-            CreateRoute("GetTenantIdByUserEmail", HttpMethod.Get, "/v1/users/tenantid/{email}", GetTenantIdByUserEmailAsync)
+            CreateRoute("GetTenantIdByUserEmail", HttpMethod.Get, "/v1/users/tenantid/{email}", GetTenantIdsByUserEmailAsync)
                 .Description("Retrieves tenant id by user email")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new Guid());
@@ -858,7 +858,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetTenantIdByUserEmailAsync(dynamic input)
+        private async Task<object> GetTenantIdsByUserEmailAsync(dynamic input)
         {
             await RequiresAccess()
                 .WithPrincipalIdExpansion(_ => PrincipalId)
@@ -868,7 +868,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.GetTenantIdByUserEmailAsync(email);
+                var result = await _userController.GetTenantIdsByUserEmailAsync(email);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);

@@ -103,16 +103,15 @@ namespace Synthesis.PrincipalService.Controllers
             if (IsBuiltInOnPremTenant(tenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(user.TenantId), "Users cannot be created under provisioning tenant") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(tenantId), "Users cannot be created under provisioning tenant") });
             }
 
-            user.TenantId = tenantId;
             user.CreatedBy = createdBy;
             user.CreatedDate = DateTime.Now;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
 
-            var result = await CreateUserInDb(user);
+            var result = await CreateUserInDb(user,tenantId);
 
             await AssignUserLicense(result, model.LicenseType);
 
@@ -182,7 +181,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-                var usersInAccount = await _userRepository.GetItemsAsync(u => u.TenantId == tenantId);
+                var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+                var userIds = result.Payload;
+                var usersInAccount = await _userRepository.GetItemsAsync(u =>userIds.Contains(u.Id));
                 if (!usersInAccount.Any())
                 {
                     _logger.Error("Users for the account could not be found");
@@ -467,7 +468,7 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<Guid> GetTenantIdByUserEmailAsync(string email)
+        public async Task<List<Guid?>> GetTenantIdsByUserEmailAsync(string email)
         {
             var userNameValidationResult = _validatorLocator.Validate<UserNameValidator>(email);
 
@@ -480,14 +481,15 @@ namespace Synthesis.PrincipalService.Controllers
 
             var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email) || u.UserName.Equals(email));
             var userWithEmail = result.ToList().FirstOrDefault();
-
             if (userWithEmail == null)
             {
                 _logger.Error($"User resource could not be found for input email {email}.");
                 throw new NotFoundException($"User resource could not be found for input email {email}.");
             }
 
-            if (userWithEmail.TenantId == Guid.Empty)
+            var tenantIds = await _tenantApi.GetTenantIdsByUserIdAsync(userWithEmail.Id ?? Guid.Empty);
+
+            if (tenantIds.Payload.Count>0)
             {
                 //TODO: Tenant Management Service Call here to get tenaant Id - Yusuf
                 //Legacy Code
@@ -508,7 +510,7 @@ namespace Synthesis.PrincipalService.Controllers
                     */
             }
 
-            return userWithEmail.TenantId;
+            return tenantIds.Payload;
         }
 
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
@@ -643,7 +645,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (user.Id != null)
             {
-                var result = await _tenantApi.GetTenantIdsByUserIdAsync((Guid)user.Id);
+                var result = await _tenantApi.GetTenantIdsByUserIdAsync(user.Id??Guid.Empty);
 
                 if (!result.Payload.IsNullOrEmpty() && result.Payload.Contains(tenantId))
                 {
@@ -779,7 +781,7 @@ namespace Synthesis.PrincipalService.Controllers
                    tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
-        private async Task<User> CreateUserInDb(User user)
+        private async Task<User> CreateUserInDb(User user,Guid tenantId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -814,14 +816,13 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             user.Groups = new List<Guid>();
-            var basicUserGroupId = await GetBuiltInGroupId(user.TenantId, BasicUserRoleName);
+            var basicUserGroupId = await GetBuiltInGroupId(tenantId, BasicUserRoleName);
             if (basicUserGroupId != null)
             {
                 user.Groups.Add( basicUserGroupId.Value);
             }
 
             var result = await _userRepository.CreateItemAsync(user);
-
             return result;
         }
 
@@ -866,9 +867,14 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ArgumentException(errorMessage);
             }
 
+            var result = await _tenantApi.GetTenantIdsByUserIdAsync(user.Id??Guid.Empty);
+            if (result.Payload.Count== 0)
+            {
+                throw new Exception($"No tenants found for the user id: {user.Id}");
+            }
             var licenseRequestDto = new UserLicenseDto
             {
-                AccountId = user.TenantId.ToString(),
+                AccountId = result.Payload.Select(id => id ?? Guid.Empty).ToList(),
                 LicenseType = (licenseType ?? LicenseType.Default).ToString(),
                 UserId = user.Id?.ToString()
             };
@@ -892,13 +898,16 @@ namespace Synthesis.PrincipalService.Controllers
             /* If a license could not be obtained lock the user that was just created. */
             await LockUser(user.Id.Value, true);
             user.IsLocked = true;
-
+            var tenantIds = result.Payload;
             //Intimate the Org Admin of the user's teanant about locked user
-            var orgAdmins = await GetTenantAdminsByIdAsync(user.TenantId);
-
-            if (orgAdmins.Count > 0)
+            foreach (var id in tenantIds)
             {
-                await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}" , user.Email);
+                var orgAdmins = await GetTenantAdminsByIdAsync(id??Guid.Empty);
+
+                if (orgAdmins.Count > 0)
+                {
+                    await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}", user.Email);
+                }
             }
         }
 
@@ -907,7 +916,8 @@ namespace Synthesis.PrincipalService.Controllers
             var adminGroupId = await GetBuiltInGroupId(userTenantId, OrgAdminRoleName);
             if(adminGroupId != null)
             {
-                var admins = await _userRepository.GetItemsAsync(u => u.TenantId == userTenantId && u.Groups.Contains(adminGroupId.Value));
+                var userIds = await _tenantApi.GetUserIdsByTenantIdAsync(userTenantId);
+                var admins = await _userRepository.GetItemsAsync(u => userIds.Payload.Contains(u.Id) && u.Groups.Contains(adminGroupId.Value));
                 return admins.ToList();
             }
 
@@ -987,9 +997,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            var userTenantId = existingUser.TenantId;
+            var result = await _tenantApi.GetTenantIdsByUserIdAsync(existingUser.Id??Guid.Empty);
+            var userTenantIds = result.Payload;
 
-            if (userTenantId == Guid.Empty || userTenantId != tenantId)
+            if (userTenantIds.Count==0 || !userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
             }
@@ -1048,7 +1059,13 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && u.TenantId == tenantId);
+            var tenantIds = await _tenantApi.GetTenantIdsByUserIdAsync(userId);
+            if (tenantIds.ResponseCode!=HttpStatusCode.OK)
+            {
+                _logger.Error("Unable to fetch tenant ids");
+                throw new NotFoundException("Unable to fetch tenant ids from tenant service");
+            }
+            var result = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId) && tenantIds.Payload.Contains(tenantId));
 
             if (result == null)
             {

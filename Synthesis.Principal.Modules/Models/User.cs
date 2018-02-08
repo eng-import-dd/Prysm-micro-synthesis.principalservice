@@ -56,9 +56,6 @@ namespace Synthesis.PrincipalService.Models
         public string LdapId { get; set; }
 
         [DataMember]
-        public Guid TenantId { get; set; }
-
-        [DataMember]
         public string UserName { get; set; }
 
         public static User Example()
@@ -76,7 +73,6 @@ namespace Synthesis.PrincipalService.Models
                 LastAccessDate = DateTime.UtcNow,
                 LastName = "ExampleLastname",
                 LdapId = "ExampleLdapId",
-                TenantId = Guid.NewGuid(),
                 UserName = "ExampleUsername"
             };
         }
