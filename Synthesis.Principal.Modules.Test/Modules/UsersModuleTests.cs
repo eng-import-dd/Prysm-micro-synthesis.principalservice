@@ -923,7 +923,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetTenantIdByUserEmailReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.GetTenantIdsByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new Exception());
 
             var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
@@ -935,7 +935,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetTenantIdByUserEmailReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.GetTenantIdsByUserEmailAsync(It.IsAny<string>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);

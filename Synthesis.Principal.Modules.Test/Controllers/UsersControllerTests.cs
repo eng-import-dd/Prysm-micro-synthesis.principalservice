@@ -279,7 +279,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new User
                 {
-                    TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                    //TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
                     Groups = new List<Guid> { Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115") }
                 }));
 
@@ -326,7 +326,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new User
                 {
-                    TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
+                    //TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
                     Groups = new List<Guid> { Guid.NewGuid() }
                 }));
 
@@ -548,7 +548,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new User
                 {
                     Id = userId,
-                    TenantId = tenantId
+                    //TenantId = tenantId
                 });
             var result = await _controller.GetLicenseTypeForUserAsync(userId, tenantId);
             Assert.IsType<LicenseType>(result);
@@ -584,7 +584,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     }
                 });
 
-            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
+            var result = await _controller.GetTenantIdsByUserEmailAsync(validEmail);
 
             Assert.IsType<Guid>(result);
         }
@@ -598,7 +598,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var validEmail = "user@prysm.com";
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdByUserEmailAsync(validEmail));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdsByUserEmailAsync(validEmail));
         }
 
         [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
@@ -620,9 +620,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             var validEmail = "user@prysm.com";
-            var result = await _controller.GetTenantIdByUserEmailAsync(validEmail);
+            var result = await _controller.GetTenantIdsByUserEmailAsync(validEmail);
 
-            Assert.Equal(Guid.Empty, result);
+            Assert.Equal(new List<Guid?>(), result);
         }
 
         [Trait("Send Reset Password Email", "Send Reset Password Email")]
@@ -953,7 +953,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com", TenantId = Guid.NewGuid() });
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com"});
 
             _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
@@ -978,7 +978,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task PromoteGuestManuallyShouldFailIfIfUserEmailIsEmptyAsync()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User { Id = Guid.NewGuid(), TenantId = Guid.NewGuid() });
+                .ReturnsAsync(new User { Id = Guid.NewGuid() });
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<LicenseSummaryDto>());

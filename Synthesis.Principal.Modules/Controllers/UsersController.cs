@@ -111,9 +111,9 @@ namespace Synthesis.PrincipalService.Controllers
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
 
-            var result = await CreateUserInDb(user,tenantId);
+            var result = await CreateUserInDb(user, tenantId);
 
-            await AssignUserLicense(result, model.LicenseType);
+            await AssignUserLicense(result, model.LicenseType, tenantId);
 
             await _eventService.PublishAsync(EventNames.UserCreated, result);
 
@@ -151,7 +151,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userListResult = await GetAccountUsersFromDb(tenantId, userId, getUsersParams);
-            if(userListResult == null)
+            if (userListResult == null)
             {
                 _logger.Error($"Users resource could not be found for input data.");
                 throw new NotFoundException($"Users resource could not be found for input data.");
@@ -181,25 +181,31 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-                var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-                var userIds = result.Payload;
-                var usersInAccount = await _userRepository.GetItemsAsync(u =>userIds.Contains(u.Id));
-                if (!usersInAccount.Any())
-                {
-                    _logger.Error("Users for the account could not be found");
-                    throw new NotFoundException($"Users for the account could not be found");
-                }
+            var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (result.ResponseCode != HttpStatusCode.OK)
+            {
+                _logger.Error("Failed to fetch tenant users.");
+                throw new NotFoundException("Failed to fetch tenant users.");
+            }
 
-                var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-                var userResponse =_mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
-                return userResponse;
+            var userIds = result.Payload;
+            var usersInAccount = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id));
+            if (!usersInAccount.Any())
+            {
+                _logger.Error("Users for the account could not be found");
+                throw new NotFoundException($"Users for the account could not be found");
+            }
+
+            var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
+            var userResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
+            return userResponse;
 
         }
 
         public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest userModel)
         {
             TrimNameOfUser(userModel);
-            var errors=new List<ValidationFailure>();
+            var errors = new List<ValidationFailure>();
             if (!await IsUniqueUsername(userId, userModel.UserName))
             {
                 errors.Add(new ValidationFailure(nameof(userModel.UserName), "A user with that UserName already exists."));
@@ -223,8 +229,8 @@ namespace Synthesis.PrincipalService.Controllers
             }
             /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
             //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
-                var user = _mapper.Map<UpdateUserRequest, User>(userModel);
-                return await UpdateUserInDb(user, userId);
+            var user = _mapper.Map<UpdateUserRequest, User>(userModel);
+            return await UpdateUserInDb(user, userId);
         }
 
         public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId)
@@ -237,7 +243,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
             var existingUser = userList.FirstOrDefault();
-            if (existingUser==null)
+            if (existingUser == null)
             {
                 _logger.Error("User not found with that email.");
                 throw new NotFoundException("User not found with that email.");
@@ -285,7 +291,7 @@ namespace Synthesis.PrincipalService.Controllers
                 // The resource not being there is what we wanted.
             }
         }
-        
+
         public async Task<UserResponse> CreateGuestAsync(CreateUserRequest request, Guid tenantId, Guid createdBy)
         {
             // Trim up the names
@@ -339,7 +345,6 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LastAccessDate = DateTime.UtcNow,
                 LastName = request.LastName,
-                TenantId = tenantId,
                 UserName = request.Email
             };
             var result = await _userRepository.CreateItemAsync(user);
@@ -348,8 +353,8 @@ namespace Synthesis.PrincipalService.Controllers
             // Done
             return _mapper.Map<User, UserResponse>(result);
         }
-        
-        public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId , LicenseType licenseType, bool autoPromote = false)
+
+        public async Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
 
@@ -409,7 +414,8 @@ namespace Synthesis.PrincipalService.Controllers
                 //}
             }
 
-            var assignLicenseResult = await _licenseApi.AssignUserLicenseAsync(new UserLicenseDto{
+            var assignLicenseResult = await _licenseApi.AssignUserLicenseAsync(new UserLicenseDto
+            {
                 AccountId = tenantId.ToString(),
                 UserId = userId.ToString(),
                 LicenseType = licenseType.ToString()
@@ -458,8 +464,10 @@ namespace Synthesis.PrincipalService.Controllers
                     _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
                     throw new PromotionFailedException($"Failed to promote user {userId}");
                 }
+
                 await _emailUtility.SendWelcomeEmailAsync(model.EmailId, model.FirstName);
             }
+
             if (model.Groups != null)
             {
                 await UpdateIdpUserGroupsAsync(model.UserId.Value, model);
@@ -489,7 +497,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var tenantIds = await _tenantApi.GetTenantIdsByUserIdAsync(userWithEmail.Id ?? Guid.Empty);
 
-            if (tenantIds.Payload.Count>0)
+            if (tenantIds.Payload.Count > 0)
             {
                 //TODO: Tenant Management Service Call here to get tenaant Id - Yusuf
                 //Legacy Code
@@ -526,13 +534,13 @@ namespace Synthesis.PrincipalService.Controllers
             };
 
             var result = await CreateUserAsync(user, tenantId, createddBy);
-            if (result != null && model.Groups !=null)
+            if (result != null && model.Groups != null)
             {
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.GetValueOrDefault(), model);
                 if (groupResult == null)
                 {
                     _logger.Error($"An error occurred updating user groups for user {result.Id.GetValueOrDefault()}");
-                    throw  new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.GetValueOrDefault()}");
+                    throw new IdpUserProvisioningException($"Failed to update Idp user groups for user {result.Id.GetValueOrDefault()}");
                 }
             }
 
@@ -558,7 +566,7 @@ namespace Synthesis.PrincipalService.Controllers
                 if (model.Groups.Contains(accountGroup.Name))
                 {
                     //Add the user to the group
-                    if(currentGroupsResult.Groups.Contains(accountGroup.Id.GetValueOrDefault()))
+                    if (currentGroupsResult.Groups.Contains(accountGroup.Id.GetValueOrDefault()))
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
@@ -578,7 +586,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             return currentGroupsResult;
         }
-        
+
         public async Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName)
         {
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -645,7 +653,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (user.Id != null)
             {
-                var result = await _tenantApi.GetTenantIdsByUserIdAsync(user.Id??Guid.Empty);
+                var result = await _tenantApi.GetTenantIdsByUserIdAsync(user.Id ?? Guid.Empty);
 
                 if (!result.Payload.IsNullOrEmpty() && result.Payload.Contains(tenantId))
                 {
@@ -653,7 +661,7 @@ namespace Synthesis.PrincipalService.Controllers
                 }
             }
 
-            var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
+            var domain = user.Email.Substring(user.Email.IndexOf('@') + 1);
             var tenantEmailDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
 
             return tenantEmailDomains.Contains(domain) ? PromoteGuestResultCode.Success : PromoteGuestResultCode.Failed;
@@ -693,7 +701,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             var criteria = new List<Expression<Func<User, bool>>>();
             Expression<Func<User, string>> orderBy;
-            criteria.Add(u => u.TenantId == Guid.Empty);
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
             if (userIdsInTenant.ResponseCode == HttpStatusCode.OK)
@@ -702,7 +709,7 @@ namespace Synthesis.PrincipalService.Controllers
                 criteria.Add(u => !userids.Contains(u.Id));
             }
 
-            var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantApi,tenantId);
+            var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
 
 
             criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
@@ -710,11 +717,11 @@ namespace Synthesis.PrincipalService.Controllers
             if (!string.IsNullOrEmpty(getGuestUsersParams.SearchValue))
             {
                 criteria.Add(x =>
-                                    x != null &&
-                                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                                                                                                getGuestUsersParams.SearchValue.ToLower()) ||
-                                    x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
-                                    x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+                    x != null &&
+                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
+                        getGuestUsersParams.SearchValue.ToLower()) ||
+                    x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
+                    x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
             }
             if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
             {
@@ -778,10 +785,10 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             return tenantId.ToString().ToUpper() == "2D907264-8797-4666-A8BB-72FE98733385" ||
-                   tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
+                tenantId.ToString().ToUpper() == "DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3";
         }
 
-        private async Task<User> CreateUserInDb(User user,Guid tenantId)
+        private async Task<User> CreateUserInDb(User user, Guid tenantId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -792,7 +799,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (!await IsUniqueEmail(user.Id, user.Email))
             {
-                validationErrors.Add(new ValidationFailure(nameof(user.Email), "A user with that email address already exists.") );
+                validationErrors.Add(new ValidationFailure(nameof(user.Email), "A user with that email address already exists."));
             }
 
             if (!string.IsNullOrEmpty(user.LdapId) && !await IsUniqueLdapId(user.Id, user.LdapId))
@@ -819,7 +826,7 @@ namespace Synthesis.PrincipalService.Controllers
             var basicUserGroupId = await GetBuiltInGroupId(tenantId, BasicUserRoleName);
             if (basicUserGroupId != null)
             {
-                user.Groups.Add( basicUserGroupId.Value);
+                user.Groups.Add(basicUserGroupId.Value);
             }
 
             var result = await _userRepository.CreateItemAsync(user);
@@ -857,7 +864,8 @@ namespace Synthesis.PrincipalService.Controllers
 
             return _mapper.Map<User, UserResponse>(existingUser);
         }
-        private async Task AssignUserLicense(User user, LicenseType? licenseType)
+
+        private async Task AssignUserLicense(User user, LicenseType? licenseType, Guid tenantId)
         {
             if (user.Id == null || user.Id == Guid.Empty)
             {
@@ -867,14 +875,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ArgumentException(errorMessage);
             }
 
-            var result = await _tenantApi.GetTenantIdsByUserIdAsync(user.Id??Guid.Empty);
-            if (result.Payload.Count== 0)
-            {
-                throw new Exception($"No tenants found for the user id: {user.Id}");
-            }
+
             var licenseRequestDto = new UserLicenseDto
             {
-                AccountId = result.Payload.Select(id => id ?? Guid.Empty).ToList(),
+                AccountId = tenantId.ToString(),
                 LicenseType = (licenseType ?? LicenseType.Default).ToString(),
                 UserId = user.Id?.ToString()
             };
@@ -898,18 +902,14 @@ namespace Synthesis.PrincipalService.Controllers
             /* If a license could not be obtained lock the user that was just created. */
             await LockUser(user.Id.Value, true);
             user.IsLocked = true;
-            var tenantIds = result.Payload;
-            //Intimate the Org Admin of the user's teanant about locked user
-            foreach (var id in tenantIds)
-            {
-                var orgAdmins = await GetTenantAdminsByIdAsync(id??Guid.Empty);
 
-                if (orgAdmins.Count > 0)
-                {
-                    await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}", user.Email);
-                }
-            }
+            //Intimate the Org Admin of the user's teanant about locked user
+
+            var orgAdmins = await GetTenantAdminsByIdAsync(tenantId);
+
+            await _emailUtility.SendUserLockedMailAsync(orgAdmins, $"{user.FirstName} {user.LastName}", user.Email);
         }
+        
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
@@ -1183,14 +1183,14 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var userTenantId = (await _userRepository.GetItemAsync(userId)).TenantId;
-
-            if (userTenantId == Guid.Empty)
+            var result = await _tenantApi.GetTenantIdsByUserIdAsync(userId);
+            var userTenantIds = result.Payload;
+            if (userTenantIds.Count==0)
             {
                 throw new NotFoundException($"A User resource could not be found for id {userId}");
             }
 
-            if (userTenantId != tenantId)
+            if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
             }
@@ -1232,7 +1232,8 @@ namespace Synthesis.PrincipalService.Controllers
                     var licenseRequestDto = new UserLicenseDto
                     {
                         UserId = id.ToString(),
-                        AccountId = existingUser.TenantId.ToString()
+                        //AccountId = existingUser.TenantId.ToString()
+                        //Todo: check how the the accounts should be updated-CHARAN
                     };
 
                     if (isLocked)
@@ -1314,11 +1315,11 @@ namespace Synthesis.PrincipalService.Controllers
             }
             var criteria = new List<Expression<Func<User, bool>>>();
             Expression<Func<User, string>> orderBy;
-            criteria.Add(u => u.TenantId == tenantId);
+            criteria.Add(u => getUsersParams.UserIds.Contains(u.Id??Guid.Empty));
 
             if (getUsersParams.OnlyCurrentUser)
             {
-                criteria.Add(u => u.Id == currentUserId);
+                criteria.Add(u => getUsersParams.UserIds.Contains(currentUserId??Guid.Empty));
             }
 
             if (!getUsersParams.IncludeInactive)

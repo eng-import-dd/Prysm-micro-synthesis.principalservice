@@ -43,18 +43,18 @@ namespace Synthesis.PrincipalService.Controllers
             return microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
         }
 
-        public Task<MicroserviceResponse<List<Guid>>> GetTenantIdsByUserIdAsync(Guid userId)
+        public Task<MicroserviceResponse<List<Guid?>>> GetTenantIdsByUserIdAsync(Guid userId)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
             var get = string.Format(Routes.GetTenantIdsByUserIdFormat, userId);
-            return microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
+            return microserviceHttpClient.GetAsync<List<Guid?>>($"{_serviceUrl}{get}");
         }
 
-        public Task<MicroserviceResponse<List<Guid>>> GetUserIdsByTenantIdAsync(Guid tenantId)
+        public Task<MicroserviceResponse<List<Guid?>>> GetUserIdsByTenantIdAsync(Guid tenantId)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
             var get = string.Format(Routes.GetUserIdsByTenantIdFormat, tenantId);
-            return microserviceHttpClient.GetAsync<List<Guid>>($"{_serviceUrl}{get}");
+            return microserviceHttpClient.GetAsync<List<Guid?>>($"{_serviceUrl}{get}");
         }
 
         private static class Routes

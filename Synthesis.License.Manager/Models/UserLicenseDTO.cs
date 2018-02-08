@@ -15,7 +15,7 @@ namespace Synthesis.License.Manager.Models
 
         [DataMember]
         [Required]
-        public List<Guid> AccountId { get; set; }
+        public string AccountId { get; set; }
 
         [DataMember]
         public string Version { get; set; }
