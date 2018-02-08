@@ -573,7 +573,7 @@ namespace Synthesis.PrincipalService.Modules
             string email = input.email;
             try
             {
-                var result = await _userController.CanPromoteUserAsync(email);
+                var result = await _userController.CanPromoteUserAsync(email, TenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);

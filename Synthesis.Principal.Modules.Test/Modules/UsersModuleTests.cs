@@ -469,7 +469,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsSuccess()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new CanPromoteUserResponse()));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -480,7 +480,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsBadrequest()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -491,7 +491,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -502,7 +502,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsUserNotFound()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException("User Doesn't Exist"));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{EmptyTestEmail}", BuildRequest);

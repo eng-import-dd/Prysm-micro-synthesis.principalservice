@@ -198,17 +198,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(_validatorFailsMock.Object);
 
             var email = "";
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CanPromoteUserAsync(email));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CanPromoteUserAsync(email, Guid.NewGuid()));
         }
 
         [Fact]
         public async Task CanPromoteUserIfUserExistsInAnAccount()
         {
             var email = "ch@asd.com";
+            var tenantId = Guid.NewGuid();
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .Returns(() =>
                 {
-                    var userList = new List<User> { new User { Email = email, TenantId = Guid.NewGuid()} };
+                    var userList = new List<User> { new User { Email = email, Id = Guid.NewGuid()} };
 
                     var items = userList;
                     return Task.FromResult(items.AsEnumerable());
@@ -220,7 +221,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "asd.com" }));
 
-            var result = await _controller.CanPromoteUserAsync(email);
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?> { Guid.NewGuid(), tenantId }));
+
+            var result = await _controller.CanPromoteUserAsync(email, tenantId);
             var response = CanPromoteUserResultCode.UserAccountAlreadyExists;
             Assert.Equal(response, result.ResultCode);
         }
@@ -231,17 +235,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(default(User));
             var email = "ch@gmm.com";
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email, Guid.NewGuid()));
         }
 
         [Fact]
         public async Task CanPromoteUserSuccess()
         {
             var email = "ch@prysm.com";
+            var tenantId = Guid.NewGuid();
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .Returns(() =>
                 {
-                    var userList = new List<User> { new User { Email = email } };
+                    var userList = new List<User> { new User { Email = email, Id = Guid.NewGuid()} };
 
                     var items = userList;
                     return Task.FromResult(items.AsEnumerable());
@@ -253,7 +258,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "prysm.com" }));
 
-            var result = await _controller.CanPromoteUserAsync(email);
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
+
+            var result = await _controller.CanPromoteUserAsync(email, tenantId);
             var response = CanPromoteUserResultCode.UserCanBePromoted;
             Assert.Equal(response, result.ResultCode);
         }
@@ -479,6 +487,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "", Items = new List<User>() });
             _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
 
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
@@ -502,6 +512,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var getGuestUserParams = new GetUsersParams();
             _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
 
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
@@ -924,11 +936,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
 
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
+            _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+
+
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
             await Assert.ThrowsAsync<LicenseAssignmentFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense));
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Exactly(2));
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Exactly(1));
         }
 
         [Fact]
@@ -937,15 +955,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com", TenantId = Guid.NewGuid() });
 
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
+
+            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
+
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<LicenseSummaryDto>());
 
+            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
+            await Assert.ThrowsAsync < PromotionFailedException >(()=> _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
-            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse.ResultCode);
         }
 
         [Fact]
@@ -967,17 +993,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestManuallyShouldFailIfIfUserIsAlreadyInTenantAsync()
         {
+            var tenantId = Guid.NewGuid();
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", TenantId = Guid.NewGuid() });
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<LicenseSummaryDto>());
 
-            var tenantId = Guid.NewGuid();
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?> { tenantId }));
+
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
             Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse.ResultCode);
         }
 
@@ -1041,12 +1071,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "test.com"}));
+            _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Once);
             _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()));
 
             Assert.Equal(PromoteGuestResultCode.Success, promoteResponse.ResultCode);

@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Threading.Tasks;
 using AutoMapper;
+using Castle.Core.Internal;
 using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.Http.Microservice;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
@@ -223,7 +226,7 @@ namespace Synthesis.PrincipalService.Controllers
                 return await UpdateUserInDb(user, userId);
         }
 
-        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email)
+        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<EmailValidator>(email);
             if (!validationResult.IsValid)
@@ -239,7 +242,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException("User not found with that email.");
             }
 
-            var isValidForPromotion = await IsValidPromotionForTenant(existingUser, existingUser.TenantId);
+            var isValidForPromotion = await IsValidPromotionForTenant(existingUser, tenantId);
             if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
             {
                 return new CanPromoteUserResponse
@@ -638,9 +641,14 @@ namespace Synthesis.PrincipalService.Controllers
                 return PromoteGuestResultCode.Failed;
             }
 
-            if (user.TenantId != Guid.Empty)
+            if (user.Id != null)
             {
-                return PromoteGuestResultCode.UserAlreadyPromoted;
+                var result = await _tenantApi.GetTenantIdsByUserIdAsync((Guid)user.Id);
+
+                if (!result.Payload.IsNullOrEmpty() && result.Payload.Contains(tenantId))
+                {
+                    return PromoteGuestResultCode.UserAlreadyPromoted;
+                }
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@')+1);
@@ -651,16 +659,25 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<PromoteGuestResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
         {
-            user.TenantId = tenantId;
-            await _userRepository.UpdateItemAsync(user.Id.GetValueOrDefault(), user);
-
-            _eventService.Publish(new ServiceBusEvent<Guid>
+            if (user.Id != null)
             {
-                Name = EventNames.UserPromoted,
-                Payload = user.Id.GetValueOrDefault()
-            });
+                var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
 
-            return PromoteGuestResultCode.Success;
+                if (result.ResponseCode != HttpStatusCode.OK && !result.Payload)
+                {
+                    return PromoteGuestResultCode.Failed;
+                }
+
+                _eventService.Publish(new ServiceBusEvent<Guid>
+                {
+                    Name = EventNames.UserPromoted,
+                    Payload = user.Id.GetValueOrDefault()
+                });
+
+                return PromoteGuestResultCode.Success;
+            }
+
+            return PromoteGuestResultCode.Failed;
         }
 
         public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
@@ -675,6 +692,13 @@ namespace Synthesis.PrincipalService.Controllers
             var criteria = new List<Expression<Func<User, bool>>>();
             Expression<Func<User, string>> orderBy;
             criteria.Add(u => u.TenantId == Guid.Empty);
+
+            var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (userIdsInTenant.ResponseCode == HttpStatusCode.OK)
+            {
+                var userids = userIdsInTenant.Payload;
+                criteria.Add(u => !userids.Contains(u.Id));
+            }
 
             var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantApi,tenantId);
 
