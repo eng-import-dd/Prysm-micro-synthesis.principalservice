@@ -496,6 +496,11 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var tenantIds = await _tenantApi.GetTenantIdsByUserIdAsync(userWithEmail.Id ?? Guid.Empty);
+            if (tenantIds.ResponseCode != HttpStatusCode.OK)
+            {
+                _logger.Error($"Failed to fetch tenant Ids for user id {userWithEmail.Id}");
+                throw new NotFoundException($"Failed to fetch tenant Ids for user id {userWithEmail.Id}");
+            }
 
             if (tenantIds.Payload.Count > 0)
             {
@@ -917,6 +922,11 @@ namespace Synthesis.PrincipalService.Controllers
             if(adminGroupId != null)
             {
                 var userIds = await _tenantApi.GetUserIdsByTenantIdAsync(userTenantId);
+                if (userIds.ResponseCode != HttpStatusCode.OK)
+                {
+                    _logger.Error($"Error fetching user ids for the tenant id: {userTenantId}");
+                    throw new NotFoundException($"Error fetching user ids for the tenant id: {userTenantId}");
+                }
                 var admins = await _userRepository.GetItemsAsync(u => userIds.Payload.Contains(u.Id) && u.Groups.Contains(adminGroupId.Value));
                 return admins.ToList();
             }
@@ -998,6 +1008,12 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsByUserIdAsync(existingUser.Id??Guid.Empty);
+            if (result.ResponseCode!=HttpStatusCode.OK)
+            {
+                _logger.Error($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
+                throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
+            }
+
             var userTenantIds = result.Payload;
 
             if (userTenantIds.Count==0 || !userTenantIds.Contains(tenantId))
@@ -1184,6 +1200,12 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsByUserIdAsync(userId);
+            if (result.ResponseCode != HttpStatusCode.OK)
+            {
+                _logger.Error($"Error fetching tenant Ids for the user Id: {userId} .");
+                throw new NotFoundException($"Error fetching tenant Ids for the user Id: {userId} .");
+            }
+
             var userTenantIds = result.Payload;
             if (userTenantIds.Count==0)
             {
