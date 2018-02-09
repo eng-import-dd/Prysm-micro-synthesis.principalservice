@@ -11,11 +11,12 @@ namespace Synthesis.PrincipalService.Validators
             RuleFor(request => request.MachineKey)
                 .NotEmpty().WithMessage("The MachineKey property must not be empty")
                 .MaximumLength(20).WithMessage("The MachineKey must be less than 20 characters long")
-                .Matches(@"^[0-9a-zA-Z]$").WithMessage("MachineKey may only contain alpha-numeric characters.");
+                .MinimumLength(10).WithMessage("The MachineKey must be greater than or equal to 10 characters long")
+                .Matches("^[0-9a-zA-Z]*$").WithMessage("MachineKey may only contain alpha-numeric characters.");
 
             RuleFor(request => request.Location)
                 .NotEmpty().WithMessage("The Location property must not be empty")
-                .MaximumLength(50).WithMessage("The Location must be less than 20 characters long");
+                .MaximumLength(50).WithMessage("The Location must be less than 50 characters long");
 
             RuleFor(request => request.SettingProfileId)
                .NotEmpty().WithMessage("The Setting Profile Id property must not be empty")
