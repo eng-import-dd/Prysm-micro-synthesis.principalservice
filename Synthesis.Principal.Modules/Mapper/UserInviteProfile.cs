@@ -12,6 +12,8 @@ namespace Synthesis.PrincipalService.Mapper
             CreateMap<UserInviteRequest, UserInviteResponse>();
             CreateMap<UserInviteResponse, UserInvite>();
             CreateMap<UserInvite, UserInviteResponse>();
+            CreateMap<UserInviteResponse, UserEmailRequest>();
+            CreateMap<UserEmailResponse, UserInviteResponse>();
         }
     }
 }

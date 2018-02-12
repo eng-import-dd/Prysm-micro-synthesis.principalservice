@@ -303,9 +303,9 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<GroupsController>().As<IGroupsController>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
-            builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+            builder.RegisterType<EmailApi>().As<IEmailApi>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
