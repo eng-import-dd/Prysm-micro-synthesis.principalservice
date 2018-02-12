@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
                 LastOnline = DateTime.UtcNow,
                 Location = "location",
                 Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
-                MachineKey = "mac_key",
+                MachineKey = "mackey01234",
                 ModifiedBy = Guid.Parse("8767752e-a867-4ec3-bec8-cea01ea2eabd"),
                 SettingProfileId = Guid.Parse("5c0cff7b-bbf6-41a4-a3f1-dba3b01f16d5"),
                 SettingProfileName = "name",
@@ -54,6 +54,102 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var result = _validator.Validate(request);
 
             Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailIfMachineKeyIsLessThan10Char()
+        {
+            var request = new CreateMachineRequest
+            {
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                DateCreated = DateTime.UtcNow,
+                DateModified = DateTime.UtcNow,
+                IsSelected = false,
+                LastOnline = DateTime.UtcNow,
+                Location = "location",
+                Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
+                MachineKey = "123456789",
+                ModifiedBy = Guid.Parse("8767752e-a867-4ec3-bec8-cea01ea2eabd"),
+                SettingProfileId = Guid.Parse("5c0cff7b-bbf6-41a4-a3f1-dba3b01f16d5"),
+                SettingProfileName = "name",
+                SynthesisVersion = "2.10"
+            };
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailIfMachineKeyIsLargerThan20Char()
+        {
+            var request = new CreateMachineRequest
+            {
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                DateCreated = DateTime.UtcNow,
+                DateModified = DateTime.UtcNow,
+                IsSelected = false,
+                LastOnline = DateTime.UtcNow,
+                Location = "location",
+                Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
+                MachineKey = "123456789012345678901",
+                ModifiedBy = Guid.Parse("8767752e-a867-4ec3-bec8-cea01ea2eabd"),
+                SettingProfileId = Guid.Parse("5c0cff7b-bbf6-41a4-a3f1-dba3b01f16d5"),
+                SettingProfileName = "name",
+                SynthesisVersion = "2.10"
+            };
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailIfLocationIsEmptyOrNull()
+        {
+            var request = new CreateMachineRequest
+            {
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                DateCreated = DateTime.UtcNow,
+                DateModified = DateTime.UtcNow,
+                IsSelected = false,
+                LastOnline = DateTime.UtcNow,
+                Location = "     ",
+                Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
+                MachineKey = "12345678901234567890",
+                ModifiedBy = Guid.Parse("8767752e-a867-4ec3-bec8-cea01ea2eabd"),
+                SettingProfileId = Guid.Parse("5c0cff7b-bbf6-41a4-a3f1-dba3b01f16d5"),
+                SettingProfileName = "name",
+                SynthesisVersion = "2.10"
+            };
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailIfSettingProfileIdIsNull()
+        {
+            var request = new CreateMachineRequest
+            {
+                TenantId = Guid.Parse("c7eb01e4-6435-4c30-b17d-743f70043d9d"),
+                DateCreated = DateTime.UtcNow,
+                DateModified = DateTime.UtcNow,
+                IsSelected = false,
+                LastOnline = DateTime.UtcNow,
+                Location = "Location",
+                Id = Guid.Parse("002a2f31-0de4-495c-823e-4d5fa4da071b"),
+                MachineKey = "12345678901234567890",
+                ModifiedBy = Guid.Parse("8767752e-a867-4ec3-bec8-cea01ea2eabd"),
+                SettingProfileId = Guid.Empty,
+                SettingProfileName = "name",
+                SynthesisVersion = "2.10"
+            };
+
+            var result = _validator.Validate(request);
+
+            Assert.False(result.IsValid);
         }
     }
 }
