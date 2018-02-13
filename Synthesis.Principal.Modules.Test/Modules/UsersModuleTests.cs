@@ -909,42 +909,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
-        #region GetTenantIdByUserEmail
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailSuccess()
-        {
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailReturnsInternalServerError()
-        {
-            _controllerMock.Setup(m => m.GetTenantIdsByUserEmailAsync(It.IsAny<string>()))
-                           .ThrowsAsync(new Exception());
-
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailReturnsBadRequestIfValidationFails()
-        {
-            _controllerMock.Setup(m => m.GetTenantIdsByUserEmailAsync(It.IsAny<string>()))
-                           .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
-
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
-        }
-        #endregion
-
         #region GetUsersByIds
         [Fact]
         public async Task GetUsersByIdsReturnsOkIfSuccessful()

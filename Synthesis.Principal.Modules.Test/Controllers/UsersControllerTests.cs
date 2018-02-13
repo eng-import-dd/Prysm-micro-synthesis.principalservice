@@ -469,7 +469,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
-
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
@@ -566,67 +567,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Throws(new NotFoundException(string.Empty));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailAsyncSuccess()
-        {
-            var validEmail = "user@prysm.com";
-            var userId = Guid.Parse("814CF57E-157B-4493-8007-691B5E316006");
-            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>{Guid.NewGuid()}));
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .ReturnsAsync(new List<User>
-                {
-                    new User
-                    {
-                        Id = userId,
-                        Email = validEmail
-                    }
-                });
-
-            var result = await _controller.GetTenantIdsByUserEmailAsync(validEmail);
-
-            Assert.IsType<List<Guid?>>(result);
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailAsyncThrowsNotFoundException()
-        {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Throws(new NotFoundException(string.Empty));
-            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?> { Guid.NewGuid() }));
-            var validEmail = "user@prysm.com";
-
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTenantIdsByUserEmailAsync(validEmail));
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailAsynctReturnsNoMatchingRecords()
-        {
-            const int count = 3;
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .Returns(() =>
-                {
-                    var itemsList = new List<User>();
-                    for (var i = 0; i < count; i++)
-                    {
-                        itemsList.Add(new User());
-                    }
-
-                    IEnumerable<User> items = itemsList;
-                    return Task.FromResult(items);
-                });
-            _tenantApiMock.Setup(m => m.GetTenantIdsByUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid?>()));
-            var validEmail = "user@prysm.com";
-            var result = await _controller.GetTenantIdsByUserEmailAsync(validEmail);
-
-            Assert.Equal(new List<Guid?>(), result);
         }
 
         [Trait("Send Reset Password Email", "Send Reset Password Email")]

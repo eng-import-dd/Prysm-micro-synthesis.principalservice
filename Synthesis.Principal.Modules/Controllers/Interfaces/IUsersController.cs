@@ -43,8 +43,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest passwordResetEmailRequest);
 
-        Task<List<Guid?>> GetTenantIdsByUserEmailAsync(string email);
-
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
 
         Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds);

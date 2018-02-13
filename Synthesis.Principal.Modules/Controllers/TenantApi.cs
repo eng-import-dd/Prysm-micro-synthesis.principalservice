@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
+using Synthesis.Configuration;
+using Synthesis.Configuration.Shared;
 using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -13,10 +15,10 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IMicroserviceHttpClientResolver _microserviceHttpClientResolver;
         private readonly string _serviceUrl;
 
-        public TenantApi(IMicroserviceHttpClientResolver microserviceHttpClientResolver)
+        public TenantApi(IMicroserviceHttpClientResolver microserviceHttpClientResolver, IAppSettingsReader appSettingsReader)
         {
             _microserviceHttpClientResolver = microserviceHttpClientResolver;
-            _serviceUrl = ConfigurationManager.AppSettings["TenantService.Url"];
+            _serviceUrl = appSettingsReader.GetValue<string>("Tenant.Url");
         }
 
         public Task<MicroserviceResponse<bool>> AddUserToTenantAsync(Guid tenantId, Guid userId)
