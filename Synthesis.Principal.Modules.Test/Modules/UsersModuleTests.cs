@@ -952,7 +952,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<List<Guid>>()))
                 .ReturnsAsync(new List<User>());
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -963,7 +963,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -974,7 +974,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
