@@ -306,6 +306,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<EmailUtility>().As<IEmailUtility>();
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+            builder.RegisterType<CloudShim>().As<ICloudShim>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

@@ -311,10 +311,12 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Constants\RouteNames.cs" />
     <Compile Include="Constants\Routing.cs" />
+    <Compile Include="Controllers\CloudShim.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseAssignmentFailedException.cs" />
     <Compile Include="Controllers\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
+    <Compile Include="Controllers\Interfaces\ICloudShim.cs" />
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
     <Compile Include="Controllers\Interfaces\IPrincipalsController.cs" />

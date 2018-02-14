@@ -53,7 +53,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _validatorLocatorMock.Object,
                 loggerFactoryMock.Object,
                 mapper,
-                _eventServiceMock.Object
+                _eventServiceMock.Object,
+                _cloudShimMock.Object
             );
         }
 
@@ -63,6 +64,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Machine>> _machineRepositoryMock = new Mock<IRepository<Machine>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<ICloudShim> _cloudShimMock = new Mock<ICloudShim>();
         private readonly MachinesController _controller;
 
         [Fact]
