@@ -314,7 +314,7 @@ namespace Synthesis.PrincipalService
             {
                 var reader = c.Resolve<IAppSettingsReader>();
                 return CreateLogLayout(reader);
-            }).SingleInstance();
+            }).AutoActivate();
             var loggerFactory = new LoggerFactory();
             var defaultLogger = loggerFactory.Get(DefaultLogTopic);
             builder.RegisterInstance(defaultLogger);
