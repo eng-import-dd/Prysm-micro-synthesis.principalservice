@@ -317,7 +317,6 @@
     <Compile Include="Controllers\GroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
-    <Compile Include="Controllers\Interfaces\IPrincipalsController.cs" />
     <Compile Include="Controllers\Interfaces\ITenantApi.cs" />
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
@@ -339,7 +338,6 @@
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Models\Group.cs" />
     <Compile Include="Models\Machine.cs" />
-    <Compile Include="Models\Principal.cs" />
     <Compile Include="Models\TenantDomain.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\UserInvite.cs" />
@@ -391,7 +389,6 @@
     <Compile Include="Validators\PasswordResetEmailRequestValidator.cs" />
     <Compile Include="Validators\PasswordValidator.cs" />
     <Compile Include="Validators\PrincipalIdValidator.cs" />
-    <Compile Include="Validators\PrincipalValidator.cs" />
     <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
