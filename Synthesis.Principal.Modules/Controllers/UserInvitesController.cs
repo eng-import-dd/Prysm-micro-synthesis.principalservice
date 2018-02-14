@@ -118,13 +118,15 @@ namespace Synthesis.PrincipalService.Controllers
             var emailRequest = _mapper.Map<List<UserInviteResponse>, List<UserEmailRequest>>(validUsers);
 
             //Mail newly created users
-            var response = await _emailApi.SendUserInvite(emailRequest);
+            var userEmailResponses = await _emailApi.SendUserInvite(emailRequest);
 
-            if (response != null && response.Payload.Count > 0)
+            if (userEmailResponses == null || userEmailResponses.Count == 0)
             {
-                var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInviteResponse>>(response.Payload);
-                await UpdateUserInviteAsync(emailResponse);
+                return validUsers;
             }
+
+            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInviteResponse>>(userEmailResponses);
+            await UpdateUserInviteAsync(emailResponse);
 
             return validUsers;
         }

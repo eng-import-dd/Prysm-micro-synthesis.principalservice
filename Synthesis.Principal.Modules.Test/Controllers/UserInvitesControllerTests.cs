@@ -240,7 +240,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 new UserEmailResponse { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" }
             };
             _emailApiMock.Setup(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, userEmailRequests));
+                .ReturnsAsync(userEmailRequests);
 
             var resendUserInviteRequest = new List<UserInviteRequest>();
             resendUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });

@@ -1,5 +1,6 @@
 ﻿using Synthesis.PrincipalService.Models;
 using System.Collections.Generic;
+using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Models
 {

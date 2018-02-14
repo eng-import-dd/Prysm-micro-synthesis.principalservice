@@ -613,24 +613,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.Equal(Guid.Empty, result);
         }
 
-        [Trait("Send Reset Password Email", "Send Reset Password Email")]
-        [Fact]
-        public async Task SendResetPasswordEmailSuccess()
-        {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                FirstName = "test",
-                Link = "http://test.com"
-            };
-            _emailApiMock.Setup(m => m.SendResetPasswordEmail(It.IsAny<PasswordResetEmailRequest>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
-
-            var result = await _controller.SendResetPasswordEmail(request);
-
-            _emailApiMock.Verify(m => m.SendResetPasswordEmail(It.IsAny<PasswordResetEmailRequest>()), Times.Once);
-            Assert.True(result);
-        }
 
         /// <summary>
         ///     Gets the user by identifier asynchronous returns user if exists.
@@ -1144,7 +1126,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task ResendWelcomeEmailSuccess()
         {
-            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).ReturnsAsync(true);
             var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
             Assert.True(result);
         }

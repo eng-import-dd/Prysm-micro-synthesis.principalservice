@@ -589,26 +589,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var response = await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = email, FirstName = firstName });
-            return response.Payload;
-        }
-
-        public async Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest request)
-        {
-            var validationResult = _validatorLocator.Validate<PasswordResetEmailRequestValidator>(request);
-            if (!validationResult.IsValid)
-            {
-                _logger.Error("Validation failed.");
-                throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            var response = await _emailApi.SendResetPasswordEmail(new PasswordResetEmailRequest
-            {
-                Email = request.Email,
-                FirstName = request.FirstName,
-                Link = request.Link
-            });
-            return response.Payload;
+            return await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = email, FirstName = firstName });
         }
 
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)
