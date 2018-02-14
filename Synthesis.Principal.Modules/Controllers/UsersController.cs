@@ -476,56 +476,6 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<User, UserResponse>(result);
         }
 
-        public async Task<List<Guid?>> GetTenantIdsByUserEmailAsync(string email)
-        {
-            var userNameValidationResult = _validatorLocator.Validate<UserNameValidator>(email);
-
-            if (!userNameValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the email address id while attempting to retrieve a tenant id.");
-                throw new ValidationFailedException(userNameValidationResult.Errors);
-            }
-
-
-            var result = await _userRepository.GetItemsAsync(u => u.Email.Equals(email) || u.UserName.Equals(email));
-            var userWithEmail = result.ToList().FirstOrDefault();
-            if (userWithEmail == null)
-            {
-                _logger.Error($"User resource could not be found for input email {email}.");
-                throw new NotFoundException($"User resource could not be found for input email {email}.");
-            }
-
-            var tenantIds = await _tenantApi.GetTenantIdsByUserIdAsync(userWithEmail.Id ?? Guid.Empty);
-            if (tenantIds.ResponseCode != HttpStatusCode.OK)
-            {
-                _logger.Error($"Failed to fetch tenant Ids for user id {userWithEmail.Id}");
-                throw new NotFoundException($"Failed to fetch tenant Ids for user id {userWithEmail.Id}");
-            }
-
-            if (tenantIds.Payload.Count > 0)
-            {
-                //TODO: Tenant Management Service Call here to get tenaant Id - Yusuf
-                //Legacy Code
-                /*
-                    * int lastIndexOfAtTheRate = email.LastIndexOf("@");
-
-                    if (lastIndexOfAtTheRate != -1)
-                    {
-                        string domain = email.Substring(lastIndexOfAtTheRate + 1);
-
-                        accountIdList = from ad in sdc.AccountDomains
-                                            where ad.Domain == domain
-                                            select ad.AccountID;
-
-                        accountId = await accountIdList.FirstOrDefaultAsync();
-                        if (accountId != Guid.Empty)
-                            return accountId;
-                    */
-            }
-
-            return tenantIds.Payload;
-        }
-
         private async Task<UserResponse> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
             var user = new CreateUserRequest
