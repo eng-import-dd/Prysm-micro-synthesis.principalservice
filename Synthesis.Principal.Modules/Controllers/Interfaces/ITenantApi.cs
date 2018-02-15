@@ -18,6 +18,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<MicroserviceResponse<List<Guid?>>> GetUserIdsByTenantIdAsync(Guid tenantId);
 
-        Task<MicroserviceResponse<bool>> AddUserToTenantAsync(Guid tenantId, Guid userId);
+        Task<MicroserviceResponse<bool>> AddUserIdToTenantAsync(Guid tenantId, Guid userId);
     }
 }

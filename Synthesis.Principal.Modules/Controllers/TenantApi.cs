@@ -21,12 +21,12 @@ namespace Synthesis.PrincipalService.Controllers
             _serviceUrl = appSettingsReader.GetValue<string>("Tenant.Url");
         }
 
-        public Task<MicroserviceResponse<bool>> AddUserToTenantAsync(Guid tenantId, Guid userId)
+        public Task<MicroserviceResponse<bool>> AddUserIdToTenantAsync(Guid tenantId, Guid userId)
         {
 
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var route = string.Format(Routes.AddUserToTenantFormat,tenantId);
-            return microserviceHttpClient.PutAsync<Guid,bool>(route, userId);
+            var route = string.Format(Routes.AddUserIdToTenantFormat,tenantId);
+            return microserviceHttpClient.PostAsync<Guid,bool>(route, userId);
         }
 
         /// <inheritdoc />
@@ -65,11 +65,11 @@ namespace Synthesis.PrincipalService.Controllers
 
             public static string GetTenantDomainIdsFormat => "/v1/tenantsdomain/domainIds/{0}";
 
-            public static string GetUserIdsByTenantIdFormat => "/v1/tenants/{0}/users";
+            public static string GetUserIdsByTenantIdFormat => "/v1/tenants/{0}/userids";
 
-            public static string GetTenantIdsByUserIdFormat => "/v1/tenants/{0}/ids";
+            public static string GetTenantIdsByUserIdFormat => "/v1/users/{0}/tenantids";
 
-            public static string AddUserToTenantFormat => "/v1/tenants/{0}/adduser";
+            public static string AddUserIdToTenantFormat => "/v1/tenants/{0}/userids";
         }
     }
 }

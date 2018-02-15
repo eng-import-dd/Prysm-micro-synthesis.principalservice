@@ -626,7 +626,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             if (user.Id != null)
             {
-                var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
+                var result = await _tenantApi.AddUserIdToTenantAsync(tenantId, (Guid)user.Id);
 
                 if (result.ResponseCode != HttpStatusCode.OK && !result.Payload)
                 {
