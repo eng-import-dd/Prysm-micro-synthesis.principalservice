@@ -39,7 +39,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Create a new machine resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(Machine.Example())
-                .ResponseFormat(Machine.Example());
+                .ResponseFormat(MachineResponse.Example());
 
             CreateRoute("GetMachineById", HttpMethod.Get, "/v1/machines/{id:guid}", GetMachineByIdAsync)
                 .Description("Gets a machine by its unique identifier")

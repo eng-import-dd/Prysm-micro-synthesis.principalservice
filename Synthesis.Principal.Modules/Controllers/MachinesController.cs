@@ -33,6 +33,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
+        private readonly ICloudShim _cloudShim;
 
         /// <summary>
         /// Constructor for the MachinesController.
@@ -42,12 +43,14 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The Logger Factory Object </param>
         /// <param name="mapper">The Mapper Object </param>
         /// <param name="eventService">The Event Service </param>
+        /// <param name="cloudShim">The cloud api service</param>
         public MachinesController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             ILoggerFactory loggerFactory,
             IMapper mapper,
-            IEventService eventService)
+            IEventService eventService,
+            ICloudShim cloudShim)
         {
             _machineRepository = repositoryFactory.CreateRepository<Machine>();
             _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
@@ -57,6 +60,7 @@ namespace Synthesis.PrincipalService.Controllers
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
             _mapper = mapper;
+            _cloudShim = cloudShim;
         }
 
         public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId)
@@ -79,7 +83,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             await _eventService.PublishAsync(EventNames.MachineCreated);
 
-            // TODO: Call to CopyMachineSettings. To be implemented as a service call to SettingsService.
+            await _cloudShim.CopyMachineSettings(result.Id);
 
             return _mapper.Map<Machine, MachineResponse>(result);
         }
@@ -250,12 +254,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(machineIdValidationResult.Errors);
             }
 
-            if (!IsUserASuperAdmin(tenantId))
-            {
-                _logger.Error("Could not delete machine. Current user is not a super admin.");
-                throw new InvalidOperationException();
-            }
-
             var result = await _machineRepository.GetItemAsync(machineId);
             if (result == null)
             {
@@ -289,14 +287,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"No Machine with id {machineId} was found.");
             }
 
-            if (!IsUserASuperAdmin(tenantId))
-            {
-                _logger.Error("Invalid operation. Current user is not a super admin.");
-                throw new InvalidOperationException();
-            }
-
-            // TODO: Validate that the SettingProfile provided is valid
-            if (!IsValidSettingProfile(settingProfileId))
+            if (!await IsValidSettingProfile(tenantId, settingProfileId))
             {
                 _logger.Error("Invalid operation. The settings profile is not valid.");
                 throw new InvalidOperationException();
@@ -337,12 +328,6 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<List<Machine>, List<MachineResponse>>(result.ToList());
         }
 
-        private bool IsUserASuperAdmin(Guid id)
-        {
-            // TODO - CU-476 - this should be obtainable from the policyevaluator
-            return true;
-        }
-
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
             var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
@@ -355,10 +340,10 @@ namespace Synthesis.PrincipalService.Controllers
             return machinesWithMatchingMachinesKey.Any() == false;
         }
 
-        private bool IsValidSettingProfile(Guid settingProfileId)
+        private async Task<bool> IsValidSettingProfile(Guid tenantId, Guid settingProfileId)
         {
-            // TODO - CU-476 - Settings are not part of the inital decomp effort, we will need to go back to the monolith to get this data.
-            return true;
+            var result = await _cloudShim.ValidateSettingProfileId(tenantId, settingProfileId);
+            return result.Payload;
         }
     }
 }

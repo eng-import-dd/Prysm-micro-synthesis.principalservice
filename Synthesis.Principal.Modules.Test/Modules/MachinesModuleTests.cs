@@ -117,7 +117,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine()));
+            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -128,7 +128,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>())).Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine()));
+            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -136,7 +136,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnStatusOk()
         {
-            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine()));
+            var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine{MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid()}));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -11,6 +12,7 @@ using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -53,7 +55,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _validatorLocatorMock.Object,
                 loggerFactoryMock.Object,
                 mapper,
-                _eventServiceMock.Object
+                _eventServiceMock.Object,
+                _cloudShimMock.Object
             );
         }
 
@@ -63,6 +66,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IRepository<Machine>> _machineRepositoryMock = new Mock<IRepository<Machine>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<ICloudShim> _cloudShimMock = new Mock<ICloudShim>();
         private readonly MachinesController _controller;
 
         [Fact]
@@ -80,6 +84,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task ChangeMachineAccountAsyncReturnsNewMachineIfSuccessful()
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
+            _cloudShimMock.Setup(m => m.ValidateSettingProfileId(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
             var tenantId = Guid.NewGuid();
             var machineId = Guid.NewGuid();
             var settingProfileId = Guid.NewGuid();

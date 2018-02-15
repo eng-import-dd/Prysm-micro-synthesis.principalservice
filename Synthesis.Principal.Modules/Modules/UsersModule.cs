@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.Example())
-                .ResponseFormat(User.Example());
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("GetUsersForAccount", HttpMethod.Get, "/v1/users/", GetUsersForAccountAsync)
                 .Description("Retrieve all Users resource")
