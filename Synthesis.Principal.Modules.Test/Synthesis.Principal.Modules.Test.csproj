@@ -155,7 +155,7 @@
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta008\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta011\lib\net452\Synthesis.EventBus.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta012\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
