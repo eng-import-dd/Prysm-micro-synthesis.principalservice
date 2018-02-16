@@ -311,11 +311,13 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Constants\RouteNames.cs" />
     <Compile Include="Constants\Routing.cs" />
+    <Compile Include="Controllers\EmailApi.cs" />
     <Compile Include="Controllers\CloudShim.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseAssignmentFailedException.cs" />
     <Compile Include="Controllers\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
+    <Compile Include="Controllers\Interfaces\IEmailApi.cs" />
     <Compile Include="Controllers\Interfaces\ICloudShim.cs" />
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
@@ -338,10 +340,13 @@
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
+    <Compile Include="Requests\LockUserRequest.cs" />
+    <Compile Include="Responses\UserEmailResponse.cs" />
     <Compile Include="Models\Group.cs" />
     <Compile Include="Models\Machine.cs" />
     <Compile Include="Models\TenantDomain.cs" />
     <Compile Include="Models\User.cs" />
+    <Compile Include="Requests\UserEmailRequest.cs" />
     <Compile Include="Models\UserInvite.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />
@@ -372,8 +377,6 @@
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
     <Compile Include="Utilities\ConfigurationUtility.cs" />
-    <Compile Include="Utilities\EmailUtility.cs" />
-    <Compile Include="Utilities\IEmailUtility.cs" />
     <Compile Include="Utilities\IPasswordUtility.cs" />
     <Compile Include="Utilities\PasswordUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />

@@ -17,6 +17,7 @@ namespace Synthesis.PrincipalService.Mapper
             CreateMap<User, BasicUserResponse>();
             CreateMap<PagingMetadata<User>, PagingMetadata<UserResponse>>();
             CreateMap<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>();
+            CreateMap<User, UserEmailRequest>();
         }
     }
 }

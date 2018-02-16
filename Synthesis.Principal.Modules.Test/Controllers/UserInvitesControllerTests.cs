@@ -59,10 +59,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _controller = new UserInvitesController(_repositoryFactoryMock.Object,
                 loggerFactoryMock.Object,
-                _emailUtilityMock.Object,
                 mapper,
                 _validatorLocatorMock.Object,
-                _tenantApiMock.Object);
+                _tenantApiMock.Object,
+                _emailApiMock.Object);
         }
 
         private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
@@ -70,11 +70,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
         private readonly Mock<IRepository<UserInvite>> _repositoryMock = new Mock<IRepository<UserInvite>>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
-        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
         private readonly IUserInvitesController _controller;
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
+        private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         [Fact]
@@ -93,8 +93,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             createUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
 
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "yopmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>{Guid.NewGuid()}));
+            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
+            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -190,8 +190,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>()));
-            _emailUtilityMock.Verify(m => m.SendUserInviteAsync(It.IsAny<List<UserInviteResponse>>()));
-
+            _emailApiMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()));
             Assert.NotNull(userInvite);
             Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);
         }
@@ -236,9 +235,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
                 .ReturnsAsync(new List<UserInvite> { new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } });
-
-            _emailUtilityMock.Setup(m => m.SendUserInviteAsync(It.IsAny<List<UserInviteResponse>>()))
-                .ReturnsAsync(true);
+            var userEmailRequests = new List<UserEmailResponse>
+            {
+                new UserEmailResponse { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" }
+            };
+            _emailApiMock.Setup(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()))
+                .ReturnsAsync(userEmailRequests);
 
             var resendUserInviteRequest = new List<UserInviteRequest>();
             resendUserInviteRequest.Add(new UserInviteRequest { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
@@ -246,7 +248,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
 
             _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<UserInvite>()));
-            _emailUtilityMock.Verify(m => m.SendUserInviteAsync(It.IsAny<List<UserInviteResponse>>()));
+            _emailApiMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()));
 
             Assert.NotNull(userInvite);
             Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);

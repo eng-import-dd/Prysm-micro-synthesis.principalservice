@@ -67,7 +67,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _eventServiceMock.Object,
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
-                _emailUtilityMock.Object,
+                _emailApiMock.Object,
                 _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
@@ -84,7 +84,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IRepository<UserInvite>> _userInviteRepositoryMock = new Mock<IRepository<UserInvite>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
-        private readonly Mock<IEmailUtility> _emailUtilityMock = new Mock<IEmailUtility>();
+        private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly IUsersController _controller;
         private readonly IMapper _mapper;
@@ -378,7 +378,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync("a@b.com", "first"));
+            _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
             _eventServiceMock.Verify(m => m.PublishAsync("UserCreated", It.IsAny<User>()));
 
             Assert.NotNull(user);
@@ -474,7 +474,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()));
-            _emailUtilityMock.Verify(m => m.SendUserLockedMailAsync(It.IsAny<List<User>>(), It.IsAny<string>(), It.IsAny<string>()));
+            _emailApiMock.Verify(m => m.SendUserLockedMail(It.IsAny<LockUserRequest>()));
 
             Assert.NotNull(user);
             Assert.Equal(user.CreatedBy, createdBy);
@@ -567,26 +567,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Throws(new NotFoundException(string.Empty));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
-        }
-
-        [Trait("Send Reset Password Email", "Send Reset Password Email")]
-        [Fact]
-        public async Task SendResetPasswordEmailSuccess()
-        {
-            var request = new PasswordResetEmailRequest
-            {
-                Email = "a@b.com",
-                FirstName = "test",
-                Link = "http://test.com"
-            };
-
-            _emailUtilityMock.Setup(m => m.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link))
-                .ReturnsAsync(true);
-
-            var result = await _controller.SendResetPasswordEmail(request);
-
-            _emailUtilityMock.Verify(m => m.SendResetPasswordEmailAsync(request.Email, request.FirstName, request.Link), Times.Once);
-            Assert.True(result);
         }
 
         /// <summary>
@@ -768,7 +748,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _eventServiceMock.Object,
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
-                _emailUtilityMock.Object,
+                _emailApiMock.Object,
                 _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
@@ -791,7 +771,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _eventServiceMock.Object,
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
-                _emailUtilityMock.Object,
+                _emailApiMock.Object,
                 _passwordUtilityMock.Object,
                 _mapper,
                 deploymentType,
@@ -1014,7 +994,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
 
             _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>{Guid.NewGuid()}));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
 
             _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "test.com"}));
@@ -1027,7 +1007,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
-            _emailUtilityMock.Verify(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>()));
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Once);
+            _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
 
             Assert.Equal(PromoteGuestResultCode.Success, promoteResponse.ResultCode);
         }
@@ -1111,21 +1092,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task ResendWelcomeEmailFailed()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new Exception());
+            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).Throws(new Exception());
             await Assert.ThrowsAsync<Exception>(() => _controller.ResendUserWelcomeEmailAsync("ch@gg.com", "charan"));
         }
 
         [Fact]
         public async Task ResendWelcomeEmailIfEmailIsEmpty()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).Throws(new ValidationException(new List<ValidationFailure>()));
+            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).Throws(new ValidationException(new List<ValidationFailure>()));
             await Assert.ThrowsAsync<ValidationException>(() => _controller.ResendUserWelcomeEmailAsync("", "charan"));
         }
 
         [Fact]
         public async Task ResendWelcomeEmailSuccess()
         {
-            _emailUtilityMock.Setup(m => m.SendWelcomeEmailAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).ReturnsAsync(true);
             var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
             Assert.True(result);
         }
@@ -1179,8 +1160,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetUserByEmailOrUserNameIfExistsAsync()
         {
             var validEmail = "smm@pry.com";
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User,bool>>>()))
-                               .ReturnsAsync(new List<User>(){new User(){Email = validEmail}});
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                               .ReturnsAsync(new List<User>() { new User() { Email = validEmail } });
 
             var result = await _controller.GetUserByUserNameOrEmailAsync(validEmail);
 
@@ -1239,8 +1220,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestForExistingUserThrowsUserExists()
         {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>() ))
-                .ReturnsAsync(new List<User> { User.Example() } );
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User> { User.Example() });
 
             await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestAsync(CreateUserRequest.GuestExample(), Guid.NewGuid(), Guid.NewGuid()));
         }

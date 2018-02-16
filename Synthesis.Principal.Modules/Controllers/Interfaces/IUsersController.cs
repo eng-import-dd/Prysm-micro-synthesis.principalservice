@@ -34,16 +34,14 @@ namespace Synthesis.PrincipalService.Controllers
         Task<List<Guid>> GetGroupsForUserAsync(Guid userId);
 
         Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
-       
+
         Task<UserResponse> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId);
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
-
-        Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest passwordResetEmailRequest);
-
-        Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
+        
+        Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId, Guid currentUserId);
 
         Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds);
 
