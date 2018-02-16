@@ -1,4 +1,6 @@
-﻿using Synthesis.PrincipalService.Entity;
+﻿using System;
+using System.Collections.Generic;
+using Synthesis.PrincipalService.Entity;
 
 namespace Synthesis.PrincipalService.Requests
 {
@@ -7,6 +9,7 @@ namespace Synthesis.PrincipalService.Requests
         public IdpFilter IdpFilter { get; set; }
         public bool IncludeInactive { get; set; }
         public bool OnlyCurrentUser { get; set; }
+        public List<Guid> UserIds { get; set; }
 
         public static GetUsersParams Example()
         {

@@ -37,13 +37,11 @@ namespace Synthesis.PrincipalService.Controllers
        
         Task<UserResponse> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
-        Task<CanPromoteUserResponse> CanPromoteUserAsync(string email);
+        Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId);
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
 
         Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest passwordResetEmailRequest);
-
-        Task<Guid> GetTenantIdByUserEmailAsync(string email);
 
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId,  Guid currentUserId);
 
