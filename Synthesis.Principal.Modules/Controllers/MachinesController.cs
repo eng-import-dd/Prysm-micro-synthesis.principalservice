@@ -88,7 +88,7 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
-        public async Task<MachineResponse> GetMachineByIdAsync(Guid machineId, Guid tenantId)
+        public async Task<MachineResponse> GetMachineByIdAsync(Guid machineId, Guid tenantId, bool isServiceCall)
         {
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
             if (!machineIdValidationResult.IsValid)
@@ -105,7 +105,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var assignedTenantId = result.TenantId;
-            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
+            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
             {
                 _logger.Error($"Invalid operation. Machine {machineId} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
@@ -113,7 +113,7 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<Machine, MachineResponse>(result);
         }
 
-        public async Task<MachineResponse> GetMachineByKeyAsync(String machineKey, Guid tenantId)
+        public async Task<MachineResponse> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
         {
             var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(machineKey));
             var machine = result.FirstOrDefault();
@@ -124,7 +124,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var assignedTenantId = machine.TenantId;
-            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
+            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
             {
                 _logger.Error($"Invalid operation. Machine {machineKey} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
@@ -132,7 +132,7 @@ namespace Synthesis.PrincipalService.Controllers
             return _mapper.Map<Machine, MachineResponse>(machine);
         }
 
-        public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId)
+        public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId, bool isServiceCall)
         {
             var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
 
@@ -145,7 +145,7 @@ namespace Synthesis.PrincipalService.Controllers
             try
             {
                 var machine = _mapper.Map<UpdateMachineRequest, Machine>(model);
-                return await UpdateMachineInDb(machine, tenantId);
+                return await UpdateMachineInDb(machine, tenantId, isServiceCall);
             }
             catch (DocumentNotFoundException ex)
             {
@@ -184,7 +184,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<MachineResponse> UpdateMachineInDb(Machine machine, Guid tenantId)
+        private async Task<MachineResponse> UpdateMachineInDb(Machine machine, Guid tenantId, bool isServiceCall)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -201,7 +201,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
             }
 
-            if (existingMachine.TenantId != tenantId)
+            if (!isServiceCall && existingMachine.TenantId != tenantId)
             {
                 _logger.Error($"Invalid operation. Machine {machine.Id} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();

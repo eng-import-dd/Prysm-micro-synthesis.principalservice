@@ -118,7 +118,7 @@ namespace Synthesis.PrincipalService.Modules
             var machineId = input.id;
             try
             {
-                return await _machineController.GetMachineByIdAsync(machineId, TenantId);
+                return await _machineController.GetMachineByIdAsync(machineId, TenantId, IsServicePrincipal);
             }
             catch (NotFoundException)
             {
@@ -148,7 +148,7 @@ namespace Synthesis.PrincipalService.Modules
             var machinekey = input.machinekey;
             try
             {
-                return await _machineController.GetMachineByKeyAsync(machinekey, TenantId);
+                return await _machineController.GetMachineByKeyAsync(machinekey, TenantId, IsServicePrincipal);
             }
             catch (NotFoundException)
             {
@@ -185,7 +185,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _machineController.UpdateMachineAsync(updateMachine, TenantId);
+                return await _machineController.UpdateMachineAsync(updateMachine, TenantId, IsServicePrincipal);
             }
             catch (ValidationFailedException ex)
             {
