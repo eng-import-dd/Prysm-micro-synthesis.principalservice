@@ -63,7 +63,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         {
             var request = UpdateMachineRequest.Example();
             var result = _validator.Validate(request);
-            Assert.False(result.IsValid);
+            Assert.True(result.IsValid);
         }
     }
 }

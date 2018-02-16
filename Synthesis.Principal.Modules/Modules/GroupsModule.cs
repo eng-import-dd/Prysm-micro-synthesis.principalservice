@@ -36,7 +36,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Creates a new group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(Group.Example())
-                .ResponseFormat(Principal.Example());
+                .ResponseFormat(Group.Example());
 
             CreateRoute("GetGroupById", HttpMethod.Get, "/v1/groups/{id}", GetGroupByIdAsync)
                 .Description("Get a group by its unique identifier")

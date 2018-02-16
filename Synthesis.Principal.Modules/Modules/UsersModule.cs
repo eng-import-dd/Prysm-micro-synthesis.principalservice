@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.Example())
-                .ResponseFormat(User.Example());
+                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("GetUsersForAccount", HttpMethod.Get, "/v1/users/", GetUsersForAccountAsync)
                 .Description("Retrieve all Users resource")
@@ -84,21 +84,17 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Guid> { new Guid() });
 
-            CreateRoute("GetTenantIdByUserEmail", HttpMethod.Get, "/v1/users/tenantid/{email}", GetTenantIdByUserEmailAsync)
-                .Description("Retrieves tenant id by user email")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Guid());
-
             CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "v1/groups/{groupId}/users/{userId}", RemoveUserFromPermissionGroupAsync)
                 .Description("Removes a specific user from the group")
-                .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
+                .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .ResponseFormat(new bool());
 
             CreateRoute("GetUserById", HttpMethod.Get, "/v1/users/{id:guid}", GetUserByIdAsync)
                 .Description("Gets a User resource by UserId")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(UserResponse.Example());
 
-            CreateRoute("GetUsersByIds", HttpMethod.Get, Routing.GetUsersByIds, GetUsersByIdsAsync)
+            CreateRoute("GetUsersByIds", HttpMethod.Post, Routing.GetUsersByIds, GetUsersByIdsAsync)
                 .Description("Get a Principal resource by it's identifier.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<User> { User.Example() });
@@ -127,12 +123,6 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
-
-            CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
-                .Description("Update a User resource")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UpdateUserRequest.Example())
-                .ResponseFormat(UserResponse.Example());
 
             CreateRoute("ResendUserWelcomeEmail", HttpMethod.Post, "/v1/users/resendwelcomemail", ResendUserWelcomeEmailAsync)
                 .Description("Resend Welcome Email to the User")
@@ -531,7 +521,7 @@ namespace Synthesis.PrincipalService.Modules
             string email = input.email;
             try
             {
-                var result = await _userController.CanPromoteUserAsync(email);
+                var result = await _userController.CanPromoteUserAsync(email, TenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -812,36 +802,6 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 Logger.Error("RemoveUserFromGroup threw an unhandled exception", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
-            }
-        }
-
-        private async Task<object> GetTenantIdByUserEmailAsync(dynamic input)
-        {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            string email = input.email;
-
-            try
-            {
-                var result = await _userController.GetTenantIdByUserEmailAsync(email);
-                return Negotiate
-                    .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.OK);
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.TenantNotFound);
-            }
-            catch (ValidationFailedException ex)
-            {
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("GetTenantIdByUserEmail threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }

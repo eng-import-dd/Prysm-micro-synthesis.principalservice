@@ -23,7 +23,6 @@ namespace Synthesis.PrincipalService.Responses
         public string LastName { get; set; }
         public string LdapId { get; set; }
         public LicenseType? LicenseType { get; set; }
-        public Guid TenantId { get; set; }
         public string UserName { get; set; }
 
         public static UserResponse Example()
@@ -41,7 +40,6 @@ namespace Synthesis.PrincipalService.Responses
                 LastName = "ExampleLastname",
                 LdapId = "ExampleLdapId",
                 LicenseType = License.Manager.Models.LicenseType.Default,
-                TenantId = Guid.NewGuid(),
                 UserName = "ExampleUsername"
             };
         }

@@ -354,10 +354,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
                            .ReturnsAsync(new UserResponse());
 
-            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var tenantId);
+            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var createdBy);
 
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
-                           .ReturnsAsync(new UserResponse() { TenantId = tenantId });
+                           .ReturnsAsync(new UserResponse() { CreatedBy = createdBy });
 
             var response = await UserTokenBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, new User()));
 
@@ -403,10 +403,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<UpdateUserRequest>()))
                            .Throws(new Exception());
 
-            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var tenantId);
+            Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var createdBy);
 
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
-                           .ReturnsAsync(new UserResponse(){TenantId = tenantId });
+                           .ReturnsAsync(new UserResponse(){CreatedBy = createdBy });
 
             var response = await UserTokenBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, new UpdateUserRequest()));
 
@@ -468,7 +468,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsSuccess()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new CanPromoteUserResponse()));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -479,7 +479,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsBadrequest()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -490,7 +490,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
@@ -501,7 +501,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CanPromoteuserReturnsUserNotFound()
         {
-            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>()))
+            _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException("User Doesn't Exist"));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{EmptyTestEmail}", BuildRequest);
@@ -873,42 +873,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
-        #region GetTenantIdByUserEmail
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailSuccess()
-        {
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailReturnsInternalServerError()
-        {
-            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
-                           .ThrowsAsync(new Exception());
-
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        }
-
-        [Trait("Get Tenant Id by User Email", "Get Tenant Id by User Email")]
-        [Fact]
-        public async Task GetTenantIdByUserEmailReturnsBadRequestIfValidationFails()
-        {
-            _controllerMock.Setup(m => m.GetTenantIdByUserEmailAsync(It.IsAny<string>()))
-                           .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
-
-            var response = await UserTokenBrowser.Get($"/v1/users/tenantid/{ValidTestEmail}", BuildRequest);
-
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
-        }
-        #endregion
-
         #region GetUsersByIds
         [Fact]
         public async Task GetUsersByIdsReturnsOkIfSuccessful()
@@ -916,7 +880,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<List<Guid>>()))
                 .ReturnsAsync(new List<User>());
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -927,7 +891,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -938,7 +902,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsersByIds, ctx => BuildRequest(ctx, new List<Guid>()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }

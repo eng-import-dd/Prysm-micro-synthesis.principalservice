@@ -306,6 +306,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
+            builder.RegisterType<CloudShim>().As<ICloudShim>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
@@ -314,7 +315,7 @@ namespace Synthesis.PrincipalService
             {
                 var reader = c.Resolve<IAppSettingsReader>();
                 return CreateLogLayout(reader);
-            }).SingleInstance();
+            }).AutoActivate();
             var loggerFactory = new LoggerFactory();
             var defaultLogger = loggerFactory.Get(DefaultLogTopic);
             builder.RegisterInstance(defaultLogger);

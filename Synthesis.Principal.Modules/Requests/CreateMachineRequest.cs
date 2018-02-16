@@ -16,7 +16,7 @@ namespace Synthesis.PrincipalService.Requests
         public string Location { get; set; }
         public string MachineKey { get; set; }
         public Guid ModifiedBy { get; set; }
-        public Guid? SettingProfileId { get; set; }
+        public Guid SettingProfileId { get; set; }
         public string SettingProfileName { get; set; }
         public string SynthesisVersion { get; set; }
         public Guid TenantId { get; set; }
