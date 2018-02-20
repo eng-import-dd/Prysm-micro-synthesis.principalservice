@@ -25,6 +25,8 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
 
+        Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds);
+
         Task<bool> LockOrUnlockUserAsync(Guid userId, bool isLocked);
 
         Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
@@ -40,7 +42,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId);
 
         Task<bool> ResendUserWelcomeEmailAsync(string email, string firstName);
-        
+
         Task<bool> RemoveUserFromPermissionGroupAsync(Guid userId, Guid groupId, Guid currentUserId);
 
         Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds);

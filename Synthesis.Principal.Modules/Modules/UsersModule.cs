@@ -57,6 +57,12 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(UpdateUserRequest.Example())
                 .ResponseFormat(UserResponse.Example());
 
+            CreateRoute("GetUserNames", HttpMethod.Post, Routing.GetUserNames, GetUserNamesAsync)
+                .Description("Gets the first and last name for each of the supplied userids")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(new List<Guid>() {Guid.Empty})
+                .ResponseFormat(new List<UserNames>() {UserNames.Example()});
+
             CreateRoute("LockUser", HttpMethod.Post, "/v1/users/{userId:guid}/lock", LockUserAsync)
                 .Description("Locks the respective user")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -263,6 +269,40 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 Logger.Error("GetUserById threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetUserNamesAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(_ => PrincipalId)
+                .ExecuteAsync(CancellationToken.None);
+
+            IEnumerable<Guid> userIds;
+
+            try
+            {
+                userIds = this.Bind<IEnumerable<Guid>>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to fetch user ids", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                return await _userController.GetNamesForUsers(userIds);
+
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(GetUserNamesAsync)} threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
