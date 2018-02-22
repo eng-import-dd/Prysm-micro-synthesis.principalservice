@@ -10,7 +10,6 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
-using Synthesis.Http.Microservice;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
@@ -19,6 +18,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Exceptions;
+using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -138,6 +138,24 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             return _mapper.Map<User, UserResponse>(result);
+        }
+
+        public async Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds)
+        {
+            var validationResult = _validatorLocator.Validate<GeUserNamesByIdsValidator>(userIds);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the userids");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            IEnumerable<Guid?> nullableUserIds = userIds.Select(x => new Guid?(x));
+            var result = await _userRepository.GetItemsAsync(user => nullableUserIds.Contains(user.Id));
+
+            return result.Select(x => new UserNames()
+            {
+                FirstName = x.FirstName, LastName = x.LastName, Id = x.Id.ToGuid()
+            });
         }
 
         /// <inheritdoc />

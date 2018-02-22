@@ -52,6 +52,58 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
+        #region GetUserNames
+
+        [Fact]
+        public async Task GetUserNamesReturnsOk()
+        {
+            var response = await UserTokenBrowser.Post(Routing.GetUserNames, ctx => BuildRequest(ctx, new List<Guid>()));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserNamesReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.GetNamesForUsers(It.IsAny<List<Guid>>()))
+                .Throws(new Exception());
+
+            var response = await UserTokenBrowser.Post(Routing.GetUserNames, ctx => BuildRequest(ctx, new List<Guid>()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUserNamesWithInvalidBodyReturnsBadRequest()
+        {
+            var response = await UserTokenBrowser.Post(Routing.GetUserNames, ctx => BuildRequest(ctx, new List<UserNames>() { new UserNames()}));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task GetUserNamesReturnsBadRequestIfValidationFails()
+        {
+            _controllerMock.Setup(m => m.GetNamesForUsers(It.IsAny<List<Guid>>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await UserTokenBrowser.Post(Routing.GetUserNames, ctx => BuildRequest(ctx, new List<Guid>()));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task GetUserNamesReturnsUnauthorizedWithoutBearerToken()
+        {
+            var response = await UnauthenticatedBrowser.Post(Routing.GetUserNames, ctx => BuildRequest(ctx, new List<Guid>()));
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        #endregion
+
         #region CreateUser
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()

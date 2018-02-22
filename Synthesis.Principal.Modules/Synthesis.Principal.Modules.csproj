@@ -340,6 +340,7 @@
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
+    <Compile Include="Models\UserNames.cs" />
     <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Responses\UserEmailResponse.cs" />
     <Compile Include="Models\Group.cs" />
@@ -385,6 +386,7 @@
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\EmailValidator.cs" />
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
+    <Compile Include="Validators\GeUserNamesByIdsValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\GroupValidator.cs" />
     <Compile Include="Validators\GuestCreationRequestValidator.cs" />

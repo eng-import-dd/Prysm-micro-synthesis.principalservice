@@ -57,6 +57,12 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(UpdateUserRequest.Example())
                 .ResponseFormat(UserResponse.Example());
 
+            CreateRoute("GetUserNames", HttpMethod.Post, Routing.GetUserNames, GetUserNamesAsync)
+                .Description("Gets the first and last name for each of the supplied userids")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(new List<Guid>() {Guid.Empty})
+                .ResponseFormat(new List<UserNames>() {UserNames.Example()});
+
             CreateRoute("LockUser", HttpMethod.Post, "/v1/users/{userId:guid}/lock", LockUserAsync)
                 .Description("Locks the respective user")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -149,7 +155,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> LockUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid id = input.userId;
@@ -190,7 +195,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> CreateUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             CreateUserRequest createUserRequest;
@@ -244,7 +248,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUserByIdAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.Id;
@@ -267,10 +270,42 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> GetUserNamesAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            IEnumerable<Guid> userIds;
+
+            try
+            {
+                userIds = this.Bind<IEnumerable<Guid>>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to fetch user ids", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                return await _userController.GetNamesForUsers(userIds);
+
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"{nameof(GetUserNamesAsync)} threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
         private async Task<object> GetUsersBasicAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             try
@@ -289,7 +324,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUserByIdBasicAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.Id;
@@ -316,7 +350,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             string userName = input.userName;
@@ -342,7 +375,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUsersForAccountAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             GetUsersParams getUsersParams;
@@ -379,7 +411,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUsersByIdsAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             IEnumerable<Guid> userIds;
@@ -412,7 +443,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             ResendEmailRequest basicUser;
@@ -448,7 +478,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId;
@@ -486,7 +515,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> DeleteUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.id;
@@ -515,7 +543,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> CanPromoteUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             string email = input.email;
@@ -545,7 +572,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> PromoteGuestAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             PromoteGuestRequest promoteRequest;
@@ -589,7 +615,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetGuestUsersForTenantAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             GetUsersParams getGuestUsersParams;
@@ -625,7 +650,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             IdpUserRequest idpUserRequest;
@@ -671,7 +695,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> CreateUserGroupAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             CreateUserGroupRequest newUserGroupRequest;
@@ -711,7 +734,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetGroupUsersAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid groupId = input.id;
@@ -741,7 +763,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUserGroupsForUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.userId;
@@ -770,7 +791,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.userId;
@@ -809,7 +829,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetLicenseTypeForUserAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId = input.userId;
