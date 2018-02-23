@@ -46,7 +46,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(CreateUserRequest.Example())
                 .ResponseFormat(UserResponse.Example());
 
-            CreateRoute("GetUsersForAccount", HttpMethod.Post, "/v1/{tenantId:guid}/users", GetUsersForAccountAsync)
+            CreateRoute("GetUsersForAccount", HttpMethod.Post, "/v1/tenant/{tenantId:guid}/users", GetUsersForAccountAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
