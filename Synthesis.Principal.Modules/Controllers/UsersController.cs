@@ -199,15 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (result.ResponseCode != HttpStatusCode.OK)
-            {
-                _logger.Error("Failed to fetch tenant users.");
-                throw new NotFoundException("Failed to fetch tenant users.");
-            }
-
-            var userIds = result.Payload;
-            var usersInAccount = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id));
+            var usersInAccount = await _userRepository.GetItemsAsync(u => getUsersParams.UserIds.Contains(u.Id??Guid.Empty));
             if (!usersInAccount.Any())
             {
                 _logger.Error("Users for the account could not be found");

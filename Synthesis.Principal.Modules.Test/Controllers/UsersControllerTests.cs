@@ -1032,7 +1032,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense);
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Once);
             _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
 
             Assert.Equal(PromoteGuestResultCode.Success, promoteResponse.ResultCode);
