@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Synthesis.Configuration;
 using Synthesis.License.Manager.Models;
 using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Interfaces;
@@ -23,10 +24,10 @@ namespace Synthesis.License.Manager
 
         protected override string SecurityToken => "C35BB5D0-4A9D-4BFB-A3EC-6E24694D2B3D";
 
-        public LicenseApi(ILoggerFactory loggerFactory, IHttpClient httpClient): base(httpClient)
+        public LicenseApi(ILoggerFactory loggerFactory, IHttpClient httpClient, IAppSettingsReader appSettingsReader) : base(httpClient)
         {
             LoggingService = loggerFactory.GetLogger(this);
-            ApiBaseUrl = ConfigurationManager.AppSettings["BaseLicenseEndpoint"];
+            ApiBaseUrl = appSettingsReader.SafeGetValue<string>("License.Url");
         }
 
         /// <inheritdoc />
