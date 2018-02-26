@@ -45,7 +45,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(_userInviteRepositoryMock.Object);
 
             // event service mock
-            _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
+            _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<User>>()))
+                .Returns(Task.FromResult(0));
 
             _validatorMock.Setup(m => m.Validate(It.IsAny<object>()))
                 .Returns(new ValidationResult());
@@ -379,7 +380,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<User>()));
             _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
-            _eventServiceMock.Verify(m => m.PublishAsync("UserCreated", It.IsAny<User>()));
+            _eventServiceMock.Verify(m => m.PublishAsync(It.Is<ServiceBusEvent<User>>(e => e.Name == "UserCreated")));
 
             Assert.NotNull(user);
             Assert.Equal(user.CreatedBy, createdBy);
