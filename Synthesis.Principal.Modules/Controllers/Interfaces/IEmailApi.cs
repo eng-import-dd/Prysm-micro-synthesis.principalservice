@@ -23,20 +23,20 @@ namespace Synthesis.PrincipalService.Controllers
         /// </summary>
         /// <param name="userEmailRequest"></param>
         /// <returns></returns>
-        Task<bool> SendWelcomeEmail(UserEmailRequest userEmailRequest);
+        Task SendWelcomeEmail(UserEmailRequest userEmailRequest);
 
         /// <summary>
         /// Send user locked email.
         /// </summary>
         /// <param name="lockUserRequest"></param>
         /// <returns></returns>
-        Task<bool> SendUserLockedMail(LockUserRequest lockUserRequest);
+        Task SendUserLockedMail(LockUserRequest lockUserRequest);
 
         /// <summary>
         /// Send reset password email.
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest request);
+        Task SendResetPasswordEmail(PasswordResetEmailRequest request);
     }
 }

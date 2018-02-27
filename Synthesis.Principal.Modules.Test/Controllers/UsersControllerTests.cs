@@ -1131,7 +1131,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task ResendWelcomeEmailSuccess()
         {
-            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).ReturnsAsync(true);
+            _emailApiMock.Setup(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>())).Returns(Task.FromResult(1));
             var result = await _controller.ResendUserWelcomeEmailAsync("ch@gmm.com", "charan");
             Assert.True(result);
         }

@@ -35,39 +35,36 @@ namespace Synthesis.PrincipalService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<bool> SendWelcomeEmail(UserEmailRequest request)
+        public async Task SendWelcomeEmail(UserEmailRequest request)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var response = await microserviceHttpClient.PostAsync<UserEmailRequest, bool>($"{_serviceUrl}/v1/sendwelcomeemail", request);
+            var response = await microserviceHttpClient.PostAsync($"{_serviceUrl}/v1/sendwelcomeemail", request);
             if (response.ResponseCode != System.Net.HttpStatusCode.Created)
             {
                 throw new Exception(response.ReasonPhrase);
             }
-            return response.Payload;
         }
 
         /// <inheritdoc />
-        public async Task<bool> SendUserLockedMail(LockUserRequest request)
+        public async Task SendUserLockedMail(LockUserRequest request)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var response = await microserviceHttpClient.PostAsync<LockUserRequest, bool>($"{_serviceUrl}/v1/senduserlockedmail", request);
+            var response = await microserviceHttpClient.PostAsync($"{_serviceUrl}/v1/senduserlockedmail", request);
             if (response.ResponseCode != System.Net.HttpStatusCode.Created)
             {
                 throw new Exception(response.ReasonPhrase);
             }
-            return response.Payload;
         }
 
         /// <inheritdoc />
-        public async Task<bool> SendResetPasswordEmail(PasswordResetEmailRequest request)
+        public async Task SendResetPasswordEmail(PasswordResetEmailRequest request)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var response = await microserviceHttpClient.PostAsync<PasswordResetEmailRequest, bool>($"{_serviceUrl}/v1/sendresetpasswordemail", request);
+            var response = await microserviceHttpClient.PostAsync($"{_serviceUrl}/v1/sendresetpasswordemail", request);
             if (response.ResponseCode != System.Net.HttpStatusCode.Created)
             {
                 throw new Exception(response.ReasonPhrase);
             }
-            return response.Payload;
         }
     }
 }

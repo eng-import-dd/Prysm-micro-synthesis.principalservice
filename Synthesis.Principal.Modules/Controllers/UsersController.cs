@@ -565,7 +565,8 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            return await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = email, FirstName = firstName });
+            await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = email, FirstName = firstName });
+            return true;
         }
 
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)

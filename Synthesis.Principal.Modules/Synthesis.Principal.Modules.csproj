@@ -383,7 +383,6 @@
     <Compile Include="Responses\UserInviteResponse.cs" />
     <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
-    <Compile Include="Utilities\ConfigurationUtility.cs" />
     <Compile Include="Utilities\IPasswordUtility.cs" />
     <Compile Include="Utilities\PasswordUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
