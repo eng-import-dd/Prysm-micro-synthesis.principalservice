@@ -38,10 +38,11 @@ using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
+using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Events;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
-using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.Tracking;
@@ -100,7 +101,7 @@ namespace Synthesis.PrincipalService
                 {
                     var serializer = new JsonSerializer
                     {
-                        ContractResolver = new SynthesisModelContractResolver(),
+                        ContractResolver = new ApiModelContractResolver(),
                         Formatting = Formatting.None
                     };
                     return serializer;
@@ -361,6 +362,11 @@ namespace Synthesis.PrincipalService
 
         private static void RegisterEvents(ContainerBuilder builder)
         {
+            builder
+                .RegisterType<EventSubscriber>()
+                .AsSelf()
+                .AutoActivate();
+
             // Event Service registration.
             builder.RegisterType<EventServiceFactory>()
                 .WithParameter(new ResolvedParameter(
