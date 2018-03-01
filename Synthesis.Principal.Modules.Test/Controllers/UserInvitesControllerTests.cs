@@ -15,6 +15,7 @@ using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
@@ -22,6 +23,7 @@ using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
+using InviteUserStatus = Synthesis.PrincipalService.Responses.InviteUserStatus;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {

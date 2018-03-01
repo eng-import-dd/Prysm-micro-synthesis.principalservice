@@ -1,4 +1,5 @@
 ﻿using Synthesis.PrincipalService.Enums;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Responses

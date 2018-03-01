@@ -6,6 +6,7 @@ using System.Configuration;
 using System.Threading.Tasks;
 using Synthesis.Configuration;
 using Synthesis.Configuration.Shared;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers

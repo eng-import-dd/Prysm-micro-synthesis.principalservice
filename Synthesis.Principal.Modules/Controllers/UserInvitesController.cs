@@ -8,12 +8,13 @@ using FluentValidation;
 using Synthesis.DocumentStorage;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Entity;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
+using InviteUserStatus = Synthesis.PrincipalService.Responses.InviteUserStatus;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -231,12 +232,12 @@ namespace Synthesis.PrincipalService.Controllers
 
         }
 
-        public async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<Entity.PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
         {
             return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<Entity.PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
@@ -265,7 +266,7 @@ namespace Synthesis.PrincipalService.Controllers
                 existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
             }
 
-            var returnMetaData = new PagingMetadata<UserInviteResponse>
+            var returnMetaData = new Entity.PagingMetadata<UserInviteResponse>
             {
                 List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
             };

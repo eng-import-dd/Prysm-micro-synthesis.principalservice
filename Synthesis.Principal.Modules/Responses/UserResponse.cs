@@ -2,6 +2,7 @@
 using System.Linq;
 using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Responses
 {
@@ -39,7 +40,7 @@ namespace Synthesis.PrincipalService.Responses
                 LastAccessDate = DateTime.UtcNow,
                 LastName = "ExampleLastname",
                 LdapId = "ExampleLdapId",
-                LicenseType = License.Manager.Models.LicenseType.Default,
+                LicenseType = InternalApi.Models.LicenseType.Default,
                 UserName = "ExampleUsername"
             };
         }

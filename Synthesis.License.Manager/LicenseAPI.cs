@@ -11,6 +11,7 @@ using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Http;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.License.Manager
 {

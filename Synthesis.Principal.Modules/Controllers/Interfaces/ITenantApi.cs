@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Controllers

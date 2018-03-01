@@ -13,6 +13,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Xunit;
 

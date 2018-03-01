@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Validators

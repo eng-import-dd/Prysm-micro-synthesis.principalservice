@@ -236,6 +236,9 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
@@ -344,12 +347,6 @@
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
-    <Compile Include="Models\Group.cs" />
-    <Compile Include="Models\Machine.cs" />
-    <Compile Include="Models\TenantDomain.cs" />
-    <Compile Include="Models\User.cs" />
-    <Compile Include="Models\UserInvite.cs" />
-    <Compile Include="Models\UserNames.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
@@ -361,7 +358,6 @@
     <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserGroupRequest.cs" />
     <Compile Include="Requests\CreateUserRequest.cs" />
-    <Compile Include="Requests\GetUserParams.cs" />
     <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
@@ -372,7 +368,6 @@
     <Compile Include="Requests\UserEmailRequest.cs" />
     <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
-    <Compile Include="Responses\CanPromoteUserResponse.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
     <Compile Include="Responses\InviteUserStatus.cs" />
     <Compile Include="Responses\MachineResponse.cs" />
@@ -425,6 +420,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="EventHandlers\" />
+    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">

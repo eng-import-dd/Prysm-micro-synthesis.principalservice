@@ -9,7 +9,6 @@ using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Models;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using System;
@@ -18,6 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
@@ -259,7 +259,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetUsersForAccountReturnsOk()
         {
             _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
+                .Returns(Task.FromResult(new Entity.PagingMetadata<UserResponse>()));
 
             var response = await UserTokenBrowser.Post($"/api/v1/tenant/{Guid.NewGuid()}/users", BuildRequest);
 
@@ -289,7 +289,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetUsersForAccountReturnsUnauthorized()
         {
             _controllerMock.Setup(m => m.GetUsersForAccountAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetadata<UserResponse>()));
+                .Returns(Task.FromResult(new Entity.PagingMetadata<UserResponse>()));
 
             var response = await UnauthenticatedBrowser.Post($"/api/v1/tenant/{Guid.NewGuid()}/users", BuildRequest);
 
@@ -521,7 +521,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task CanPromoteuserReturnsSuccess()
         {
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
-                           .Returns(Task.FromResult(new CanPromoteUserResponse()));
+                           .Returns(Task.FromResult(new CanPromoteUser()));
 
             var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
 

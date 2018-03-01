@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.License.Manager.Interfaces
 {

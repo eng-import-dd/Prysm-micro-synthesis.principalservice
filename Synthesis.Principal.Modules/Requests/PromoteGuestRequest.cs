@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Requests
 {

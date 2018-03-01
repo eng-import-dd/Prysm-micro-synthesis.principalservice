@@ -14,6 +14,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;

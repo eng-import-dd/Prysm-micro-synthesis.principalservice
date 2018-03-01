@@ -1,6 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 using Synthesis.License.Manager.Models;
+using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Requests
 {
@@ -34,7 +35,7 @@ namespace Synthesis.PrincipalService.Requests
                 UserName = "ExampleUsername",
                 LdapId = "ExampleLdapId",
                 IsIdpUser = false,
-                LicenseType = License.Manager.Models.LicenseType.Default
+                LicenseType = InternalApi.Models.LicenseType.Default
             };
         }
 
@@ -50,7 +51,7 @@ namespace Synthesis.PrincipalService.Requests
                 PasswordConfirmation = "SecurePassword123",
                 IsIdpUser = false,
                 ProjectAccessCode = "1234567890",
-                LicenseType = License.Manager.Models.LicenseType.Default
+                LicenseType = InternalApi.Models.LicenseType.Default
             };
         }
     }

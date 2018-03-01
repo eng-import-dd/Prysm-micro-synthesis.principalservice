@@ -16,9 +16,9 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
-using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -159,7 +159,7 @@ namespace Synthesis.PrincipalService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<Entity.PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -175,11 +175,11 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
-            var basicUserResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(userListResult);
+            var basicUserResponse = _mapper.Map<Entity.PagingMetadata<User>, Entity.PagingMetadata<BasicUserResponse>>(userListResult);
             return basicUserResponse;
         }
 
-        public async Task<PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<Entity.PagingMetadata<UserResponse>> GetUsersForAccountAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(currentUserId);
             var tenantIdValidationresult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
@@ -207,7 +207,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var users = await GetAccountUsersFromDb(tenantId, currentUserId, getUsersParams);
-            var userResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<UserResponse>>(users);
+            var userResponse = _mapper.Map<Entity.PagingMetadata<User>, Entity.PagingMetadata<UserResponse>>(users);
             return userResponse;
 
         }
@@ -243,7 +243,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await UpdateUserInDb(user, userId);
         }
 
-        public async Task<CanPromoteUserResponse> CanPromoteUserAsync(string email, Guid tenantId)
+        public async Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId)
         {
             var validationResult = _validatorLocator.Validate<EmailValidator>(email);
             if (!validationResult.IsValid)
@@ -262,7 +262,7 @@ namespace Synthesis.PrincipalService.Controllers
             var isValidForPromotion = await IsValidPromotionForTenant(existingUser, tenantId);
             if (isValidForPromotion != PromoteGuestResultCode.UserAlreadyPromoted && isValidForPromotion != PromoteGuestResultCode.Failed)
             {
-                return new CanPromoteUserResponse
+                return new CanPromoteUser
                 {
                     ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
                     UserId = existingUser.Id
@@ -270,7 +270,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             _logger.Error("User already in an account");
-            return new CanPromoteUserResponse
+            return new CanPromoteUser
             {
                 ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
             };
@@ -330,7 +330,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Does a user already exist that uses email or has a username equal to the email?
-            var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.UserName == request.Email);
+            var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.Username == request.Email);
             if (existingUser != null)
             {
                 throw new UserExistsException($"A user already exists for email = {request.Email}");
@@ -355,7 +355,7 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LastAccessDate = DateTime.UtcNow,
                 LastName = request.LastName,
-                UserName = request.Email
+                Username = request.Email
             };
             var result = await _userRepository.CreateItemAsync(user);
             _eventService.Publish(EventNames.UserCreated, result);
@@ -578,7 +578,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationException("Email/UserName is either empty or invalid");
             }
 
-            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.UserName.Equals(username));
+            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.Username.Equals(username));
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
             {
@@ -643,7 +643,7 @@ namespace Synthesis.PrincipalService.Controllers
             return PromoteGuestResultCode.Failed;
         }
 
-        public async Task<PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
+        public async Task<Entity.PagingMetadata<UserResponse>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -674,7 +674,7 @@ namespace Synthesis.PrincipalService.Controllers
                     (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
                         getGuestUsersParams.SearchValue.ToLower()) ||
                     x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
-                    x != null && x.UserName.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+                    x != null && x.Username.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
             }
             if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
             {
@@ -697,7 +697,7 @@ namespace Synthesis.PrincipalService.Controllers
                         break;
 
                     case "username":
-                        orderBy = u => u.UserName;
+                        orderBy = u => u.Username;
                         break;
 
                     default:
@@ -718,7 +718,7 @@ namespace Synthesis.PrincipalService.Controllers
             var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
             var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
             var filteredUserCount = guestUsersInTenant.Count;
-            var returnMetaData = new PagingMetadata<UserResponse>
+            var returnMetaData = new Entity.PagingMetadata<UserResponse>
             {
                 CurrentCount = filteredUserCount,
                 List = _mapper.Map<List<User>, List<UserResponse>>(guestUsersInTenant),
@@ -745,9 +745,9 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if (!await IsUniqueUsername(user.Id, user.UserName))
+            if (!await IsUniqueUsername(user.Id, user.Username))
             {
-                validationErrors.Add(new ValidationFailure(nameof(user.UserName), "A user with that UserName already exists."));
+                validationErrors.Add(new ValidationFailure(nameof(user.Username), "A user with that UserName already exists."));
             }
 
             if (!await IsUniqueEmail(user.Id, user.Email))
@@ -795,9 +795,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"A User resource could not be found for id {id}");
             }
 
-            if (string.IsNullOrEmpty(user.UserName))
+            if (string.IsNullOrEmpty(user.Username))
             {
-                user.UserName = existingUser.UserName;
+                user.Username = existingUser.Username;
             }
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
@@ -1249,8 +1249,8 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var users = await _userRepository
                             .GetItemsAsync(u => userId == null || userId.Value == Guid.Empty
-                                                    ? u.UserName == username
-                                                    : u.Id != userId && u.UserName == username);
+                                                    ? u.Username == username
+                                                    : u.Id != userId && u.Username == username);
             return !users.Any();
         }
 
@@ -1272,7 +1272,7 @@ namespace Synthesis.PrincipalService.Controllers
             return !users.Any();
         }
 
-        public async Task<PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public async Task<Entity.PagingMetadata<User>> GetAccountUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
         {
             if (getUsersParams == null)
             {
@@ -1319,7 +1319,7 @@ namespace Synthesis.PrincipalService.Controllers
                                  (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
                                                                                                getUsersParams.SearchValue.ToLower()) ||
                                  x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                                 x != null && x.UserName.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
+                                 x != null && x.Username.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
             }
             if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
             {
@@ -1342,7 +1342,7 @@ namespace Synthesis.PrincipalService.Controllers
                         break;
 
                     case "username":
-                        orderBy = u => u.UserName;
+                        orderBy = u => u.Username;
                         break;
 
                     default:
@@ -1365,7 +1365,7 @@ namespace Synthesis.PrincipalService.Controllers
             var usersInAccounts = usersInAccountsResult.Items.ToList();
             var filteredUserCount = usersInAccounts.Count;
             var resultingUsers = usersInAccounts;
-            var returnMetaData = new PagingMetadata<User>
+            var returnMetaData = new Entity.PagingMetadata<User>
             {
                 CurrentCount = filteredUserCount,
                 List = resultingUsers,

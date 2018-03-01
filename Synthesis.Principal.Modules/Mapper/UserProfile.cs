@@ -3,6 +3,7 @@ using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
+using User = Synthesis.PrincipalService.InternalApi.Models.User;
 
 namespace Synthesis.PrincipalService.Mapper
 {
