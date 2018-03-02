@@ -9,12 +9,10 @@ using Synthesis.DocumentStorage;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
-using InviteUserStatus = Synthesis.PrincipalService.Responses.InviteUserStatus;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -47,12 +45,12 @@ namespace Synthesis.PrincipalService.Controllers
             _validatorLocator = validatorLocator;
         }
 
-        public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        public async Task<List<UserInvite>> CreateUserInviteListAsync(List<UserInvite> userInviteList, Guid tenantId)
         {
-            var userInviteServiceResult = new List<UserInviteResponse>();
-            var validUsers = new List<UserInviteResponse>();
-            var inValidDomainUsers = new List<UserInviteResponse>();
-            var inValidEmailFormatUsers = new List<UserInviteResponse>();
+            var userInviteServiceResult = new List<UserInvite>();
+            var validUsers = new List<UserInvite>();
+            var inValidDomainUsers = new List<UserInvite>();
+            var inValidEmailFormatUsers = new List<UserInvite>();
             var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
             if (validTenantDomains.Count == 0)
             {
@@ -60,7 +58,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();
-            var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
+            var userInviteEntityList = _mapper.Map<List<UserInvite>, List<UserInvite>>(userInviteList);
             foreach (var newUserInvite in userInviteEntityList)
             {
                 if (newUserInvite.Email == null)
@@ -112,11 +110,11 @@ namespace Synthesis.PrincipalService.Controllers
             return userInviteServiceResult;
         }
 
-        private async Task<List<UserInviteResponse>> SendUserInvites(List<UserInviteResponse> userInviteServiceResult)
+        private async Task<List<UserInvite>> SendUserInvites(List<UserInvite> userInviteServiceResult)
         {
             //Filter any duplicate users
-            List<UserInviteResponse> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
-            var emailRequest = _mapper.Map<List<UserInviteResponse>, List<UserEmailRequest>>(validUsers);
+            List<UserInvite> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
+            var emailRequest = _mapper.Map<List<UserInvite>, List<UserEmailRequest>>(validUsers);
 
             //Mail newly created users
             var userEmailResponses = await _emailApi.SendUserInvite(emailRequest);
@@ -126,17 +124,17 @@ namespace Synthesis.PrincipalService.Controllers
                 return validUsers;
             }
 
-            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInviteResponse>>(userEmailResponses);
+            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInvite>>(userEmailResponses);
             await UpdateUserInviteAsync(emailResponse);
 
             return validUsers;
         }
 
-        public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInviteList, Guid tenantId)
         {
             if (userInviteList.Count > 0)
             {
-                var userInvites = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
+                var userInvites = _mapper.Map<List<UserInvite>, List<UserInvite>>(userInviteList);
 
                 //User is exist in system or not
                 foreach (var userInvite in userInvites)
@@ -159,10 +157,10 @@ namespace Synthesis.PrincipalService.Controllers
 
                 return userInvites;
             }
-            return new List<UserInviteResponse>();
+            return new List<UserInvite>();
         }
 
-        private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
+        private async Task<List<UserInvite>> CreateUserInviteInDb(List<UserInvite> userInviteList)
         {
             var invitedEmails = userInviteList.Select(u => u.Email.ToLower());
 
@@ -184,7 +182,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             duplicateUsers.ForEach(x => x.Status = InviteUserStatus.DuplicateUserEmail);
 
-            var currentUserInvites = new List<UserInviteResponse>();
+            var currentUserInvites = new List<UserInvite>();
 
             if (validUsers.Count > 0)
             {
@@ -199,7 +197,7 @@ namespace Synthesis.PrincipalService.Controllers
                     }
                     else
                     {
-                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInviteResponse, UserInvite>(validUser));
+                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInvite, UserInvite>(validUser));
                         currentUserInvites.Add(validUser);
                     }
                 }
@@ -213,7 +211,7 @@ namespace Synthesis.PrincipalService.Controllers
             return currentUserInvites;
         }
 
-        private async Task UpdateUserInviteAsync(List<UserInviteResponse> userInvite)
+        private async Task UpdateUserInviteAsync(List<UserInvite> userInvite)
         {
             var lastInvitedDates = userInvite.ToDictionary(u => u.Email, u => u.LastInvitedDate);
 
@@ -222,7 +220,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var userInviteDb = (await _userInviteRepository.GetItemsAsync(u => u.Email == userInviteupdate.Email)).First();
                 if (lastInvitedDates[userInviteupdate.Email] != null)
                 {
-                    userInviteDb.LastInvitedDate = lastInvitedDates[userInviteupdate.Email].Value;
+                    userInviteDb.LastInvitedDate = lastInvitedDates[userInviteupdate.Email];
                 }
                 if (userInviteDb.Id != null)
                 {
@@ -232,12 +230,12 @@ namespace Synthesis.PrincipalService.Controllers
 
         }
 
-        public async Task<Entity.PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<Entity.PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
         {
             return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<Entity.PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<Entity.PagingMetadata<UserInvite>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
@@ -266,9 +264,9 @@ namespace Synthesis.PrincipalService.Controllers
                 existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
             }
 
-            var returnMetaData = new Entity.PagingMetadata<UserInviteResponse>
+            var returnMetaData = new Entity.PagingMetadata<UserInvite>
             {
-                List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
+                List = _mapper.Map<List<UserInvite>, List<UserInvite>>(existingUserInvites)
             };
             return returnMetaData;
         }

@@ -11,12 +11,12 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserProfile()
         {
-            CreateMap<CreateUserRequest, User>();
-            CreateMap<User, CreateUserRequest>();
-            CreateMap<UpdateUserRequest, User>();
-            CreateMap<User, UserResponse>();
+            CreateMap<User, User>();
+            CreateMap<User, User>();
+            CreateMap<User, User>();
+            CreateMap<User, User>();
             CreateMap<User, BasicUserResponse>();
-            CreateMap<PagingMetadata<User>, PagingMetadata<UserResponse>>();
+            CreateMap<PagingMetadata<User>, PagingMetadata<User>>();
             CreateMap<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>();
             CreateMap<User, UserEmailRequest>();
         }

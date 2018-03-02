@@ -1,9 +1,10 @@
 ﻿using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
+    public class UpdateUserRequestValidator : AbstractValidator<User>
     {
         public UpdateUserRequestValidator()
         {
@@ -20,9 +21,9 @@ namespace Synthesis.PrincipalService.Validators
                 .MaximumLength(100).WithMessage("The Email must be less than 100 characters long")
                 .EmailAddress().WithMessage("Invalid email address");
 
-            RuleFor(request => request.UserName)
-                .NotEmpty().WithMessage("The UserName property must not be empty")
-                .MaximumLength(100).WithMessage("The UserName must be less than 100 characters long")
+            RuleFor(request => request.Username)
+                .NotEmpty().WithMessage("The Username property must not be empty")
+                .MaximumLength(100).WithMessage("The Username must be less than 100 characters long")
                 .Matches(@"^[0-9a-zA-Z@\-\._]{1,100}$").WithMessage("Username may only contain alpha-numeric characters as well . @ _ -");
         }
     }

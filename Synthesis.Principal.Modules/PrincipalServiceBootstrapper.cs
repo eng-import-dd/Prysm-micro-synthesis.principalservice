@@ -289,7 +289,6 @@ namespace Synthesis.PrincipalService
             var mapper = new MapperConfiguration(cfg => {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
-                cfg.AddProfile<MachineProfile>();
                 cfg.AddProfile<UserInviteProfile>();
             }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
@@ -304,7 +303,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<GroupsController>().As<IGroupsController>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
-            builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();

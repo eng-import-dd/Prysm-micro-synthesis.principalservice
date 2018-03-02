@@ -43,19 +43,19 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, "/v1/users", CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(CreateUserRequest.Example())
-                .ResponseFormat(UserResponse.Example());
+                .RequestFormat(User.Example())
+                .ResponseFormat(User.Example());
 
-            CreateRoute("GetUsersForAccount", HttpMethod.Post, "/v1/tenant/{tenantId:guid}/users", GetUsersForAccountAsync)
+            CreateRoute("GetUsersForTenant", HttpMethod.Post, "/v1/tenant/{tenantId:guid}/users", GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Entity.PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
+                .ResponseFormat(new Entity.PagingMetadata<User> { List = new List<User> { User.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
                 .Description("Update a User resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UpdateUserRequest.Example())
-                .ResponseFormat(UserResponse.Example());
+                .RequestFormat(User.Example())
+                .ResponseFormat(User.Example());
 
             CreateRoute("GetUserNames", HttpMethod.Post, Routing.GetUserNames, GetUserNamesAsync)
                 .Description("Gets the first and last name for each of the supplied userids")
@@ -80,17 +80,17 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(CanPromoteUser.Example());
 
-            CreateRoute("GetGroupUsers", HttpMethod.Get, "/v1/groups/{id}/users", GetGroupUsersAsync)
+            CreateRoute("GetUserIdsByGroupId", HttpMethod.Get, "/v1/groups/{id}/users", GetUserIdsByGroupIdAsync)
                 .Description("Retrieves user groups by group Id")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Guid> { new Guid() });
 
-            CreateRoute("GetUserGroupsForUser", HttpMethod.Get, "/v1/users/{userId}/groups", GetUserGroupsForUserAsync)
+            CreateRoute("GetGroupIdsByUserId", HttpMethod.Get, "/v1/users/{userId}/groups", GetGroupIdsByUserIdAsync)
                 .Description("Retrieves user groups by user Id")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Guid> { new Guid() });
 
-            CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "v1/groups/{groupId}/users/{userId}", RemoveUserFromPermissionGroupAsync)
+            CreateRoute("RemoveUserFromPermissionGroup", HttpMethod.Delete, "/v1/groups/{groupId}/users/{userId}", RemoveUserFromPermissionGroupAsync)
                 .Description("Removes a specific user from the group")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(new bool());
@@ -98,7 +98,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUserById", HttpMethod.Get, "/v1/users/{id:guid}", GetUserByIdAsync)
                 .Description("Gets a User resource by UserId")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(UserResponse.Example());
+                .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersByIds", HttpMethod.Post, Routing.GetUsersByIds, GetUsersByIdsAsync)
                 .Description("Get a Principal resource by it's identifier.")
@@ -113,7 +113,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
                 .Description("Get a Principal resource by it's identifier.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(UserResponse.Example());
+                .ResponseFormat(User.Example());
 
             CreateRoute("GetUserByUserNameOrEmail", HttpMethod.Get, "/v1/user/{userName}", GetUserByUserNameOrEmailAsync)
                 .Description("Get a user object by username or email.")
@@ -128,14 +128,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetGuestUsersForTenant", HttpMethod.Get, "/v1/users/guests", GetGuestUsersForTenantAsync)
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Entity.PagingMetadata<UserResponse> { List = new List<UserResponse> { UserResponse.Example() } });
-
-            CreateRoute("ResendUserWelcomeEmail", HttpMethod.Post, "/v1/users/resendwelcomemail", ResendUserWelcomeEmailAsync)
-                .Description("Resend Welcome Email to the User")
-                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(ResendEmailRequest.Example())
-                .ResponseFormat(new bool());
-
+                .ResponseFormat(new Entity.PagingMetadata<User> { List = new List<User> { User.Example() } });
+            
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
@@ -149,7 +143,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Autoprovisions the refresh groups")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(IdpUserRequest.Example())
-                .ResponseFormat(UserResponse.Example());
+                .ResponseFormat(User.Example());
         }
 
         private async Task<object> LockUserAsync(dynamic input)
@@ -197,10 +191,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateUserRequest createUserRequest;
+            User createUserRequest;
             try
             {
-                createUserRequest = this.Bind<CreateUserRequest>();
+                createUserRequest = this.Bind<User>();
             }
             catch (Exception ex)
             {
@@ -210,7 +204,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                UserResponse userResponse;
+                User userResponse;
                 if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
                 {
                     userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
@@ -372,7 +366,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUsersForAccountAsync(dynamic input)
+        private async Task<object> GetUsersForTenantAsync(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
@@ -391,7 +385,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetUsersForAccountAsync(getUsersParams, TenantId, PrincipalId);
+                return await _userController.GetUsersForTenantAsync(getUsersParams, TenantId, PrincipalId);
             }
             catch (NotFoundException)
             {
@@ -440,52 +434,17 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> ResendUserWelcomeEmailAsync(dynamic input)
-        {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            ResendEmailRequest basicUser;
-            try
-            {
-                basicUser = this.Bind<ResendEmailRequest>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to update a User resource.", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            try
-            {
-                var result = await _userController.ResendUserWelcomeEmailAsync(basicUser.Email, basicUser.FirstName);
-                return Negotiate
-                    .WithModel(result)
-                    .WithStatusCode(HttpStatusCode.OK);
-            }
-            catch (ValidationFailedException ex)
-            {
-                Logger.Error("Error occured", ex);
-                return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Failed to send email due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorResendWelcomeMail);
-            }
-        }
-
         private async Task<object> UpdateUserAsync(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
             Guid userId;
-            UpdateUserRequest userModel;
+            User userModel;
             try
             {
                 userId = Guid.Parse(input.id);
-                userModel = this.Bind<UpdateUserRequest>();
+                userModel = this.Bind<User>();
             }
             catch (Exception ex)
             {
@@ -731,7 +690,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetGroupUsersAsync(dynamic input)
+        private async Task<object> GetUserIdsByGroupIdAsync(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
@@ -740,7 +699,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.GetGroupUsersAsync(groupId, TenantId, PrincipalId);
+                var result = await _userController.GetUserIdsByGroupIdAsync(groupId, TenantId, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -760,7 +719,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUserGroupsForUserAsync(dynamic input)
+        private async Task<object> GetGroupIdsByUserIdAsync(dynamic input)
         {
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
@@ -768,7 +727,7 @@ namespace Synthesis.PrincipalService.Modules
             Guid userId = input.userId;
             try
             {
-                var result = await _userController.GetGroupsForUserAsync(userId);
+                var result = await _userController.GetGroupIdsByUserIdAsync(userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);

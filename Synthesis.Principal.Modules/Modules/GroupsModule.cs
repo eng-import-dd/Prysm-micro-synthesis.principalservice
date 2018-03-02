@@ -115,7 +115,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (UnauthorizedAccessException)
             {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid account level access to groups!");
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid tenant level access to groups!");
             }
             catch (Exception ex)
             {

@@ -33,7 +33,6 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IValidator _updateMachineRequestValidator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
-        private readonly IMapper _mapper;
         private readonly ICloudShim _cloudShim;
 
         /// <summary>
@@ -42,14 +41,12 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="repositoryFactory">The Repository Factory </param>
         /// <param name="validatorLocator">The Validator Locator </param>
         /// <param name="loggerFactory">The Logger Factory Object </param>
-        /// <param name="mapper">The Mapper Object </param>
         /// <param name="eventService">The Event Service </param>
         /// <param name="cloudShim">The cloud api service</param>
         public MachinesController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             ILoggerFactory loggerFactory,
-            IMapper mapper,
             IEventService eventService,
             ICloudShim cloudShim)
         {
@@ -60,13 +57,12 @@ namespace Synthesis.PrincipalService.Controllers
             _updateMachineRequestValidator = validatorLocator.GetValidator(typeof(UpdateMachineRequestValidator));
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
-            _mapper = mapper;
             _cloudShim = cloudShim;
         }
 
-        public async Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId)
+        public async Task<Machine> CreateMachineAsync(Machine machine, Guid tenantId)
         {
-            var validationResult = await _createMachineRequestValidator.ValidateAsync(model);
+            var validationResult = await _createMachineRequestValidator.ValidateAsync(machine);
 
             if (!validationResult.IsValid)
             {
@@ -74,7 +70,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var machine = _mapper.Map<CreateMachineRequest, Machine>(model);
             machine.TenantId = tenantId;
             machine.DateCreated = DateTime.UtcNow;
             machine.DateModified = DateTime.UtcNow;
@@ -86,10 +81,10 @@ namespace Synthesis.PrincipalService.Controllers
 
             await _cloudShim.CopyMachineSettings(result.Id);
 
-            return _mapper.Map<Machine, MachineResponse>(result);
+            return result;
         }
 
-        public async Task<MachineResponse> GetMachineByIdAsync(Guid machineId, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> GetMachineByIdAsync(Guid machineId, Guid tenantId, bool isServiceCall)
         {
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
             if (!machineIdValidationResult.IsValid)
@@ -111,10 +106,10 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error($"Invalid operation. Machine {machineId} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
             }
-            return _mapper.Map<Machine, MachineResponse>(result);
+            return result;
         }
 
-        public async Task<MachineResponse> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
         {
             var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(machineKey));
             var machine = result.FirstOrDefault();
@@ -130,10 +125,10 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error($"Invalid operation. Machine {machineKey} does not belong to tenant {tenantId}.");
                 throw new InvalidOperationException();
             }
-            return _mapper.Map<Machine, MachineResponse>(machine);
+            return machine;
         }
 
-        public async Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> UpdateMachineAsync(Machine model, Guid tenantId, bool isServiceCall)
         {
             var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
 
@@ -145,7 +140,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             try
             {
-                var machine = _mapper.Map<UpdateMachineRequest, Machine>(model);
+                var machine = model;
                 return await UpdateMachineInDb(machine, tenantId, isServiceCall);
             }
             catch (DocumentNotFoundException ex)
@@ -185,7 +180,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<MachineResponse> UpdateMachineInDb(Machine machine, Guid tenantId, bool isServiceCall)
+        private async Task<Machine> UpdateMachineInDb(Machine machine, Guid tenantId, bool isServiceCall)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -242,7 +237,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw;
             }
 
-            return _mapper.Map<Machine, MachineResponse>(existingMachine);
+            return existingMachine;
         }
 
         public async Task DeleteMachineAsync(Guid machineId, Guid tenantId)
@@ -272,19 +267,19 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<MachineResponse> ChangeMachineAccountAsync(Guid machineId, Guid tenantId, Guid settingProfileId)
+        public async Task<Machine> ChangeMachineTenantasync(Guid machineId, Guid tenantId, Guid settingProfileId)
         {
             var existingMachine = await _machineRepository.GetItemAsync(machineId);
 
             if (settingProfileId == Guid.Empty)
             {
-                _logger.Error("An error occurred changing the account. settingProfileId must not be null or empty");
+                _logger.Error("An error occurred changing the tenant. settingProfileId must not be null or empty");
                 throw new BadRequestException("Setting Profile Id cannot be null");
             }
 
             if (existingMachine == null)
             {
-                _logger.Error($"An error occurred changing the account. Machine {machineId} was not found.");
+                _logger.Error($"An error occurred changing the tenant. Machine {machineId} was not found.");
                 throw new NotFoundException($"No Machine with id {machineId} was found.");
             }
 
@@ -306,10 +301,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw;
             }
 
-            return _mapper.Map<Machine, MachineResponse>(existingMachine);
+            return existingMachine;
         }
 
-        public async Task<List<MachineResponse>> GetTenantMachinesAsync(Guid tenantId)
+        public async Task<List<Machine>> GetTenantMachinesAsync(Guid tenantId)
         {
             var tenantIdValidationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!tenantIdValidationResult.IsValid)
@@ -326,13 +321,13 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"Machine resources could not be found for id {tenantId}");
             }
 
-            return _mapper.Map<List<Machine>, List<MachineResponse>>(result.ToList());
+            return result.ToList();
         }
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
-            var accountMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
-            return accountMachines.Any() == false;
+            var tenantMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
+            return tenantMachines.Any() == false;
         }
 
         private async Task<bool> IsUniqueMachineKey(Machine machine)

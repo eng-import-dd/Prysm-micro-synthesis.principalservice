@@ -237,6 +237,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
@@ -343,7 +344,6 @@
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
-    <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
@@ -355,29 +355,17 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Requests\CreateMachineRequest.cs" />
     <Compile Include="Requests\CreateUserGroupRequest.cs" />
-    <Compile Include="Requests\CreateUserRequest.cs" />
     <Compile Include="Requests\IdpUserRequest.cs" />
     <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
     <Compile Include="Requests\PromoteGuestRequest.cs" />
-    <Compile Include="Requests\ResendEmailRequest.cs" />
-    <Compile Include="Requests\UpdateMachineRequest.cs" />
-    <Compile Include="Requests\UpdateUserRequest.cs" />
     <Compile Include="Requests\UserEmailRequest.cs" />
-    <Compile Include="Requests\UserInviteRequest.cs" />
     <Compile Include="Responses\BasicUserResponse.cs" />
     <Compile Include="Responses\GuestCreationResponse.cs" />
-    <Compile Include="Responses\InviteUserStatus.cs" />
-    <Compile Include="Responses\MachineResponse.cs" />
     <Compile Include="Responses\PromoteGuestResponse.cs" />
     <Compile Include="Responses\UserEmailResponse.cs" />
-    <Compile Include="Responses\UserInviteResponse.cs" />
-    <Compile Include="Responses\UserResponse.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
-    <Compile Include="Utilities\IPasswordUtility.cs" />
-    <Compile Include="Utilities\PasswordUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />

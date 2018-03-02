@@ -17,6 +17,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Entity;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
+using UserInvite = Synthesis.PrincipalService.InternalApi.Models.UserInvite;
 
 namespace Synthesis.PrincipalService.Modules
 {
@@ -38,19 +39,19 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUserInviteListForAccount", HttpMethod.Post, "/v1/userinvites", _ => CreateUserInviteListForTenantAsync())
                 .Description("Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(UserInviteRequest.Example())
-                .ResponseFormat(new List<UserInviteResponse>{ new UserInviteResponse() });
+                .RequestFormat(UserInvite.Example())
+                .ResponseFormat(new List<UserInvite>{ new UserInvite() });
 
             CreateRoute("ResendEmailInvitation", HttpMethod.Post, "/v1/userinvites/resend", _ => ResendEmailInvitationAsync())
                 .Description("Resend Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new List<UserInviteRequest> { UserInviteRequest.Example() })
-                .ResponseFormat(new List<UserInviteResponse> { UserInviteResponse.Example() });
+                .RequestFormat(new List<UserInvite> { UserInvite.Example() })
+                .ResponseFormat(new List<UserInvite> { UserInvite.Example() });
 
-            CreateRoute("GetdUsersInviteForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
+            CreateRoute("GetUsersInviteForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
                 .Description("Gets all invited users for Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new PagingMetadata<UserInviteResponse> { List = new List<UserInviteResponse> { UserInviteResponse.Example() } });
+                .ResponseFormat(new PagingMetadata<UserInvite> { List = new List<UserInvite> { UserInvite.Example() } });
         }
 
         private async Task<object> CreateUserInviteListForTenantAsync()
@@ -59,10 +60,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            List<UserInviteRequest> invitedUsersList;
+            List<UserInvite> invitedUsersList;
             try
             {
-                invitedUsersList = this.Bind<List<UserInviteRequest>>();
+                invitedUsersList = this.Bind<List<UserInvite>>();
             }
             catch (Exception ex)
             {
@@ -95,10 +96,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            List<UserInviteRequest> invitedUsersList;
+            List<UserInvite> invitedUsersList;
             try
             {
-                invitedUsersList = this.Bind<List<UserInviteRequest>>();
+                invitedUsersList = this.Bind<List<UserInvite>>();
             }
             catch (Exception ex)
             {

@@ -40,7 +40,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Create a new machine resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(Machine.Example())
-                .ResponseFormat(MachineResponse.Example());
+                .ResponseFormat(Machine.Example());
 
             CreateRoute("GetMachineById", HttpMethod.Get, "/v1/machines/{id:guid}", GetMachineByIdAsync)
                 .Description("Gets a machine by its unique identifier")
@@ -55,23 +55,23 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("UpdateMachine", HttpMethod.Put, "/v1/machines/{id:guid}", UpdateMachineAsync)
                 .Description("Update a Principal resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UpdateMachineRequest.Example())
-                .ResponseFormat(MachineResponse.Example());
+                .RequestFormat(Machine.Example())
+                .ResponseFormat(Machine.Example());
 
             CreateRoute("DeleteMachine", HttpMethod.Delete, "/v1/machines/{id:guid}", DeleteMachineAsync)
                 .Description("Deletes a machine")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("ChangeMachineAccount", HttpMethod.Put, "/v1/machines/{id:guid}/changeaccount", ChangeMachineAccountAsync)
-                .Description("Changes a machine's account")
+            CreateRoute("ChangeMachineTenant", HttpMethod.Put, "/v1/machines/{id:guid}/changetenant", ChangeMachineTenantAsync)
+                .Description("Changes a machine's tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UpdateMachineRequest.Example())
-                .ResponseFormat(MachineResponse.Example());
+                .RequestFormat(Machine.Example())
+                .ResponseFormat(Machine.Example());
 
             CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/tenantmachines", GetTenantMachinesAsync)
                 .Description("Retrieves a list of machines for a given tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new List<MachineResponse> { MachineResponse.Example() });
+                .ResponseFormat(new List<Machine> { Machine.Example() });
         }
 
         private async Task<object> CreateMachineAsync(dynamic input)
@@ -80,10 +80,10 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateMachineRequest newMachine;
+            Machine newMachine;
             try
             {
-                newMachine = this.Bind<CreateMachineRequest>();
+                newMachine = this.Bind<Machine>();
             }
             catch (Exception ex)
             {
@@ -172,11 +172,11 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            UpdateMachineRequest updateMachine;
+            Machine updateMachine;
 
             try
             {
-                updateMachine = this.Bind<UpdateMachineRequest>();
+                updateMachine = this.Bind<Machine>();
             }
             catch (Exception ex)
             {
@@ -240,16 +240,16 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> ChangeMachineAccountAsync(dynamic input)
+        private async Task<object> ChangeMachineTenantAsync(dynamic input)
         {
             await RequiresAccess()
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            UpdateMachineRequest updateMachine;
+            Machine updateMachine;
             try
             {
-                updateMachine = this.Bind<UpdateMachineRequest>();
+                updateMachine = this.Bind<Machine>();
             }
             catch (Exception ex)
             {
@@ -259,7 +259,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _machineController.ChangeMachineAccountAsync(updateMachine.Id, TenantId, updateMachine.SettingProfileId);
+                return await _machineController.ChangeMachineTenantasync(updateMachine.Id, TenantId, updateMachine.SettingProfileId.Value);
             }
             catch (ValidationFailedException ex)
             {
@@ -271,7 +271,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (InvalidOperationException)
             {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "ChangeMachineAccount: Not authorized.");
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "ChangeMachineTenant: Not authorized.");
             }
             catch (Exception ex)
             {
