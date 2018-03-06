@@ -231,7 +231,7 @@
       <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta003\lib\net452\Synthesis.Owin.Security.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Policy.1.0.0-beta004\lib\net452\Synthesis.Policy.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PolicyEvaluator, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.1.0.0-beta008\lib\net452\Synthesis.PolicyEvaluator.dll</HintPath>
