@@ -8,8 +8,8 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserProfile()
         {
-            CreateMap<User, BasicUserResponse>();
-            CreateMap<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>();
+            CreateMap<User, BasicUser>();
+            CreateMap<PagingMetadata<User>, PagingMetadata<BasicUser>>();
             CreateMap<User, UserEmailRequest>();
         }
     }

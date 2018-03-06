@@ -46,7 +46,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(User.Example())
                 .ResponseFormat(User.Example());
 
-            CreateRoute("GetUsersForTenant", HttpMethod.Post, "/v1/tenant/{tenantId:guid}/users", GetUsersForTenantAsync)
+            CreateRoute("GetUsersForTenant", HttpMethod.Get, "/v1/users", GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
@@ -108,7 +108,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUsersBasic", HttpMethod.Get, "/v1/users/basic", GetUsersBasicAsync)
                 .Description("Retrieves a users basic details")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse> { BasicUserResponse.Example() } });
+                .ResponseFormat(new PagingMetadata<BasicUser> { List = new List<BasicUser> { BasicUser.Example() } });
 
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
                 .Description("Get a Principal resource by it's identifier.")

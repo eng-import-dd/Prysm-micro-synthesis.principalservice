@@ -10,6 +10,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.Http.Microservice;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
@@ -156,7 +157,7 @@ namespace Synthesis.PrincipalService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -172,7 +173,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"Users resource could not be found for input data.");
             }
 
-            var basicUserResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUserResponse>>(userListResult);
+            var basicUserResponse = _mapper.Map<PagingMetadata<User>, PagingMetadata<BasicUser>>(userListResult);
             return basicUserResponse;
         }
 
@@ -196,7 +197,13 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            var usersInTenant = await _userRepository.GetItemsAsync(u => getUsersParams.UserIds.Contains(u.Id??Guid.Empty));
+            var tenantUsers = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (!tenantUsers.IsSuccess())
+            {
+                throw new Exception("Unable to find users for the tenant id");
+            }
+
+            var usersInTenant = await _userRepository.GetItemsAsync(u => tenantUsers.Payload.Contains(u.Id??Guid.Empty));
             if (!usersInTenant.Any())
             {
                 _logger.Error("Users for the tenant could not be found");
@@ -1247,11 +1254,18 @@ namespace Synthesis.PrincipalService.Controllers
             }
             var criteria = new List<Expression<Func<User, bool>>>();
             Expression<Func<User, string>> orderBy;
-            criteria.Add(u => getUsersParams.UserIds.Contains(u.Id??Guid.Empty));
+
+            var tenantUsers = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (!tenantUsers.IsSuccess())
+            {
+                throw new Exception("Unable to find users for the tenant id");
+            }
+
+            criteria.Add(u => tenantUsers.Payload.Contains(u.Id??Guid.Empty));
 
             if (getUsersParams.OnlyCurrentUser)
             {
-                criteria.Add(u => getUsersParams.UserIds.Contains(currentUserId??Guid.Empty));
+                criteria.Add(u => tenantUsers.Payload.Contains(currentUserId??Guid.Empty));
             }
 
             if (!getUsersParams.IncludeInactive)
