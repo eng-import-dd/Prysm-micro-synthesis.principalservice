@@ -13,6 +13,7 @@ using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -26,6 +27,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantApi _tenantApi;
         private readonly IEmailApi _emailApi;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly ITenantDomainApi _tenantDomainApi;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
@@ -33,6 +35,7 @@ namespace Synthesis.PrincipalService.Controllers
             IMapper mapper,
             IValidatorLocator validatorLocator,
             ITenantApi tenantApi,
+            ITenantDomainApi tenantDomainApi,
             IEmailApi emailApi)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
@@ -41,6 +44,7 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _tenantApi = tenantApi;
+            _tenantDomainApi = tenantDomainApi;
             _emailApi = emailApi;
             _validatorLocator = validatorLocator;
         }
@@ -51,15 +55,14 @@ namespace Synthesis.PrincipalService.Controllers
             var validUsers = new List<UserInvite>();
             var inValidDomainUsers = new List<UserInvite>();
             var inValidEmailFormatUsers = new List<UserInvite>();
-            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
-            if (validTenantDomains.Count == 0)
+            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantDomainApi, tenantId);
+            if (!validTenantDomains.Any())
             {
                 throw new Exception("Couldn't fetch tenant domains");
             }
 
             var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();
-            var userInviteEntityList = _mapper.Map<List<UserInvite>, List<UserInvite>>(userInviteList);
-            foreach (var newUserInvite in userInviteEntityList)
+            foreach (var newUserInvite in userInviteList)
             {
                 if (newUserInvite.Email == null)
                 {
@@ -130,11 +133,10 @@ namespace Synthesis.PrincipalService.Controllers
             return validUsers;
         }
 
-        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInviteList, Guid tenantId)
+        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInvites, Guid tenantId)
         {
-            if (userInviteList.Count > 0)
+            if (userInvites.Count > 0)
             {
-                var userInvites = _mapper.Map<List<UserInvite>, List<UserInvite>>(userInviteList);
 
                 //User is exist in system or not
                 foreach (var userInvite in userInvites)
@@ -197,7 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                     }
                     else
                     {
-                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInvite, UserInvite>(validUser));
+                        await _userInviteRepository.CreateItemAsync(validUser);
                         currentUserInvites.Add(validUser);
                     }
                 }
@@ -230,12 +232,12 @@ namespace Synthesis.PrincipalService.Controllers
 
         }
 
-        public async Task<Entity.PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
         {
             return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<Entity.PagingMetadata<UserInvite>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
@@ -255,8 +257,8 @@ namespace Synthesis.PrincipalService.Controllers
                 foreach (var batch in invitedEmails.Batch(150))
                 {
                     var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-                    var userIds = result.Payload;
-                    var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id) && batch.Contains(u.Email));
+                    var userIds = result.Payload.ToList();
+                    var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email));
                     tenantUsersList.AddRange(tenantUsers);
                 }
 
@@ -264,9 +266,9 @@ namespace Synthesis.PrincipalService.Controllers
                 existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
             }
 
-            var returnMetaData = new Entity.PagingMetadata<UserInvite>
+            var returnMetaData = new PagingMetadata<UserInvite>
             {
-                List = _mapper.Map<List<UserInvite>, List<UserInvite>>(existingUserInvites)
+                List = existingUserInvites
             };
             return returnMetaData;
         }

@@ -47,7 +47,7 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("GetMachineByKey", HttpMethod.Get, "/v1/machines/machinekey/{machinekey}", GetMachineByKeyAsync)
+            CreateRoute("GetMachineByKey", HttpMethod.Get, "/v1/machines?machinekey={machinekey}", GetMachineByKeyAsync)
                 .Description("Get a machine by machine key")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Machine.Example());
@@ -68,8 +68,8 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(Machine.Example())
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/tenantmachines", GetTenantMachinesAsync)
-                .Description("Retrieves a list of machines for a given tenant")
+            CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/machines", GetTenantMachinesAsync)
+                .Description("Retrieves a list of machines for the tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Machine> { Machine.Example() });
         }
@@ -275,7 +275,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Unhandled exception encountered while attempting to Change Machine account", ex);
+                Logger.Error("Unhandled exception encountered while attempting to Change Machine tenant", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
             }
         }

@@ -1,11 +1,12 @@
 ﻿using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public class CreateUserGroupRequestValidator : AbstractValidator<CreateUserGroupRequest>
+    public class UserGroupValidator : AbstractValidator<UserGroup>
     {
-        public CreateUserGroupRequestValidator()
+        public UserGroupValidator()
         {
             RuleFor(request => request.UserId)
                 .NotEmpty().WithMessage("User Id must not be empty.");

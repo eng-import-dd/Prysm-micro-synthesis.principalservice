@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.InternalApi.Models;
 using UserInvite = Synthesis.PrincipalService.InternalApi.Models.UserInvite;
 
 namespace Synthesis.PrincipalService.Controllers

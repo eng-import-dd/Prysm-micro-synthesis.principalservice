@@ -269,7 +269,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -286,7 +286,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -320,7 +320,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -332,7 +332,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid().ToString();
-            var response = await UserTokenBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
@@ -349,7 +349,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid();
-            var response = await UnauthenticatedBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UnauthenticatedBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                     with =>
                                                     {
                                                         with.HttpRequest();
@@ -366,7 +366,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Throws(new Exception());
 
             var validMachineKey = Guid.NewGuid();
-            var response = await UserTokenBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                   with =>
                                                   {
                                                       with.HttpRequest();

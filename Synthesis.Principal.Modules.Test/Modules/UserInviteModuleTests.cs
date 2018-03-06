@@ -4,10 +4,7 @@ using System.Threading.Tasks;
 using Moq;
 using Nancy;
 using Synthesis.PrincipalService.Controllers;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Modules;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 using UserInvite = Synthesis.PrincipalService.InternalApi.Models.UserInvite;
 

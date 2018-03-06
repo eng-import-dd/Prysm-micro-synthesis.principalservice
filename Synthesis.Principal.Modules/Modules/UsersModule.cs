@@ -49,7 +49,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUsersForTenant", HttpMethod.Post, "/v1/tenant/{tenantId:guid}/users", GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Entity.PagingMetadata<User> { List = new List<User> { User.Example() } });
+                .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
                 .Description("Update a User resource")
@@ -72,7 +72,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUserGroup", HttpMethod.Post, "/v1/usergroups", CreateUserGroupAsync)
                 .Description("Creates a User Group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(CreateUserGroupRequest.Example())
+                .RequestFormat(UserGroup.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, "/v1/users/canpromoteuser/{0}", CanPromoteUserAsync)
@@ -108,7 +108,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUsersBasic", HttpMethod.Get, "/v1/users/basic", GetUsersBasicAsync)
                 .Description("Retrieves a users basic details")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Entity.PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse> { BasicUserResponse.Example() } });
+                .ResponseFormat(new PagingMetadata<BasicUserResponse> { List = new List<BasicUserResponse> { BasicUserResponse.Example() } });
 
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
                 .Description("Get a Principal resource by it's identifier.")
@@ -120,7 +120,7 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(User.Example());
 
-            CreateRoute("GetLicenseTypeForUser", HttpMethod.Get, "/v1/users/{userId}/license-types", GetLicenseTypeForUserAsync)
+            CreateRoute("GetLicenseTypeForUser", HttpMethod.Get, "/v1/users/{userId}/licensetypes", GetLicenseTypeForUserAsync)
                 .Description("Retrieves license type for User")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(LicenseType.Default);
@@ -128,13 +128,13 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetGuestUsersForTenant", HttpMethod.Get, "/v1/users/guests", GetGuestUsersForTenantAsync)
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .ResponseFormat(new Entity.PagingMetadata<User> { List = new List<User> { User.Example() } });
+                .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
             
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userIdzzz}/promote", PromoteGuestAsync)
+            CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userId}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(PromoteGuestRequest.Example());
@@ -546,10 +546,9 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.PromoteGuestUserAsync(promoteRequest.UserId, TenantId, promoteRequest.LicenseType);
+                await _userController.PromoteGuestUserAsync(promoteRequest.UserId, TenantId, promoteRequest.LicenseType);
 
                 return Negotiate
-                    .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
@@ -656,11 +655,11 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            CreateUserGroupRequest newUserGroupRequest;
+            UserGroup newUserGroupRequest;
 
             try
             {
-                newUserGroupRequest = this.Bind<CreateUserGroupRequest>();
+                newUserGroupRequest = this.Bind<UserGroup>();
             }
             catch (Exception ex)
             {

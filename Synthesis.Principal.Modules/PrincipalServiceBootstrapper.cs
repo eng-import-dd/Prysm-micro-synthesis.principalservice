@@ -45,6 +45,7 @@ using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
@@ -289,7 +290,6 @@ namespace Synthesis.PrincipalService
             var mapper = new MapperConfiguration(cfg => {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
-                cfg.AddProfile<UserInviteProfile>();
             }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -304,6 +304,7 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+            builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
         }

@@ -202,7 +202,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
-            var response = await UserTokenBrowser.Get("/v1/groups/tenant", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/groups", BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -214,7 +214,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(Enumerable.Empty<Group>()));
 
-            var response = await UserTokenBrowser.Get("/v1/groups/tenant", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/groups", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }

@@ -2,6 +2,7 @@
 
 namespace Synthesis.PrincipalService.Responses
 {
+    //Todo : Remove this class while integrating with email internal api
     public class UserEmailResponse
     {
         public string Email { get; set; }

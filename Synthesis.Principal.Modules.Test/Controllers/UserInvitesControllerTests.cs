@@ -20,6 +20,8 @@ using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.TenantService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
@@ -61,6 +63,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 mapper,
                 _validatorLocatorMock.Object,
                 _tenantApiMock.Object,
+                _tenantDomainApiMock.Object,
                 _emailApiMock.Object);
         }
 
@@ -73,6 +76,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
+        private readonly Mock<ITenantDomainApi> _tenantDomainApiMock = new Mock<ITenantDomainApi>();
         private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
@@ -92,8 +96,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
 
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -116,8 +120,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -130,8 +134,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var createUserInviteRequest = new List<UserInvite>();
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@test.com" });
             var tenantId = Guid.NewGuid();
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -144,8 +148,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var createUserInviteRequest = new List<UserInvite>();
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@gmail.com" });
             var tenantId = Guid.NewGuid();
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "gmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "gmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -161,8 +165,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var createUserInviteRequest = new List<UserInvite>();
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc.com" });
             var tenantId = Guid.NewGuid();
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "gmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "gmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             Assert.NotNull(userInvite);
@@ -184,8 +188,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var createUserInviteRequest = new List<UserInvite>();
             createUserInviteRequest.Add(new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
             var tenantId = Guid.NewGuid();
-            _tenantApiMock.Setup(m => m.GetTenantDomainAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
-            _tenantApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "yopmail.com" }));
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
             _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>()));

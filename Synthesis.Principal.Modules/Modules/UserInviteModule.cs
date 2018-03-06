@@ -14,9 +14,7 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Controllers;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.InternalApi.Models;
 using UserInvite = Synthesis.PrincipalService.InternalApi.Models.UserInvite;
 
 namespace Synthesis.PrincipalService.Modules
@@ -36,7 +34,7 @@ namespace Synthesis.PrincipalService.Modules
 
             this.RequiresAuthentication();
 
-            CreateRoute("CreateUserInviteListForAccount", HttpMethod.Post, "/v1/userinvites", _ => CreateUserInviteListForTenantAsync())
+            CreateRoute("CreateUserInviteListForTenant", HttpMethod.Post, "/v1/userinvites", _ => CreateUserInviteListForTenantAsync())
                 .Description("Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(UserInvite.Example())

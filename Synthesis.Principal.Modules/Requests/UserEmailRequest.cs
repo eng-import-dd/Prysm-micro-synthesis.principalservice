@@ -1,5 +1,6 @@
 ﻿namespace Synthesis.PrincipalService.Requests
 {
+    //Todo : Remove this class while integrating with email internal api
     public class UserEmailRequest
     {
         public string Email { get; set; }

@@ -1,9 +1,9 @@
-﻿using Synthesis.PrincipalService.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Models
 {
+    //Todo : Remove this class while integrating with email internal api
     public class LockUserRequest
     {
         public List<UserEmailRequest> OrgAdmins { get; set; }

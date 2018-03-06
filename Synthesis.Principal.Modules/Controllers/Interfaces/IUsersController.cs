@@ -17,23 +17,23 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task DeleteUserAsync(Guid userId);
 
-        Task<PromoteGuestResponse> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false);
+        Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false);
 
-        Task<Entity.PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
+        Task<PagingMetadata<BasicUserResponse>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams);
 
-        Task<Entity.PagingMetadata<User>> GetUsersForTenantAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
+        Task<PagingMetadata<User>> GetUsersForTenantAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId);
 
         Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds);
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, bool isLocked);
 
-        Task<User> CreateUserGroupAsync(CreateUserGroupRequest model, Guid tenantId, Guid userId);
+        Task<User> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId);
 
         Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId);
 
         Task<List<Guid>> GetGroupIdsByUserIdAsync(Guid userId);
 
-        Task<Entity.PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
+        Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams);
 
         Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy);
 

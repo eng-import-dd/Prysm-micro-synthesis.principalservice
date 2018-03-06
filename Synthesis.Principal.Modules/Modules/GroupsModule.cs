@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
 
-            CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups/tenant", GetGroupsForTenantAsync)
+            CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups", GetGroupsForTenantAsync)
                 .Description("Get Group for a tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
