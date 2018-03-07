@@ -38,12 +38,14 @@ using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
+using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Events;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
-using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.PrincipalService.Utilities;
+using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
@@ -100,7 +102,7 @@ namespace Synthesis.PrincipalService
                 {
                     var serializer = new JsonSerializer
                     {
-                        ContractResolver = new SynthesisModelContractResolver(),
+                        ContractResolver = new ApiModelContractResolver(),
                         Formatting = Formatting.None
                     };
                     return serializer;
@@ -288,8 +290,6 @@ namespace Synthesis.PrincipalService
             var mapper = new MapperConfiguration(cfg => {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
-                cfg.AddProfile<MachineProfile>();
-                cfg.AddProfile<UserInviteProfile>();
             }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
@@ -303,8 +303,8 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<GroupsController>().As<IGroupsController>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
-            builder.RegisterType<PasswordUtility>().As<IPasswordUtility>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
+            builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
         }
@@ -361,6 +361,11 @@ namespace Synthesis.PrincipalService
 
         private static void RegisterEvents(ContainerBuilder builder)
         {
+            builder
+                .RegisterType<EventSubscriber>()
+                .AsSelf()
+                .AutoActivate();
+
             // Event Service registration.
             builder.RegisterType<EventServiceFactory>()
                 .WithParameter(new ResolvedParameter(

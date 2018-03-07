@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3DBB0D31-0A8F-11E8-A39B-0F5BDC1289A0}</ProjectGuid>
+    <ProjectGuid>{03F2CB11-1D2C-11E8-8334-D906597EAF7D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Synthesis.PrincipalService</RootNamespace>
@@ -166,9 +166,6 @@
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleCrypto, Version=26.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleCrypto.0.3.30.26\lib\SimpleCrypto.dll</HintPath>
-    </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.4.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.4\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
@@ -207,7 +204,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta009\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -219,7 +216,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta030\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta032\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -239,14 +236,20 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.4\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta002\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Avro, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta002\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta001\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
@@ -317,44 +320,31 @@
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Constants\RouteNames.cs" />
     <Compile Include="Constants\Routing.cs" />
-    <Compile Include="Controllers\EmailApi.cs" />
     <Compile Include="Controllers\CloudShim.cs" />
+    <Compile Include="Controllers\EmailApi.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseAssignmentFailedException.cs" />
     <Compile Include="Controllers\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
-    <Compile Include="Controllers\Interfaces\IEmailApi.cs" />
     <Compile Include="Controllers\Interfaces\ICloudShim.cs" />
+    <Compile Include="Controllers\Interfaces\IEmailApi.cs" />
     <Compile Include="Controllers\Interfaces\IGroupsController.cs" />
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
-    <Compile Include="Controllers\Interfaces\ITenantApi.cs" />
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
-    <Compile Include="Controllers\TenantApi.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
     <Compile Include="Controllers\UsersController.cs" />
-    <Compile Include="Entity\PagingMetaData.cs" />
-    <Compile Include="Entity\ServerSidePagingParams.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
+    <Compile Include="Events\EventSubscriber.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
     <Compile Include="Exceptions\UserNotInvitedException.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
-    <Compile Include="Mapper\MachineProfile.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
-    <Compile Include="Models\UserNames.cs" />
-    <Compile Include="Requests\LockUserRequest.cs" />
-    <Compile Include="Responses\UserEmailResponse.cs" />
-    <Compile Include="Models\Group.cs" />
-    <Compile Include="Models\Machine.cs" />
-    <Compile Include="Models\TenantDomain.cs" />
-    <Compile Include="Models\User.cs" />
-    <Compile Include="Requests\UserEmailRequest.cs" />
-    <Compile Include="Models\UserInvite.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />
     <Compile Include="Modules\PrincipalServiceHealthModule.cs" />
@@ -363,28 +353,11 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Requests\CreateMachineRequest.cs" />
-    <Compile Include="Requests\CreateUserGroupRequest.cs" />
-    <Compile Include="Requests\CreateUserRequest.cs" />
-    <Compile Include="Requests\GetUserParams.cs" />
-    <Compile Include="Requests\IdpUserRequest.cs" />
+    <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
-    <Compile Include="Requests\PromoteGuestRequest.cs" />
-    <Compile Include="Requests\ResendEmailRequest.cs" />
-    <Compile Include="Requests\UpdateMachineRequest.cs" />
-    <Compile Include="Requests\UpdateUserRequest.cs" />
-    <Compile Include="Requests\UserInviteRequest.cs" />
-    <Compile Include="Responses\BasicUserResponse.cs" />
-    <Compile Include="Responses\CanPromoteUserResponse.cs" />
-    <Compile Include="Responses\GuestCreationResponse.cs" />
-    <Compile Include="Responses\InviteUserStatus.cs" />
-    <Compile Include="Responses\MachineResponse.cs" />
-    <Compile Include="Responses\PromoteGuestResponse.cs" />
-    <Compile Include="Responses\UserInviteResponse.cs" />
-    <Compile Include="Responses\UserResponse.cs" />
+    <Compile Include="Requests\UserEmailRequest.cs" />
+    <Compile Include="Responses\UserEmailResponse.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
-    <Compile Include="Utilities\IPasswordUtility.cs" />
-    <Compile Include="Utilities\PasswordUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
@@ -395,7 +368,6 @@
     <Compile Include="Validators\GroupIdValidator.cs" />
     <Compile Include="Validators\GroupValidator.cs" />
     <Compile Include="Validators\GuestCreationRequestValidator.cs" />
-    <Compile Include="Validators\GuidValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\NameValidator.cs" />
     <Compile Include="Validators\PasswordResetEmailRequestValidator.cs" />
@@ -408,6 +380,7 @@
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
     <Compile Include="Validators\UserNameValidator.cs" />
+    <Compile Include="Validators\GuidValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -424,6 +397,9 @@
     <Content Include="librdkafka\x86\librdkafkacpp.dll" />
     <Content Include="librdkafka\x86\msvcr120.dll" />
     <Content Include="librdkafka\x86\zlib.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="EventHandlers\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">

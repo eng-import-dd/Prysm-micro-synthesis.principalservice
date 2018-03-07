@@ -13,6 +13,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -43,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
 
-            CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups/tenant", GetGroupsForTenantAsync)
+            CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups", GetGroupsForTenantAsync)
                 .Description("Get Group for a tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
@@ -114,7 +115,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (UnauthorizedAccessException)
             {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid account level access to groups!");
+                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetGroupById: No valid tenant level access to groups!");
             }
             catch (Exception ex)
             {

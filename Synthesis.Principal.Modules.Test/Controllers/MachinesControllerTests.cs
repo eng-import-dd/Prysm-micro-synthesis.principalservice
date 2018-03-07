@@ -17,6 +17,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
@@ -48,13 +49,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(_loggerMock.Object);
 
-            // Mapper Mock
-            var mapper = new MapperConfiguration(cfg => { cfg.AddProfile<MachineProfile>(); }).CreateMapper();
-
             _controller = new MachinesController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
                 loggerFactoryMock.Object,
-                mapper,
                 _eventServiceMock.Object,
                 _cloudShimMock.Object
             );
@@ -70,18 +67,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly MachinesController _controller;
 
         [Fact]
-        public async Task ChangeMachineAccountAsyncNotFoundException()
+        public async Task ChangeMachineTenantAsyncNotFoundException()
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync((Machine)null);
             var tenantId = Guid.NewGuid();
             var machineId = Guid.NewGuid();
             var settingProfileId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<NotFoundException>(() => _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId));
+            var ex = await Assert.ThrowsAsync<NotFoundException>(() => _controller.ChangeMachineTenantasync(machineId, tenantId, settingProfileId));
             Assert.IsType<NotFoundException>(ex);
         }
 
         [Fact]
-        public async Task ChangeMachineAccountAsyncReturnsNewMachineIfSuccessful()
+        public async Task ChangeMachineTenantAsyncReturnsNewMachineIfSuccessful()
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             _cloudShimMock.Setup(m => m.ValidateSettingProfileId(It.IsAny<Guid>(), It.IsAny<Guid>()))
@@ -89,18 +86,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             var machineId = Guid.NewGuid();
             var settingProfileId = Guid.NewGuid();
-            var result = await _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId);
+            var result = await _controller.ChangeMachineTenantasync(machineId, tenantId, settingProfileId);
             Assert.NotNull(result);
         }
 
         [Fact]
-        public async Task ChangeMachineAccountAsyncThrowsbadRequestException()
+        public async Task ChangeMachineTenantAsyncThrowsbadRequestException()
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             var tenantId = Guid.NewGuid();
             var machineId = Guid.NewGuid();
             var settingProfileId = Guid.Empty;
-            var ex = await Assert.ThrowsAsync<BadRequestException>(() => _controller.ChangeMachineAccountAsync(machineId, tenantId, settingProfileId));
+            var ex = await Assert.ThrowsAsync<BadRequestException>(() => _controller.ChangeMachineTenantasync(machineId, tenantId, settingProfileId));
             Assert.IsType<BadRequestException>(ex);
         }
 
@@ -108,7 +105,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateMachineAsyncReturnsNewMachineIfSuccessful()
         {
             _machineRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Machine>())).Returns(Task.FromResult(new Machine()));
-            var newMachine = new CreateMachineRequest();
+            var newMachine = new Machine();
             var tenantId = Guid.NewGuid();
             var result = await _controller.CreateMachineAsync(newMachine, tenantId);
             Assert.NotNull(result);
@@ -118,7 +115,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateMachineAsyncThrowsValidationExceptionIfLocationIsDuplicate()
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
-            var newMachineRequest = new CreateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
+            var newMachineRequest = new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEmpty(ex.Errors.ToList());
@@ -128,7 +125,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateMachineAsyncThrowsValidationExceptionIfMachineKeyIsDuplicate()
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
-            var newMachineRequest = new CreateMachineRequest { MachineKey = "machinekey" };
+            var newMachineRequest = new Machine { MachineKey = "machinekey" };
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
             Assert.NotEmpty(ex.Errors.ToList());
@@ -179,7 +176,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
             var result = await _controller.GetMachineByIdAsync(machineId, tenantId,false);
 
-            Assert.IsType<MachineResponse>(result);
+            Assert.IsType<Machine>(result);
         }
 
         [Fact]
@@ -227,7 +224,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var result = await _controller.GetTenantMachinesAsync(It.IsAny<Guid>());
 
-            Assert.IsType<List<MachineResponse>>(result);
+            Assert.IsType<List<Machine>>(result);
         }
 
         [Trait("Tenant Machines", "Tenant Machines")]
@@ -260,7 +257,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
             var result = await _controller.GetMachineByKeyAsync(machineKey, tenantId, false);
 
-            Assert.IsType<MachineResponse>(result);
+            Assert.IsType<Machine>(result);
         }
 
         [Fact]
@@ -293,7 +290,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
 
-            var newMachine = new UpdateMachineRequest() { Id = Guid.NewGuid() };
+            var newMachine = new Machine() { Id = Guid.NewGuid() };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var result = await _controller.UpdateMachineAsync(newMachine, tenantId, false);
             Assert.NotNull(result);
@@ -305,7 +302,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { TenantId = Guid.Parse("d1532c34-09dd-4cf8-b893-894afde2adad") } });
 
-            var newMachineRequest = new UpdateMachineRequest { TenantId = Guid.Parse("cb37242e-af65-45b4-bcb4-bd259f0b4c76") };
+            var newMachineRequest = new Machine { TenantId = Guid.Parse("cb37242e-af65-45b4-bcb4-bd259f0b4c76") };
             var tenantId = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
             Assert.IsType<InvalidOperationException>(ex);
@@ -317,7 +314,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
 
-            var newMachineRequest = new UpdateMachineRequest { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
+            var newMachineRequest = new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
             Assert.NotEmpty(ex.Errors.ToList());
@@ -329,7 +326,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620") });
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine() });
 
-            var newMachineRequest = new UpdateMachineRequest { MachineKey = "machinekey" };
+            var newMachineRequest = new Machine { MachineKey = "machinekey" };
             var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
             Assert.NotEmpty(ex.Errors.ToList());

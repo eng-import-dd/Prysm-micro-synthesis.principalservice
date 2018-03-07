@@ -4,11 +4,9 @@ using System.Threading.Tasks;
 using Moq;
 using Nancy;
 using Synthesis.PrincipalService.Controllers;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Modules;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
+using UserInvite = Synthesis.PrincipalService.InternalApi.Models.UserInvite;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
@@ -26,10 +24,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void CreateUserInviteReturnCreated()
         {
-            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
-                .ReturnsAsync(new List<UserInviteResponse>());
+            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInvite>>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new List<UserInvite>());
 
-            var response = await UserTokenBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
+            var response = await UserTokenBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new List<UserInvite>()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -37,10 +35,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void CreateUserInviteReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateUserInviteListAsync(It.IsAny<List<UserInvite>>(), It.IsAny<Guid>()))
                 .ThrowsAsync(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
+            var response = await UserTokenBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new List<UserInvite>()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -71,7 +69,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async void GetInvitedUsersForTenantReturnsOk()
         {
             _controllerMock.Setup(m => m.GetUsersInvitedForTenantAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
-                .Returns(Task.FromResult(new PagingMetadata<UserInviteResponse>()));
+                .Returns(Task.FromResult(new PagingMetadata<UserInvite>()));
 
             var response = await UserTokenBrowser.Get("/v1/userinvites", BuildRequest);
 
@@ -81,10 +79,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void ResendUserInviteReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInviteRequest>>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.ResendEmailInviteAsync(It.IsAny<List<UserInvite>>(), It.IsAny<Guid>()))
                 .ThrowsAsync(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
+            var response = await UserTokenBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInvite>()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -92,7 +90,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void ResendUserInviteReturnsRespondWithUnauthorizedNoBearer()
         {
-            var response = await UnauthenticatedBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
+            var response = await UnauthenticatedBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInvite>()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -100,7 +98,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void ResendUserInviteReturnsSuccess()
         {
-            var response = await UserTokenBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInviteRequest>()));
+            var response = await UserTokenBrowser.Post("/v1/userinvites/resend", ctx => BuildRequest(ctx, new List<UserInvite>()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -108,7 +106,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async void RespondWithUnauthorizedNoBearer()
         {
-            var response = await UnauthenticatedBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new UserInviteRequest()));
+            var response = await UnauthenticatedBrowser.Post("/v1/userinvites", ctx => BuildRequest(ctx, new UserInvite()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
@@ -9,11 +10,8 @@ namespace Synthesis.PrincipalService.Mapper
     {
         public UserInviteProfile()
         {
-            CreateMap<UserInviteRequest, UserInviteResponse>();
-            CreateMap<UserInviteResponse, UserInvite>();
-            CreateMap<UserInvite, UserInviteResponse>();
-            CreateMap<UserInviteResponse, UserEmailRequest>();
-            CreateMap<UserEmailResponse, UserInviteResponse>();
+            CreateMap<UserInvite, UserEmailRequest>();
+            CreateMap<UserEmailResponse, UserInvite>();
         }
     }
 }

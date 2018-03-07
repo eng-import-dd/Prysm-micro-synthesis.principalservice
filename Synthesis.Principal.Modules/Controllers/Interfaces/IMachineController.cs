@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 
@@ -8,12 +9,12 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IMachineController
     {
-        Task<MachineResponse> CreateMachineAsync(CreateMachineRequest model, Guid tenantId);
-        Task<MachineResponse> GetMachineByIdAsync(Guid id, Guid tenantId, bool isServiceCall);
-        Task<MachineResponse> GetMachineByKeyAsync(string machineKey, Guid tenantId, bool isServiceCall);
-        Task<MachineResponse> UpdateMachineAsync(UpdateMachineRequest model, Guid tenantId, bool isServiceCall);
+        Task<Machine> CreateMachineAsync(Machine model, Guid tenantId);
+        Task<Machine> GetMachineByIdAsync(Guid id, Guid tenantId, bool isServiceCall);
+        Task<Machine> GetMachineByKeyAsync(string machineKey, Guid tenantId, bool isServiceCall);
+        Task<Machine> UpdateMachineAsync(Machine model, Guid tenantId, bool isServiceCall);
         Task DeleteMachineAsync(Guid id, Guid tenantId);
-        Task<MachineResponse> ChangeMachineAccountAsync(Guid machineId, Guid tenantId, Guid settingProfileId);
-        Task<List<MachineResponse>> GetTenantMachinesAsync(Guid tenantId);
+        Task<Machine> ChangeMachineTenantasync(Guid machineId, Guid tenantId, Guid settingProfileId);
+        Task<List<Machine>> GetTenantMachinesAsync(Guid tenantId);
     }
 }

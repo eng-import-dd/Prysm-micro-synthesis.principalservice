@@ -1,10 +1,11 @@
 ﻿using System;
 using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public class CreateMachineRequestValidator : AbstractValidator<CreateMachineRequest>
+    public class CreateMachineRequestValidator : AbstractValidator<Machine>
     {
         public CreateMachineRequestValidator()
         {
@@ -23,7 +24,7 @@ namespace Synthesis.PrincipalService.Validators
                 .Must(BeAValidGuid).WithMessage("The Setting Profile Id must be a valid guid");
         }
 
-        private bool BeAValidGuid(Guid id)
+        private bool BeAValidGuid(Guid? id)
         {
             return !id.Equals(default(Guid));
         }

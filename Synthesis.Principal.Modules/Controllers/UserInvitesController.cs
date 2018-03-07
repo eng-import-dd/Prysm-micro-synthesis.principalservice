@@ -8,12 +8,12 @@ using FluentValidation;
 using Synthesis.DocumentStorage;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Entity;
-using Synthesis.PrincipalService.Models;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -27,6 +27,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantApi _tenantApi;
         private readonly IEmailApi _emailApi;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly ITenantDomainApi _tenantDomainApi;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
@@ -34,6 +35,7 @@ namespace Synthesis.PrincipalService.Controllers
             IMapper mapper,
             IValidatorLocator validatorLocator,
             ITenantApi tenantApi,
+            ITenantDomainApi tenantDomainApi,
             IEmailApi emailApi)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
@@ -42,25 +44,25 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _tenantApi = tenantApi;
+            _tenantDomainApi = tenantDomainApi;
             _emailApi = emailApi;
             _validatorLocator = validatorLocator;
         }
 
-        public async Task<List<UserInviteResponse>> CreateUserInviteListAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        public async Task<List<UserInvite>> CreateUserInviteListAsync(List<UserInvite> userInviteList, Guid tenantId)
         {
-            var userInviteServiceResult = new List<UserInviteResponse>();
-            var validUsers = new List<UserInviteResponse>();
-            var inValidDomainUsers = new List<UserInviteResponse>();
-            var inValidEmailFormatUsers = new List<UserInviteResponse>();
-            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantApi, tenantId);
-            if (validTenantDomains.Count == 0)
+            var userInviteServiceResult = new List<UserInvite>();
+            var validUsers = new List<UserInvite>();
+            var inValidDomainUsers = new List<UserInvite>();
+            var inValidEmailFormatUsers = new List<UserInvite>();
+            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantDomainApi, tenantId);
+            if (!validTenantDomains.Any())
             {
                 throw new Exception("Couldn't fetch tenant domains");
             }
 
             var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();
-            var userInviteEntityList = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
-            foreach (var newUserInvite in userInviteEntityList)
+            foreach (var newUserInvite in userInviteList)
             {
                 if (newUserInvite.Email == null)
                 {
@@ -111,11 +113,11 @@ namespace Synthesis.PrincipalService.Controllers
             return userInviteServiceResult;
         }
 
-        private async Task<List<UserInviteResponse>> SendUserInvites(List<UserInviteResponse> userInviteServiceResult)
+        private async Task<List<UserInvite>> SendUserInvites(List<UserInvite> userInviteServiceResult)
         {
             //Filter any duplicate users
-            List<UserInviteResponse> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
-            var emailRequest = _mapper.Map<List<UserInviteResponse>, List<UserEmailRequest>>(validUsers);
+            List<UserInvite> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
+            var emailRequest = _mapper.Map<List<UserInvite>, List<UserEmailRequest>>(validUsers);
 
             //Mail newly created users
             var userEmailResponses = await _emailApi.SendUserInvite(emailRequest);
@@ -125,17 +127,16 @@ namespace Synthesis.PrincipalService.Controllers
                 return validUsers;
             }
 
-            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInviteResponse>>(userEmailResponses);
+            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInvite>>(userEmailResponses);
             await UpdateUserInviteAsync(emailResponse);
 
             return validUsers;
         }
 
-        public async Task<List<UserInviteResponse>> ResendEmailInviteAsync(List<UserInviteRequest> userInviteList, Guid tenantId)
+        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInvites, Guid tenantId)
         {
-            if (userInviteList.Count > 0)
+            if (userInvites.Count > 0)
             {
-                var userInvites = _mapper.Map<List<UserInviteRequest>, List<UserInviteResponse>>(userInviteList);
 
                 //User is exist in system or not
                 foreach (var userInvite in userInvites)
@@ -158,10 +159,10 @@ namespace Synthesis.PrincipalService.Controllers
 
                 return userInvites;
             }
-            return new List<UserInviteResponse>();
+            return new List<UserInvite>();
         }
 
-        private async Task<List<UserInviteResponse>> CreateUserInviteInDb(List<UserInviteResponse> userInviteList)
+        private async Task<List<UserInvite>> CreateUserInviteInDb(List<UserInvite> userInviteList)
         {
             var invitedEmails = userInviteList.Select(u => u.Email.ToLower());
 
@@ -183,7 +184,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             duplicateUsers.ForEach(x => x.Status = InviteUserStatus.DuplicateUserEmail);
 
-            var currentUserInvites = new List<UserInviteResponse>();
+            var currentUserInvites = new List<UserInvite>();
 
             if (validUsers.Count > 0)
             {
@@ -198,7 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                     }
                     else
                     {
-                        await _userInviteRepository.CreateItemAsync(_mapper.Map<UserInviteResponse, UserInvite>(validUser));
+                        await _userInviteRepository.CreateItemAsync(validUser);
                         currentUserInvites.Add(validUser);
                     }
                 }
@@ -212,7 +213,7 @@ namespace Synthesis.PrincipalService.Controllers
             return currentUserInvites;
         }
 
-        private async Task UpdateUserInviteAsync(List<UserInviteResponse> userInvite)
+        private async Task UpdateUserInviteAsync(List<UserInvite> userInvite)
         {
             var lastInvitedDates = userInvite.ToDictionary(u => u.Email, u => u.LastInvitedDate);
 
@@ -221,7 +222,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var userInviteDb = (await _userInviteRepository.GetItemsAsync(u => u.Email == userInviteupdate.Email)).First();
                 if (lastInvitedDates[userInviteupdate.Email] != null)
                 {
-                    userInviteDb.LastInvitedDate = lastInvitedDates[userInviteupdate.Email].Value;
+                    userInviteDb.LastInvitedDate = lastInvitedDates[userInviteupdate.Email];
                 }
                 if (userInviteDb.Id != null)
                 {
@@ -231,12 +232,12 @@ namespace Synthesis.PrincipalService.Controllers
 
         }
 
-        public async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        public async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
         {
             return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
         }
 
-        private async Task<PagingMetadata<UserInviteResponse>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
+        private async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
         {
             var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
             if (!validationResult.IsValid)
@@ -256,8 +257,8 @@ namespace Synthesis.PrincipalService.Controllers
                 foreach (var batch in invitedEmails.Batch(150))
                 {
                     var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-                    var userIds = result.Payload;
-                    var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id) && batch.Contains(u.Email));
+                    var userIds = result.Payload.ToList();
+                    var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email));
                     tenantUsersList.AddRange(tenantUsers);
                 }
 
@@ -265,9 +266,9 @@ namespace Synthesis.PrincipalService.Controllers
                 existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
             }
 
-            var returnMetaData = new PagingMetadata<UserInviteResponse>
+            var returnMetaData = new PagingMetadata<UserInvite>
             {
-                List = _mapper.Map<List<UserInvite>, List<UserInviteResponse>>(existingUserInvites)
+                List = existingUserInvites
             };
             return returnMetaData;
         }

@@ -6,7 +6,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3DBB0D32-0A8F-11E8-A39B-0F5BDC1289A0}</ProjectGuid>
+    <ProjectGuid>{03F2CB12-1D2C-11E8-8334-D906597EAF7D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Synthesis.PrincipalService.Modules.Test</RootNamespace>
@@ -156,7 +156,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta008\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta009\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
@@ -168,7 +168,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta030\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta032\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -182,8 +182,17 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.4\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta002\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta001\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
@@ -253,22 +262,6 @@
     <Compile Include="Modules\UserInviteModuleTests.cs" />
     <Compile Include="Modules\UsersModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Validators\BulkUploadEmailValidatorTests.cs" />
-    <Compile Include="Validators\CreateGroupRequestValidatorTests.cs" />
-    <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
-    <Compile Include="Validators\CreateUserGroupRequestValidatorTests.cs" />
-    <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />
-    <Compile Include="Validators\EmailValidatorTests.cs" />
-    <Compile Include="Validators\GetUsersByIdValidatorTests.cs" />
-    <Compile Include="Validators\GuestCreationRequestValidatorTests.cs" />
-    <Compile Include="Validators\NameValidatorTests.cs" />
-    <Compile Include="Validators\PasswordResetEmailRequestValidatorTests.cs" />
-    <Compile Include="Validators\PasswordValidatorTests.cs" />
-    <Compile Include="Validators\ProjectAccessCodeValidatorTests.cs" />
-    <Compile Include="Validators\UpdateGroupRequestValidatorTests.cs" />
-    <Compile Include="Validators\UpdateMachineRequestValidatorTests.cs" />
-    <Compile Include="Validators\UpdateUserRequestValidatorTests.cs" />
-    <Compile Include="Validators\UserNameValidatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
@@ -276,7 +269,7 @@
       <Name>Synthesis.License.Manager</Name>
     </ProjectReference>
     <ProjectReference Include="..\Synthesis.Principal.Modules\Synthesis.Principal.Modules.csproj">
-      <Project>{3DBB0D31-0A8F-11E8-A39B-0F5BDC1289A0}</Project>
+      <Project>{03F2CB11-1D2C-11E8-8334-D906597EAF7D}</Project>
       <Name>Synthesis.PrincipalService.Modules</Name>
     </ProjectReference>
   </ItemGroup>

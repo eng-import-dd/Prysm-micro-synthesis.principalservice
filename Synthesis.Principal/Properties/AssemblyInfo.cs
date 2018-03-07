@@ -22,7 +22,7 @@ using Synthesis.Logging.Log4Net;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("3DBB0D30-0A8F-11E8-A39B-0F5BDC1289A0")]
+[assembly: Guid("03F2CB10-1D2C-11E8-8334-D906597EAF7D")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -9,6 +9,7 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Requests;
@@ -29,19 +30,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task ChangeMachineAccountReturnsBadRequest()
+        public async Task ChangeMachineTenantReturnsBadRequest()
         {
-            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount", ctx => BuildRequest(ctx, "bad request"));
+            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changetenant", ctx => BuildRequest(ctx, "bad request"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [Fact]
-        public async Task ChangeMachineAccountReturnsInternalServerError()
+        public async Task ChangeMachineTenantReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.ChangeMachineAccountAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Throws(new Exception());
+            _controllerMock.Setup(m => m.ChangeMachineTenantasync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Throws(new Exception());
 
-            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount", ctx => BuildRequest(ctx,
+            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changetenant", ctx => BuildRequest(ctx,
                 new Machine
                 {
                     MachineKey = "12345678901234567890",
@@ -55,9 +56,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task ChangeMachineAccountReturnsNotFound()
+        public async Task ChangeMachineTenantReturnsNotFound()
         {
-            var response = await UserTokenBrowser.Put("/v1/machines/notavalidmachine/changeaccount", ctx => BuildRequest(ctx,
+            var response = await UserTokenBrowser.Put("/v1/machines/notavalidmachine/changetenant", ctx => BuildRequest(ctx,
                 new Machine
                 {
                     MachineKey = "12345678901234567890",
@@ -71,9 +72,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task ChangeMachineAccountReturnsOk()
+        public async Task ChangeMachineTenantReturnsOk()
         {
-            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount", ctx => BuildRequest(ctx,
+            var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changetenant", ctx => BuildRequest(ctx,
                 new Machine
                 {
                     MachineKey = "12345678901234567890",
@@ -87,9 +88,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task ChangeMachineAccountReturnsUnauthorized()
+        public async Task ChangeMachineTenantReturnsUnauthorized()
         {
-            var response = await UnauthenticatedBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changeaccount", ctx => BuildRequest(ctx,
+            var response = await UnauthenticatedBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539/changetenant", ctx => BuildRequest(ctx,
                 new Machine
                 {
                     MachineKey = "12345678901234567890",
@@ -114,7 +115,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
@@ -126,7 +127,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<CreateMachineRequest>(), It.IsAny<Guid>())).Throws(new Exception());
+            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>())).Throws(new Exception());
 
             var response = await UserTokenBrowser.Post("/v1/machines", ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
 
@@ -220,7 +221,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetMachineByIdReturnsOk()
         {
             _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
-                .Returns(Task.FromResult(new MachineResponse()));
+                .Returns(Task.FromResult(new Machine()));
 
             var validMachineId = Guid.NewGuid();
 
@@ -233,7 +234,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetMachineByIdReturnsUnauthorized()
         {
             _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
-                .Returns(Task.FromResult(new MachineResponse()));
+                .Returns(Task.FromResult(new Machine()));
 
             var validMachineId = Guid.NewGuid();
 
@@ -263,12 +264,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //var validTenantId = Guid.NewGuid();
 
             _controllerMock.Setup(m => m.GetTenantMachinesAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new List<MachineResponse>()));
+                .Returns(Task.FromResult(new List<Machine>()));
 
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -285,7 +286,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -319,7 +320,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_machineRepositoryMock.Setup(m => m.GetItemsAsync(t => t.TenantId == validTenantId))
             //    .Returns(Task.FromResult(Enumerable.Empty<Machine>()));
 
-            var response = await UserTokenBrowser.Get("/v1/tenantmachines", BuildRequest);
+            var response = await UserTokenBrowser.Get("/v1/machines", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -328,10 +329,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetMachineByKeyReturnsOk()
         {
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
-                           .Returns(Task.FromResult(new MachineResponse()));
+                           .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid().ToString();
-            var response = await UserTokenBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
@@ -345,10 +346,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetMachineByKeyReturnsUnauthorized()
         {
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
-                           .Returns(Task.FromResult(new MachineResponse()));
+                           .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid();
-            var response = await UnauthenticatedBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UnauthenticatedBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                     with =>
                                                     {
                                                         with.HttpRequest();
@@ -365,7 +366,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Throws(new Exception());
 
             var validMachineKey = Guid.NewGuid();
-            var response = await UserTokenBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
@@ -403,7 +404,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateMachineReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.UpdateMachineAsync(It.IsAny<UpdateMachineRequest>(), It.IsAny<Guid>(), It.IsAny<bool>())).Throws(new Exception());
+            _controllerMock.Setup(m => m.UpdateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>(), It.IsAny<bool>())).Throws(new Exception());
 
             var response = await UserTokenBrowser.Put("/v1/machines/6b47560d-772a-41e5-8196-fb1ec6178539", ctx => BuildRequest(ctx,
                 new Machine
