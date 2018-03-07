@@ -137,7 +137,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("PromoteGuest", HttpMethod.Post, "/v1/users/{userId}/promote", PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(PromoteGuestRequest.Example());
+                .RequestFormat(LicenseType.UserLicense);
 
             CreateRoute("AutoProvisionRefreshGroups", HttpMethod.Post, "/v1/users/autoprovisionrefreshgroups", AutoProvisionRefreshGroupsAsync)
                 .Description("Autoprovisions the refresh groups")
@@ -533,10 +533,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            PromoteGuestRequest promoteRequest;
+            LicenseType licenseType;
             try
             {
-                promoteRequest = this.Bind<PromoteGuestRequest>();
+                licenseType = this.Bind<LicenseType>();
             }
             catch (Exception ex)
             {
@@ -546,7 +546,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                await _userController.PromoteGuestUserAsync(promoteRequest.UserId, TenantId, promoteRequest.LicenseType);
+                await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType);
 
                 return Negotiate
                     .WithStatusCode(HttpStatusCode.OK);

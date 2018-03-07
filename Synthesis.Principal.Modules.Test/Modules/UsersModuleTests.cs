@@ -314,7 +314,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task PromoteGuestRespondWithUnauthorizedNoBearerAsync()
         {
-            var response = await UnauthenticatedBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UnauthenticatedBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -322,7 +322,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task PromoteGuestRespondWithOkAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -334,7 +334,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -355,7 +355,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -368,7 +368,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                 .Throws(new PromotionFailedException(""));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             Assert.Equal(ResponseReasons.PromotionFailed, response.ReasonPhrase);
@@ -381,7 +381,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                 .Throws(new LicenseAssignmentFailedException("", Guid.NewGuid()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, new PromoteGuestRequest()));
+            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             Assert.Equal(ResponseReasons.LicenseAssignmentFailed, response.ReasonPhrase);
@@ -392,7 +392,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             const LicenseType expectedLicense = LicenseType.UserLicense;
             var expectedId = Guid.NewGuid();
-            var request = new PromoteGuestRequest { UserId = expectedId, LicenseType = expectedLicense };
+            var request = LicenseType.UserLicense;
 
             var response = await UserTokenBrowser.Post($"/v1/users/{expectedId}/promote", ctx => BuildRequest(ctx, request));
 
