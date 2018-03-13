@@ -332,12 +332,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                            .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid().ToString();
-            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
+            var response = await UserTokenBrowser.Get($"/v1/machines",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
                                                       with.Header("Accept", "application/json");
                                                       with.Header("Content-Type", "application/json");
+                                                      with.Query("machinekey", validMachineKey);
                                                   });
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -348,13 +349,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Returns(Task.FromResult(new Machine()));
 
-            var validMachineKey = Guid.NewGuid();
-            var response = await UnauthenticatedBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
+            var validMachineKey = "0123456789";
+            var response = await UnauthenticatedBrowser.Get($"/v1/machines",
                                                     with =>
                                                     {
                                                         with.HttpRequest();
                                                         with.Header("Accept", "application/json");
                                                         with.Header("Content-Type", "application/json");
+                                                        with.Query("machinekey", validMachineKey);
                                                     });
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -365,13 +367,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Throws(new Exception());
 
-            var validMachineKey = Guid.NewGuid();
-            var response = await UserTokenBrowser.Get($"/v1/machines?machinekey={validMachineKey}",
+            var validMachineKey = "0123456789";
+            var response = await UserTokenBrowser.Get($"/v1/machines",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
                                                       with.Header("Accept", "application/json");
                                                       with.Header("Content-Type", "application/json");
+                                                      with.Query("machinekey", validMachineKey);
                                                   });
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -382,13 +385,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
                            .Throws(new NotFoundException(string.Empty));
 
-            var validMachineKey = Guid.NewGuid();
-            var response = await UserTokenBrowser.Get($"/v1/machines/machinekey/{validMachineKey}",
+            var validMachineKey = "0123456789";
+            var response = await UserTokenBrowser.Get($"/v1/machines",
                                                   with =>
                                                   {
                                                       with.HttpRequest();
                                                       with.Header("Accept", "application/json");
                                                       with.Header("Content-Type", "application/json");
+                                                      with.Query("machinekey", validMachineKey);
                                                   });
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
