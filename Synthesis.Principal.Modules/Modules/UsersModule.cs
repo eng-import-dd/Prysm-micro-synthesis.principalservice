@@ -75,7 +75,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(UserGroup.Example())
                 .ResponseFormat(User.Example());
 
-            CreateRoute("CanPromoteUser", HttpMethod.Get, "/v1/users/canpromoteuser/{0}", CanPromoteUserAsync)
+            CreateRoute("CanPromoteUser", HttpMethod.Get, "/v1/users/canpromoteuser/{email}", CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(CanPromoteUser.Example());
