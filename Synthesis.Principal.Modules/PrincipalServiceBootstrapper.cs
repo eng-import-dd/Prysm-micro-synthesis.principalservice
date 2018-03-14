@@ -25,6 +25,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka;
+using Synthesis.EventBus.Kafka.Autofac;
 using Synthesis.Http;
 using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
@@ -33,6 +34,7 @@ using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
 using Synthesis.Nancy.MicroService.Authentication;
+using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
@@ -121,6 +123,13 @@ namespace Synthesis.PrincipalService
                 MatchingScopeLifetimeTags.RequestLifetimeScopeTag,
                 bldr =>
                 {
+                    bldr.RegisterType<EventServicePublishExtender>()
+                        .WithParameter(new ResolvedParameter(
+                            (p, c) => p.ParameterType == typeof(IEventService),
+                            (p, c) => ApplicationContainer.Resolve<IEventService>()))
+                        .As<IEventService>()
+                        .InstancePerLifetimeScope();
+
                     bldr.Register(c => new RequestHeaders(context.Request.Headers))
                         .As<IRequestHeaders>()
                         .InstancePerLifetimeScope();
@@ -361,30 +370,13 @@ namespace Synthesis.PrincipalService
 
         private static void RegisterEvents(ContainerBuilder builder)
         {
+            // Event Service registration.
+            builder.RegisterKafkaEventBusComponents(ServiceName);
+
             builder
                 .RegisterType<EventSubscriber>()
                 .AsSelf()
                 .AutoActivate();
-
-            // Event Service registration.
-            builder.RegisterType<EventServiceFactory>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "logger",
-                    (p, c) => c.Resolve<ILoggerFactory>().Get(EventServiceLogTopic)))
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.Name == "context",
-                    (p, c) => new EventServiceContext
-                    {
-                        ServiceName = ServiceName,
-                        KafkaConnection = c.Resolve<IAppSettingsReader>().GetValue<string>("Kafka.Server"),
-                        SchemaConnection = c.Resolve<IAppSettingsReader>().GetValue<string>("SchemaRegistry.Server")
-                    }))
-                .As<IEventServiceFactory>()
-                .SingleInstance();
-
-            builder.Register(c => c.Resolve<IEventServiceFactory>().CreateEventService(ServiceName))
-                .As<IEventService>()
-                .SingleInstance();
 
             builder
                 .RegisterType<EventHandlerLocator>()
@@ -406,9 +398,9 @@ namespace Synthesis.PrincipalService
             // register event service for events to be handled for every instance of this service
             builder
                 .Register(c => new EventHandlerLocator(
-                    c.Resolve<IEventServiceFactory>().CreateEventService(ServiceName + Guid.NewGuid()),
+                    c.ResolveKeyed<IEventService>(Registration.PerInstanceEventServiceKey),
                     new IEventHandlerBase[] { new SettingsInvalidateCacheEventHandler(c.Resolve<ISharedAppSettingsReader>()) }))
-                .Keyed<IEventHandlerLocator>("PerServiceEventServiceKey")
+                .Keyed<IEventHandlerLocator>(Registration.PerInstanceEventServiceKey)
                 .SingleInstance()
                 .AutoActivate();
         }
