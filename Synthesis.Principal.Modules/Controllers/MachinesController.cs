@@ -12,10 +12,8 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers

@@ -9,6 +9,8 @@ using Castle.Core.Internal;
 using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
+using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
 using Synthesis.Http.Microservice;
 using Synthesis.License.Manager.Interfaces;
@@ -20,7 +22,6 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
@@ -50,17 +51,18 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IRepository<UserInvite> _userInviteRepository;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="UsersController"/> class.
+        /// Initializes a new instance of the <see cref="UsersController" /> class.
         /// </summary>
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
         /// <param name="loggerFactory">The logger factory.</param>
-        /// <param name="licenseApi"></param>
-        /// <param name="mapper"></param>
-        /// <param name="deploymentType"></param>
-        /// <param name="tenantApi"></param>
-        /// <param name="emailApi"></param>
+        /// <param name="licenseApi">The license API.</param>
+        /// <param name="emailApi">The email API.</param>
+        /// <param name="mapper">The mapper.</param>
+        /// <param name="deploymentType">Type of the deployment.</param>
+        /// <param name="tenantDomainApi">The tenant domain API.</param>
+        /// <param name="tenantApi">The tenant API.</param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,

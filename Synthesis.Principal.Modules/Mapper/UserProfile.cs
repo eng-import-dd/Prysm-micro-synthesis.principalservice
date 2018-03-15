@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
+using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Mapper
 {

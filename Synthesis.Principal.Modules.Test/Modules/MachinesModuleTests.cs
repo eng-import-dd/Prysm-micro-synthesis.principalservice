@@ -8,12 +8,8 @@ using Nancy;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
-using Synthesis.PrincipalService.Modules;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules

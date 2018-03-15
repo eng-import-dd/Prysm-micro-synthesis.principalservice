@@ -7,7 +7,6 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
-using Synthesis.PrincipalService.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -15,13 +14,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
-using Synthesis.PrincipalService.Requests;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Modules
 {
