@@ -6,7 +6,6 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
 using Moq;
@@ -18,10 +17,6 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Mapper;
-using Synthesis.PrincipalService.Models;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers

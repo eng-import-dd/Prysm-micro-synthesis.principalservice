@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using Synthesis.PrincipalService.Requests;
+using Synthesis.EmailService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Models
 {

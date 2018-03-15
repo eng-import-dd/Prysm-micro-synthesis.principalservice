@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Requests;
-using Synthesis.PrincipalService.Responses;
 
 namespace Synthesis.PrincipalService.Controllers
 {
