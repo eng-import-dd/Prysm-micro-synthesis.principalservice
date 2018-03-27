@@ -19,7 +19,7 @@ namespace Synthesis.PrincipalService
         /// <inheritdoc />
         public IMicroserviceHttpClient Resolve()
         {
-            var canResolve = _container.TryResolve<IRequestHeaders>(out var _);
+            var canResolve = _container.TryResolve<IRequestHeaders>(out var requestHeaders) && requestHeaders.ContainsKey("Authorization");
             return _container.ResolveKeyed<IMicroserviceHttpClient>(canResolve ? _passThroughKey : _serviceToServiceKey);
         }
     }
