@@ -371,7 +371,13 @@ namespace Synthesis.PrincipalService
         private static void RegisterEvents(ContainerBuilder builder)
         {
             // Event Service registration.
-            builder.RegisterKafkaEventBusComponents(ServiceName);
+            builder.RegisterKafkaEventBusComponents(
+                ServiceName,
+                (metadata, bldr) =>
+                {
+                    bldr.Register(c => metadata.ToRequestHeaders())
+                        .InstancePerRequest();
+                });
 
             builder
                 .RegisterType<EventSubscriber>()
@@ -396,10 +402,13 @@ namespace Synthesis.PrincipalService
             }
 
             // register event service for events to be handled for every instance of this service
-            builder
-                .Register(c => new EventHandlerLocator(
-                    c.ResolveKeyed<IEventService>(Registration.PerInstanceEventServiceKey),
-                    new IEventHandlerBase[] { new SettingsInvalidateCacheEventHandler(c.Resolve<ISharedAppSettingsReader>()) }))
+            builder.RegisterType<SettingsInvalidateCacheEventHandler>().AsSelf();
+
+            builder.RegisterType<EventHandlerLocator>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IEventServiceConsumer),
+                    (p, c) => c.ResolveKeyed<IEventServiceConsumer>(Registration.PerInstanceEventServiceKey)))
+                .OnActivated(args => args.Instance.SubscribeEventHandler<SettingsInvalidateCacheEventHandler>("*", Configuration.Shared.EventNames.SettingsInvalidateCache))
                 .Keyed<IEventHandlerLocator>(Registration.PerInstanceEventServiceKey)
                 .SingleInstance()
                 .AutoActivate();
