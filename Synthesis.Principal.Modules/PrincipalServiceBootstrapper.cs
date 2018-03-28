@@ -375,6 +375,13 @@ namespace Synthesis.PrincipalService
                 ServiceName,
                 (metadata, bldr) =>
                 {
+                    bldr.RegisterType<EventServicePublishExtender>()
+                        .WithParameter(new ResolvedParameter(
+                            (p, c) => p.ParameterType == typeof(IEventService),
+                            (p, c) => RootContainer.Resolve<IEventService>()))
+                        .As<IEventService>()
+                        .InstancePerLifetimeScope();
+
                     bldr.Register(c => metadata.ToRequestHeaders())
                         .InstancePerRequest();
                 });
