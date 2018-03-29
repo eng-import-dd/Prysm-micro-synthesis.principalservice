@@ -49,8 +49,8 @@ namespace Synthesis.PrincipalService.Controllers
         private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
         private readonly IRepository<UserInvite> _userInviteRepository;
-        readonly IUserSearchBuilder _searchBuilder;
-        readonly IQueryRunner<User> _queryRunner;
+        private readonly IUserSearchBuilder _searchBuilder;
+        private readonly IQueryRunner<User> _queryRunner;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.

@@ -201,15 +201,15 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                User userResponse = null;
+                User userResponse;
                 if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
                 {
                     userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
                 }
-                //else
-                //{
-                //    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
-                //}
+                else
+                {
+                    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
+                }
 
                 return Negotiate
                     .WithModel(userResponse)
