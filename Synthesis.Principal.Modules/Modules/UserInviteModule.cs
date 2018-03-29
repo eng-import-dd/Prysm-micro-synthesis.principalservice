@@ -37,8 +37,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUserInviteListForTenant", HttpMethod.Post, "/v1/userinvites", _ => CreateUserInviteListForTenantAsync())
                 .Description("Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(UserInvite.Example())
-                .ResponseFormat(new List<UserInvite>{ new UserInvite() });
+                .RequestFormat(new List<UserInvite>{UserInvite.Example()})
+                .ResponseFormat(new List<UserInvite>{ UserInvite.Example() });
 
             CreateRoute("ResendEmailInvitation", HttpMethod.Post, "/v1/userinvites/resend", _ => ResendEmailInvitationAsync())
                 .Description("Resend Email invites for passed user list")
