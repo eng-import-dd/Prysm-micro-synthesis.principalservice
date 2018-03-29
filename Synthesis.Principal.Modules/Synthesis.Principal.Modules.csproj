@@ -336,9 +336,13 @@
     <Compile Include="Controllers\Interfaces\IMachineController.cs" />
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
+    <Compile Include="Controllers\IQueryRunner.cs" />
+    <Compile Include="Controllers\IUserSearchBuilder.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
+    <Compile Include="Controllers\UserQueryRunner.cs" />
     <Compile Include="Controllers\UsersController.cs" />
+    <Compile Include="Controllers\UserSearchBuilder.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />

@@ -49,6 +49,8 @@ namespace Synthesis.PrincipalService.Controllers
         private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
         private readonly IRepository<UserInvite> _userInviteRepository;
+        private readonly IUserSearchBuilder _searchBuilder;
+        private readonly IQueryRunner<User> _queryRunner;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.
@@ -62,7 +64,9 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
         /// <param name="tenantDomainApi">The tenant domain API.</param>
+        /// <param name="queryRunner"></param>
         /// <param name="tenantApi">The tenant API.</param>
+        /// <param name="searchBuilder"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -73,6 +77,8 @@ namespace Synthesis.PrincipalService.Controllers
             IMapper mapper,
             string deploymentType,
             ITenantDomainApi tenantDomainApi,
+            IUserSearchBuilder searchBuilder,
+            IQueryRunner<User> queryRunner,
             ITenantApi tenantApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -86,6 +92,8 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _deploymentType = deploymentType;
             _tenantDomainApi = tenantDomainApi;
+            _searchBuilder = searchBuilder;
+            _queryRunner = queryRunner;
             _tenantApi = tenantApi;
         }
 
@@ -1254,102 +1262,28 @@ namespace Synthesis.PrincipalService.Controllers
                     IdpFilter = IdpFilter.All
                 };
             }
-            var criteria = new List<Expression<Func<User, bool>>>();
-            Expression<Func<User, string>> orderBy;
 
-            var tenantUsers = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (!tenantUsers.IsSuccess())
+            var tenantUsersResponse = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (!tenantUsersResponse.IsSuccess())
             {
                 throw new Exception("Unable to find users for the tenant id");
             }
 
-            criteria.Add(u => tenantUsers.Payload.Contains(u.Id??Guid.Empty));
-
-            if (getUsersParams.OnlyCurrentUser)
-            {
-                criteria.Add(u => tenantUsers.Payload.Contains(currentUserId??Guid.Empty));
-            }
-
-            if (!getUsersParams.IncludeInactive)
-            {
-                criteria.Add(u => !u.IsLocked);
-            }
-            switch (getUsersParams.IdpFilter)
-            {
-                case IdpFilter.IdpUsers:
-                    criteria.Add(u => u.IsIdpUser == true);
-                    break;
-                case IdpFilter.LocalUsers:
-                    criteria.Add(u => u.IsIdpUser == false);
-                    break;
-                case IdpFilter.NotSet:
-                    criteria.Add(u => u.IsIdpUser == null);
-                    break;
-            }
-
-            if (!string.IsNullOrEmpty(getUsersParams.SearchValue))
-            {
-                criteria.Add(x =>
-                                 x != null &&
-                                 (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                                                                                               getUsersParams.SearchValue.ToLower()) ||
-                                 x != null && x.Email.ToLower().Contains(getUsersParams.SearchValue.ToLower()) ||
-                                 x != null && x.Username.ToLower().Contains(getUsersParams.SearchValue.ToLower()));
-            }
-            if (string.IsNullOrWhiteSpace(getUsersParams.SortColumn))
-            {
-                orderBy = u => u.FirstName;
-            }
-            else
-            {
-                switch (getUsersParams.SortColumn.ToLower())
-                {
-                    case "firstname":
-                        orderBy = u => u.FirstName;
-                        break;
-
-                    case "lastname":
-                        orderBy = u => u.LastName;
-                        break;
-
-                    case "email":
-                        orderBy = u => u.Email;
-                        break;
-
-                    case "username":
-                        orderBy = u => u.Username;
-                        break;
-
-                    default:
-
-                        // LINQ to Entities requires calling OrderBy before using .Skip and .Take methods
-                        orderBy = u => u.FirstName;
-                        break;
-                }
-            }
-
-            var queryparams = new OrderedQueryParameters<User, string>
-            {
-                Criteria = criteria,
-                OrderBy = orderBy,
-                SortDescending = getUsersParams.SortDescending,
-                ContinuationToken = getUsersParams.ContinuationToken ?? ""
-            };
-            var usersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-
-            var usersInTenants = usersInTenantResult.Items.ToList();
+            var tenantUsers = tenantUsersResponse.Payload.ToList();
+            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, getUsersParams);
+            var batch = await _queryRunner.RunQuery(query);
+            var usersInTenants = batch.ToList();
             var filteredUserCount = usersInTenants.Count;
             var resultingUsers = usersInTenants;
-            var returnMetaData = new PagingMetadata<User>
+
+            return new PagingMetadata<User>
             {
                 CurrentCount = filteredUserCount,
                 List = resultingUsers,
                 SearchValue = getUsersParams.SearchValue,
-                ContinuationToken = usersInTenantResult.ContinuationToken,
-                IsLastChunk = usersInTenantResult.IsLastChunk
+                ContinuationToken = batch.ContinuationToken,
+                IsLastChunk = string.IsNullOrEmpty(batch.ContinuationToken)
             };
-
-            return returnMetaData;
         }
 
         private void TrimNameOfUser(User user)

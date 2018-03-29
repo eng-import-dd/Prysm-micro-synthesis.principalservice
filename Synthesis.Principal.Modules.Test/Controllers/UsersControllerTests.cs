@@ -71,8 +71,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _licenseApiMock.Object,
                 _emailApiMock.Object,
                 _mapper,
-                deploymentType, 
-                _tenantDomainApiMock.Object, 
+                deploymentType,
+                _tenantDomainApiMock.Object,
+                _searchBuilderMock.Object,
+                _queryRunnerMock.Object,
                 _tenantApiMock.Object);
         }
 
@@ -89,7 +91,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly Mock<ITenantDomainApi> _tenantDomainApiMock = new Mock<ITenantDomainApi>();
-        
+        private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
+        private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
+
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
         private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
@@ -664,6 +668,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetUsersByIdsAsync(new List<Guid>()));
         }
 
+        private Mock<IBatchResult<User>> WrapUsersInBatchMock(IEnumerable<User> users)
+        {
+            var listMock = new Mock<IEnumerable<User>>();
+            listMock
+                .Setup(x => x.GetEnumerator())
+                .Returns(users.GetEnumerator);
+
+            return listMock.As<IBatchResult<User>>();
+        }
+
         [Fact]
         public async Task GetUsersBasicAsyncReturnsUsersIfExists()
         {
@@ -682,8 +696,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>() { }.AsEnumerable()));
-            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
-                .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() } );
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
             var getUsersParams = new GetUsersParams();
@@ -721,8 +739,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     var items = userList;
                     return Task.FromResult(items.AsEnumerable());
                 });
-            _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
-                .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
 
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -782,6 +803,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _mapper,
                 deploymentType,
                 _tenantDomainApiMock.Object,
+                _searchBuilderMock.Object,
+                _queryRunnerMock.Object,
                 _tenantApiMock.Object);
 
             var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
@@ -805,6 +828,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _mapper,
                 deploymentType,
                 _tenantDomainApiMock.Object,
+                _searchBuilderMock.Object,
+                _queryRunnerMock.Object,
                 _tenantApiMock.Object);
 
             var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
