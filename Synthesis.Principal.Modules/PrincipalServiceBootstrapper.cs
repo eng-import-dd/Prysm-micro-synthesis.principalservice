@@ -44,6 +44,7 @@ using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Events;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
@@ -316,6 +317,9 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
+            builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
+            builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
+
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
