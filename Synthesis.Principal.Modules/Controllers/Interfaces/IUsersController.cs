@@ -25,7 +25,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, bool isLocked);
 
-        Task<User> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId);
+        Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId);
 
         Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId);
 
