@@ -1,7 +1,8 @@
 using Synthesis.EventBus;
-using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.EventHandlers;
 using Synthesis.TenantService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi;
+using Synthesis.TenantService.InternalApi.Constants;
 
 namespace Synthesis.PrincipalService.Events
 {
@@ -10,7 +11,7 @@ namespace Synthesis.PrincipalService.Events
         public EventSubscriber(IEventHandlerLocator eventHandlerLocator)
         {
             eventHandlerLocator
-                .SubscribeEventHandler<TenantCreatedHandler, Tenant>(EventNamespaces.TenantService, EventNames.TenantCreated);
+                .SubscribeEventHandler<TenantCreatedHandler, Tenant>(ServiceInformation.ServiceName, EventNames.TenantCreated);
         }
     }
 }
