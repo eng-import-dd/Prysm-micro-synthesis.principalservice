@@ -121,7 +121,11 @@ namespace Synthesis.PrincipalService.Controllers
 
             var result = await CreateUserInDb(user, tenantId);
 
-            await AssignUserLicense(result, user.LicenseType, tenantId);
+            //Tenant id will be null if the route is called using a service token. In that case don't try to assign a license (Trial user creation)
+            if (tenantId != Guid.Empty)
+            {
+                await AssignUserLicense(result, user.LicenseType, tenantId);
+            }
 
             await _eventService.PublishAsync(EventNames.UserCreated, result);
 
@@ -803,7 +807,6 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error(errorMessage);
                 throw new ArgumentException(errorMessage);
             }
-
 
             var licenseRequestDto = new UserLicenseDto
             {
