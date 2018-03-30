@@ -323,6 +323,7 @@
     <Compile Include="Constants\ErrorCodes.cs" />
     <Compile Include="Constants\ErrorMessages.cs" />
     <Compile Include="Constants\EventNames.cs" />
+    <Compile Include="Constants\EventNamespaces.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Constants\RouteNames.cs" />
     <Compile Include="Constants\Routing.cs" />
@@ -344,6 +345,7 @@
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\UserSearchBuilder.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
+    <Compile Include="EventHandlers\TenantCreated.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
     <Compile Include="Exceptions\UserNotInvitedException.cs" />
@@ -404,9 +406,7 @@
     <Content Include="librdkafka\x86\msvcr120.dll" />
     <Content Include="librdkafka\x86\zlib.dll" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="EventHandlers\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
       <Project>{9b91b286-6a67-4f27-bcd0-206d74aa5efa}</Project>

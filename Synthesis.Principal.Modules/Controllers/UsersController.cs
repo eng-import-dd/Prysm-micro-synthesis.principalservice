@@ -249,7 +249,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
             /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
-            //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service.
+            //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service, CU-577 added to address this
             return await UpdateUserInDb(userModel, userId);
         }
 
@@ -509,7 +509,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var currentGroupsResult = await _userRepository.GetItemAsync(userId);
 
-            //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class
+            //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class, CU-577 added to address this
             var tenantGroupsResult = await _groupRepository.GetItemsAsync(g => g.TenantId == model.TenantId);
 
             var tenantGroups = tenantGroupsResult as IList<Group> ?? tenantGroupsResult.ToList();
@@ -884,7 +884,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            //TODO: dependency on group implementation to get all the groupIds
+            //TODO: dependency on group implementation to get all the groupIds, CU-577 added to address this
             #region  Get superadmin group ids
 
             // if trying to lock a user we need to check if it is a superAdmin user
@@ -948,7 +948,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new InvalidOperationException();
             }
 
-            //TODO: User Permission check here - Yusuf
+            //TODO: User Permission check here - Yusuf, CU-577 added to address this
             #region Legacy code - Will be removed after implementation
             /*
             * if (UserId == accessedUserId)
@@ -968,7 +968,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             #endregion
 
-            //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf
+            //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf, CU-577 added to address this
             #region Legacy code - Will be removed after implementation
             /*
              *
@@ -1016,7 +1016,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"A User group resource could not be found for id {groupId}");
             }
 
-            //TODO: Access Checks - Yusuf
+            //TODO: Access Checks - Yusuf, CU-577 added to address this
             //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
             return result.Select(user => user.Id.GetValueOrDefault()).ToList();
@@ -1094,7 +1094,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             //var userGroups = GetUserGroupsForUser(userId).Payload;
             //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
-            //TODO: Put code here to check User Group - Charan
+            //TODO: Put code here to check User Group - Charan, CU-577 added to address this
             return true;
         }
 
@@ -1144,7 +1144,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new InvalidOperationException();
             }
 
-            //TODO: Check valid access for user here - Yusuf
+            //TODO: Check valid access for user here - Yusuf, CU-577 added to address this
             //Code required to check permission to make the API call IF the requesting user is not the requested user
             // var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
             //if (userPermissions.Value.Contains(requiredPermission)
@@ -1182,7 +1182,7 @@ namespace Synthesis.PrincipalService.Controllers
                     {
                         UserId = id.ToString(),
                         //AccountId = existingUser.TenantId.ToString()
-                        //Todo: check how the the accounts should be updated-CHARAN
+                        //Todo: check how the the accounts should be updated-CHARAN, CU-577 added to address this
                     };
 
                 if (isLocked)

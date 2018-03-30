@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synthesis.Principal", "Synthesis.Principal\Synthesis.Principal.csproj", "{03F2CB10-1D2C-11E8-8334-D906597EAF7D}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -17,6 +17,8 @@ EndProject
 Project("{A07B5EB6-E848-4116-A8D0-A826331D98C6}") = "Synthesis.Application", "Synthesis.Application\Synthesis.Application.sfproj", "{03F2CB13-1D2C-11E8-8334-D906597EAF7D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synthesis.License.Manager", "Synthesis.License.Manager\Synthesis.License.Manager.csproj", "{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synthesis.PolicyEvaluator", "..\synthesis.policyevaluator\Synthesis.PolicyEvaluator\Synthesis.PolicyEvaluator.csproj", "{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -136,6 +138,26 @@ Global
 		{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}.Release|x64.ActiveCfg = Release|x64
 		{9B91B286-6A67-4F27-BCD0-206D74AA5EFA}.Release|x64.Build.0 = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Debug|x64.ActiveCfg = Debug|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Debug|x64.Build.0 = Debug|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Dev|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Dev|Any CPU.Build.0 = Debug|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Dev|x64.ActiveCfg = Debug|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Dev|x64.Build.0 = Debug|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPrem|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPrem|Any CPU.Build.0 = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPrem|x64.ActiveCfg = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPrem|x64.Build.0 = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPremInstaller|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPremInstaller|Any CPU.Build.0 = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPremInstaller|x64.ActiveCfg = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.OnPremInstaller|x64.Build.0 = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Release|x64.ActiveCfg = Release|x64
+		{FA2F17A6-B8DC-4550-8C44-077474EF9ACD}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

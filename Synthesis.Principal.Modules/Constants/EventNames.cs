@@ -9,5 +9,6 @@ namespace Synthesis.PrincipalService.Constants
         public const string GroupDeleted = "GroupDeleted";
         public const string GroupUpdated = "GroupUpdated";
         public const string MachineCreated = "MachineCreated";
+        public const string TenantCreated = "TenantCreated";
     }
 }
