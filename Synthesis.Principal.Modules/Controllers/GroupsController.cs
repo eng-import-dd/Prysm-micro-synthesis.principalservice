@@ -59,7 +59,7 @@ namespace Synthesis.PrincipalService.Controllers
                 TenantId = tenantId,
                 Name = "Default",
                 IsLocked = true,
-                // IsDefault = true
+                IsDefault = true
             };
 
             return await CreateGroupAsync(defaultGroup, tenantId, Guid.Empty);
