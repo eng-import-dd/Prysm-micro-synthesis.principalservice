@@ -121,7 +121,11 @@ namespace Synthesis.PrincipalService.Controllers
 
             var result = await CreateUserInDb(user, tenantId);
 
-            await AssignUserLicense(result, user.LicenseType, tenantId);
+            //Tenant id will be null if the route is called using a service token. In that case don't try to assign a license (Trial user creation)
+            if (tenantId != Guid.Empty)
+            {
+                await AssignUserLicense(result, user.LicenseType, tenantId);
+            }
 
             await _eventService.PublishAsync(EventNames.UserCreated, result);
 
@@ -804,7 +808,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ArgumentException(errorMessage);
             }
 
-
             var licenseRequestDto = new UserLicenseDto
             {
                 AccountId = tenantId.ToString(),
@@ -913,7 +916,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         #region User Group Methods
 
-        public async Task<User> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
+        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -1098,13 +1101,13 @@ namespace Synthesis.PrincipalService.Controllers
             return true;
         }
 
-        private async Task<User> CreateUserGroupInDb(UserGroup UserGroup, User existingUser)
+        private async Task<UserGroup> CreateUserGroupInDb(UserGroup userGroup, User existingUser)
         {
             try
             {
-                existingUser.Groups.Add(UserGroup.GroupId);
-                await _userRepository.UpdateItemAsync(UserGroup.UserId, existingUser);
-                return existingUser;
+                existingUser.Groups.Add(userGroup.GroupId);
+                await _userRepository.UpdateItemAsync(userGroup.UserId, existingUser);
+                return userGroup;
             }
             catch (Exception ex)
             {

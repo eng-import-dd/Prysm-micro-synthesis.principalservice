@@ -243,13 +243,13 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta010\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta012\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Avro, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta002\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Serialization.Avro.1.0.0-beta003\lib\net452\Synthesis.Serialization.Avro.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.9.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.9\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
