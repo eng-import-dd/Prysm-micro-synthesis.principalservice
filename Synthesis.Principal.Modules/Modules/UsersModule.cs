@@ -70,7 +70,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Creates a User Group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(UserGroup.Example())
-                .ResponseFormat(User.Example());
+                .ResponseFormat(UserGroup.Example());
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, "/v1/users/canpromoteuser/{email}", CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")

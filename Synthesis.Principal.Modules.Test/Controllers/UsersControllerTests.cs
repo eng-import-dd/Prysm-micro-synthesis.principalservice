@@ -301,7 +301,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { tenantId }.AsEnumerable()));
             _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new User()));
+                .Returns(Task.FromResult(new UserGroup()));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
             Assert.Single(ex.Errors.ToList());
@@ -312,7 +312,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
         {
             _mockUserController.Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new User()));
+                .Returns(Task.FromResult(new UserGroup()));
 
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult<User>(null));
@@ -323,7 +323,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
-        public async Task CreateUserGroupAsyncReturnsUserIfSuccessful()
+        public async Task CreateUserGroupAsyncReturnsUserGroupIfSuccessful()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .Returns(Task.FromResult(new User()));
@@ -349,10 +349,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { tenantId }.AsEnumerable()));
             _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId))
-                .Returns(Task.FromResult(new User()));
+                .Returns(Task.FromResult(new UserGroup()));
 
             var result = await _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
-            Assert.IsType<User>(result);
+            Assert.IsType<UserGroup>(result);
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -360,7 +360,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateUserGroupAsyncReturnsValidationException()
         {
             _mockUserController.Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new User()));
+                .Returns(Task.FromResult(new UserGroup()));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()));
             Assert.Single(ex.Errors.ToList());

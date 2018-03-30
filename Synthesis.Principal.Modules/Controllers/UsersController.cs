@@ -916,7 +916,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         #region User Group Methods
 
-        public async Task<User> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
+        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -1101,13 +1101,13 @@ namespace Synthesis.PrincipalService.Controllers
             return true;
         }
 
-        private async Task<User> CreateUserGroupInDb(UserGroup UserGroup, User existingUser)
+        private async Task<UserGroup> CreateUserGroupInDb(UserGroup userGroup, User existingUser)
         {
             try
             {
-                existingUser.Groups.Add(UserGroup.GroupId);
-                await _userRepository.UpdateItemAsync(UserGroup.UserId, existingUser);
-                return existingUser;
+                existingUser.Groups.Add(userGroup.GroupId);
+                await _userRepository.UpdateItemAsync(userGroup.UserId, existingUser);
+                return userGroup;
             }
             catch (Exception ex)
             {
