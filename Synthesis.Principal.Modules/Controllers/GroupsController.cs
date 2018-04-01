@@ -57,7 +57,7 @@ namespace Synthesis.PrincipalService.Controllers
             var defaultGroup = new Group()
             {
                 TenantId = tenantId,
-                Name = "Default",
+                Name = "Basic_User",
                 IsLocked = true,
                 IsDefault = true
             };
