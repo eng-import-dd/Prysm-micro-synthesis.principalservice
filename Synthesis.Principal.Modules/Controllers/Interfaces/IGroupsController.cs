@@ -29,5 +29,6 @@ namespace Synthesis.PrincipalService.Controllers
         Task<bool> DeleteGroupAsync(Guid groupId, Guid userId);
 
         Task<Group> UpdateGroupAsync(Group group, Guid tenantId, Guid userId);
+        Task<Group> CreateDefaultGroupAsync(Guid tenantId);
     }
 }
