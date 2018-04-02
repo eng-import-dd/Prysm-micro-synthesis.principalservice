@@ -67,7 +67,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.Empty;
             await _controller.CreateDefaultGroupAsync(tenantId);
 
-            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == "Default" && x.IsLocked && x.IsDefault)));
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == "Basic_User" && x.IsLocked && x.IsDefault)));
         }
 
         [Fact]
