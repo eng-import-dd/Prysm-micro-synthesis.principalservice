@@ -99,7 +99,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<User> CreateUserAsync(User user, Guid tenantId, Guid createdBy)
         {
-            //TODO Check for CanManageUserLicenses permission if user.LicenseType != null
+            //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
 
             var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(user);
             if (!validationResult.IsValid)
@@ -739,15 +739,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
-
-            //TODO Check if it is a valid tenant
-            //var tenant = dc.Accounts.Find(tenantId);
-            //if (tenant == null)
-            //{
-            //    var ex = new Exception("Unable to provision user. The tanant could not be found with the given id.");
-            //    LogError(ex);
-            //    throw ex;
-            //}
 
             if (validationErrors.Any())
             {
