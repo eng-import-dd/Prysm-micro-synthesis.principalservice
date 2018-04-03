@@ -14,7 +14,6 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
@@ -57,7 +56,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly IGroupsController _controller;
+        private readonly GroupsController _controller;
+
+        [Fact]
+        public async Task DefaultGroupIsCreated()
+        {
+            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .Returns(Task.FromResult(new Group()));
+
+            var tenantId = Guid.Empty;
+            await _controller.CreateDefaultGroupAsync(tenantId);
+
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == "Basic_User" && x.IsLocked && x.IsDefault)));
+        }
 
         [Fact]
         public async Task CreateGroupAsyncReturnsNewGroupIfSuccessful()

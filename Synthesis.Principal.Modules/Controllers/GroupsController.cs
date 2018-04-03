@@ -9,10 +9,9 @@ using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Extensions;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -53,17 +52,30 @@ namespace Synthesis.PrincipalService.Controllers
             _logger = loggerFactory.GetLogger(this);
         }
 
+        public async Task<Group> CreateDefaultGroupAsync(Guid tenantId)
+        {
+            var defaultGroup = new Group()
+            {
+                TenantId = tenantId,
+                Name = "Basic_User",
+                IsLocked = true,
+                IsDefault = true
+            };
+
+            return await CreateGroupAsync(defaultGroup, tenantId, Guid.Empty);
+        }
+
         /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
         /// <param name="model">The model.</param>
         /// <param name="tenantId">The tenant identifier.</param>
-        /// <param name="userId">The user identifier.</param>
+        /// <param name="currentUserId">The user identifier.</param>
         /// <returns>
         /// Group object.
         /// </returns>
         /// <exception cref="ValidationFailedException"></exception>
-        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid userId)
+        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId)
         {
             var validationResult = await _createGroupValidator.ValidateAsync(model);
             if (!validationResult.IsValid)
@@ -73,7 +85,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Do not allow creation of a group with IsLocked set to true unless you are a superadmin
-            if (model.IsLocked && !IsSuperAdmin(userId))
+            if (model.IsLocked && (currentUserId != Guid.Empty || !IsSuperAdmin(currentUserId)))
             {
                 model.IsLocked = false;
             }
@@ -185,7 +197,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             //A list of the Groups which belong to the current user's tenant
 
-            //TODO: Checks here - Yusuf
+            //TODO: Checks here - Yusuf, CU-577 added to address this
             // Legacy code - public List<GroupDTO> GetGroupsForAccount(Guid accountId) - In DatabaseService.cs
             // In legacy cloud service there is usage of GroupPermissions and Permissions tables to determine the accessibility.
 
@@ -260,7 +272,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             //var userGroups = GetUserGroupsForUser(userId).Payload;
             //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
-            //TODO: Put code here to check User Group here - Yusuf
+            //TODO: Put code here to check User Group here - Yusuf, CU-577 added to address this
             return true;
         }
     }
