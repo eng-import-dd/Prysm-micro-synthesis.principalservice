@@ -15,21 +15,21 @@ namespace Synthesis.PrincipalService.Controllers
             _userRepository = repositoryFactor.CreateRepository<User>();
         }
 
-        public IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, GetUsersParams searchOptions)
+        public IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserSearchOptions searchOptions)
         {
-            var batchOptions = new BatchOptions
-            {
-                BatchSize = searchOptions.PageSize,
-                ContinuationToken = searchOptions.ContinuationToken
-            };
+            //var batchOptions = new BatchOptions
+            //{
+            //    BatchSize = searchOptions.PageSize,
+            //    ContinuationToken = searchOptions.ContinuationToken
+            //};
 
-            var query = _userRepository.CreateItemQuery(batchOptions);
+            var query = _userRepository.CreateItemQuery();
             query = BuildWhereClause(currentUserId, userIds, searchOptions, query);
             var batch = BuildOrderByClause(searchOptions, query);
             return batch;
         }
 
-        private IQueryable<User> BuildWhereClause(Guid? currentUserId, List<Guid> userIds, GetUsersParams searchOptions, IQueryable<User> query)
+        private IQueryable<User> BuildWhereClause(Guid? currentUserId, List<Guid> userIds, UserSearchOptions searchOptions, IQueryable<User> query)
         {
             query = query.Where(user => userIds.Contains(user.Id ?? Guid.Empty));
 
@@ -67,7 +67,7 @@ namespace Synthesis.PrincipalService.Controllers
             return query;
         }
 
-        private IQueryable<User> BuildOrderByClause(GetUsersParams searchOptions, IQueryable<User> query)
+        private IQueryable<User> BuildOrderByClause(UserSearchOptions searchOptions, IQueryable<User> query)
         {
             // TODO: See CU-568 - Define an index for each of these attributes
             return query;

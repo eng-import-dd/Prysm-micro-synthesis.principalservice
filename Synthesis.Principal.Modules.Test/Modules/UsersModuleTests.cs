@@ -257,7 +257,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForTenantReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
             var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
@@ -267,7 +267,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForTenantReturnsNotFound()
         {
-            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
             var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
@@ -277,7 +277,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForTenantReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<GetUsersParams>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
@@ -287,7 +287,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForTenantReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
             var response = await UnauthenticatedBrowser.Get($"/api/v1/users", BuildRequest);
@@ -297,7 +297,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetUsersForTenantReturnsInternalError()
         {
-            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<GetUsersParams>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
@@ -788,7 +788,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGuestUsersForTenantReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<GetUsersParams>()))
+            _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<UserSearchOptions>()))
                            .ThrowsAsync(new Exception());
 
             var response = await UserTokenBrowser.Get("/v1/users/guests", BuildRequest);

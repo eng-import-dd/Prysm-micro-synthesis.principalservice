@@ -25,6 +25,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Requests;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -48,6 +49,7 @@ namespace Synthesis.PrincipalService.Controllers
         private const string OrgAdminRoleName = "Org_Admin";
         private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
+        private readonly IProjectApi _projectApi;
         private readonly IRepository<UserInvite> _userInviteRepository;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
@@ -61,6 +63,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi">The license API.</param>
         /// <param name="emailApi">The email API.</param>
+        /// <param name="projectApi"></param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
         /// <param name="tenantDomainApi">The tenant domain API.</param>
@@ -74,6 +77,7 @@ namespace Synthesis.PrincipalService.Controllers
             ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailApi emailApi,
+            IProjectApi projectApi,
             IMapper mapper,
             string deploymentType,
             ITenantDomainApi tenantDomainApi,
@@ -95,6 +99,7 @@ namespace Synthesis.PrincipalService.Controllers
             _searchBuilder = searchBuilder;
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
+            _projectApi = projectApi;
         }
 
         public async Task<User> CreateUserAsync(User user, Guid tenantId, Guid createdBy)
@@ -167,7 +172,7 @@ namespace Synthesis.PrincipalService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserSearchOptions userSearchOptions)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -176,7 +181,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var userListResult = await GetTenantUsersFromDb(tenantId, userId, getUsersParams);
+            var userListResult = await GetTenantUsersFromDb(tenantId, userId, userSearchOptions);
             if (userListResult == null)
             {
                 _logger.Error($"Users resource could not be found for input data.");
@@ -187,7 +192,7 @@ namespace Synthesis.PrincipalService.Controllers
             return basicUserResponse;
         }
 
-        public async Task<PagingMetadata<User>> GetUsersForTenantAsync(GetUsersParams getUsersParams, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetadata<User>> GetUsersForTenantAsync(UserSearchOptions userSearchOptions, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(currentUserId);
             var tenantIdValidationresult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
@@ -220,7 +225,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"Users for the tenant could not be found");
             }
 
-            return await GetTenantUsersFromDb(tenantId, currentUserId, getUsersParams);
+            return await GetTenantUsersFromDb(tenantId, currentUserId, userSearchOptions);
         }
 
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
@@ -619,7 +624,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.PromotionNotPossible;
         }
 
-        public async Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, GetUsersParams getGuestUsersParams)
+        public async Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserSearchOptions userSearchOptions)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -643,22 +648,22 @@ namespace Synthesis.PrincipalService.Controllers
 
             criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
 
-            if (!string.IsNullOrEmpty(getGuestUsersParams.SearchValue))
+            if (!string.IsNullOrEmpty(userSearchOptions.SearchValue))
             {
                 criteria.Add(x =>
                     x != null &&
                     (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                        getGuestUsersParams.SearchValue.ToLower()) ||
-                    x != null && x.Email.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()) ||
-                    x != null && x.Username.ToLower().Contains(getGuestUsersParams.SearchValue.ToLower()));
+                        userSearchOptions.SearchValue.ToLower()) ||
+                    x != null && x.Email.ToLower().Contains(userSearchOptions.SearchValue.ToLower()) ||
+                    x != null && x.Username.ToLower().Contains(userSearchOptions.SearchValue.ToLower()));
             }
-            if (string.IsNullOrWhiteSpace(getGuestUsersParams.SortColumn))
+            if (string.IsNullOrWhiteSpace(userSearchOptions.SortColumn))
             {
                 orderBy = u => u.FirstName;
             }
             else
             {
-                switch (getGuestUsersParams.SortColumn.ToLower())
+                switch (userSearchOptions.SortColumn.ToLower())
                 {
                     case "firstname":
                         orderBy = u => u.FirstName;
@@ -686,9 +691,9 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 Criteria = criteria,
                 OrderBy = orderBy,
-                SortDescending = getGuestUsersParams.SortDescending,
-                ContinuationToken = getGuestUsersParams.ContinuationToken,
-                ChunkSize = getGuestUsersParams.PageSize
+                SortDescending = userSearchOptions.SortDescending,
+                ContinuationToken = userSearchOptions.ContinuationToken,
+                ChunkSize = userSearchOptions.PageSize
             };
 
             var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
@@ -698,7 +703,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 CurrentCount = filteredUserCount,
                 List = guestUsersInTenant,
-                SearchValue = getGuestUsersParams.SearchValue,
+                SearchValue = userSearchOptions.SearchValue,
                 ContinuationToken = guestUsersInTenantResult.ContinuationToken,
                 IsLastChunk = guestUsersInTenantResult.IsLastChunk
             };
@@ -1248,11 +1253,11 @@ namespace Synthesis.PrincipalService.Controllers
             return !users.Any();
         }
 
-        public async Task<PagingMetadata<User>> GetTenantUsersFromDb(Guid tenantId, Guid? currentUserId, GetUsersParams getUsersParams)
+        public async Task<PagingMetadata<User>> GetTenantUsersFromDb(Guid tenantId, Guid currentUserId, UserSearchOptions userSearchOptions)
         {
-            if (getUsersParams == null)
+            if (userSearchOptions == null)
             {
-                getUsersParams = new GetUsersParams
+                userSearchOptions = new UserSearchOptions
                 {
                     SearchValue = "",
                     OnlyCurrentUser = false,
@@ -1270,20 +1275,95 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var tenantUsers = tenantUsersResponse.Payload.ToList();
-            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, getUsersParams);
+            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, userSearchOptions);
             var batch = await _queryRunner.RunQuery(query);
-            var usersInTenants = batch.ToList();
-            var filteredUserCount = usersInTenants.Count;
-            var resultingUsers = usersInTenants;
+            var userList = batch.ToList();
+
+            switch (userSearchOptions.GroupingType)
+            {
+                case UserGroupingType.Project when !userSearchOptions.UserGroupingId.Equals(Guid.Empty):
+                    userList = await FilterListByProject(userList, userSearchOptions);
+                    break;
+                case UserGroupingType.Group:
+                    userList = await FilterListByGroup(userList, tenantId, currentUserId, userSearchOptions);
+                    break;
+                case UserGroupingType.None:
+                    break;
+            }
+
+            var totalRecords = userList.Count;
+
+            if (userSearchOptions.PageNumber >= 1 && userSearchOptions.PageSize >= 1)
+            {
+                userList = userList.Skip((userSearchOptions.PageNumber - 1) * userSearchOptions.PageSize)
+                    .Take(userSearchOptions.PageSize)
+                    .ToList();
+            }
+
+            //return new PagingMetadata<User>
+            //{
+            //    CurrentCount = filteredUserCount,
+            //    List = currentpage,
+            //    SearchValue = userSearchOptions.SearchValue,
+            //    ContinuationToken = batch.ContinuationToken,
+            //    IsLastChunk = string.IsNullOrEmpty(batch.ContinuationToken)
+            //};
 
             return new PagingMetadata<User>
             {
-                CurrentCount = filteredUserCount,
-                List = resultingUsers,
-                SearchValue = getUsersParams.SearchValue,
-                ContinuationToken = batch.ContinuationToken,
-                IsLastChunk = string.IsNullOrEmpty(batch.ContinuationToken)
+                CurrentCount = userList.Count,
+                TotalRecords = totalRecords,
+                List = userList,
+                SearchValue = userSearchOptions.SearchValue
             };
+        }
+
+        private async Task<List<User>> FilterListByGroup(List<User> userList,
+                                                         Guid tenantId,
+                                                         Guid currentUserId,
+                                                         UserSearchOptions userSearchOptions)
+        {
+            var usersIdsInGroup = await GetUserIdsByGroupIdAsync(userSearchOptions.UserGroupingId, tenantId, currentUserId);
+            if (usersIdsInGroup.Count <= 0)
+            {
+                return userList;
+            }
+
+            if (userSearchOptions.ExcludeUsersInGroup)
+            {
+                var excludedUsers = userList.Where(u => !usersIdsInGroup.Contains(u.Id ?? Guid.Empty));
+                userList = excludedUsers.ToList();
+            }
+            else
+            {
+                var usersGroupedByPermissions = userList.Where(u => usersIdsInGroup.Contains(u.Id ?? Guid.Empty)).ToList();
+                userList = usersGroupedByPermissions.ToList();
+            }
+
+            return userList;
+        }
+
+        private async Task<List<User>> FilterListByProject(List<User> userList, UserSearchOptions userSearchOptions)
+        {
+            var project = await _projectApi.GetProjectByIdAsync(userSearchOptions.UserGroupingId);
+            if (project.Payload == null)
+            {
+                return userList;
+            }
+
+            var usersInProject = project.Payload.UserIds.ToList();
+            if (userSearchOptions.ExcludeUsersInGroup)
+            {
+                var excludedUsers = userList.Where(u => !usersInProject.Contains(u.Id ?? Guid.Empty));
+                userList = excludedUsers.ToList();
+            }
+            else
+            {
+                var usersGroupedByProject = userList.Where(u => usersInProject.Contains(u.Id ?? Guid.Empty));
+                userList = usersGroupedByProject.ToList();
+            }
+
+            return userList;
         }
 
         private void TrimNameOfUser(User user)

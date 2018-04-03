@@ -43,9 +43,10 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(User.Example())
                 .ResponseFormat(User.Example());
 
-            CreateRoute("GetUsersForTenant", HttpMethod.Get, "/v1/users", GetUsersForTenantAsync)
+            CreateRoute("GetUsersForTenant", HttpMethod.Post, "/v1/users", GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .RequestFormat(UserSearchOptions.Example())
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
@@ -102,9 +103,10 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<User> { User.Example() });
 
-            CreateRoute("GetUsersBasic", HttpMethod.Get, "/v1/users/basic", GetUsersBasicAsync)
+            CreateRoute("GetUsersBasic", HttpMethod.Post, "/v1/users/basic", GetUsersBasicAsync)
                 .Description("Retrieves a users basic details")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .RequestFormat(UserSearchOptions.Example())
                 .ResponseFormat(new PagingMetadata<BasicUser> { List = new List<BasicUser> { BasicUser.Example() } });
 
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
@@ -122,9 +124,10 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(LicenseType.Default);
 
-            CreateRoute("GetGuestUsersForTenant", HttpMethod.Get, "/v1/users/guests", GetGuestUsersForTenantAsync)
+            CreateRoute("GetGuestUsersForTenant", HttpMethod.Post, "/v1/users/guests", GetGuestUsersForTenantAsync)
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .RequestFormat(UserSearchOptions.Example())
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
             
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
@@ -301,8 +304,8 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var getUsersParams = this.Bind<GetUsersParams>();
-                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, getUsersParams);
+                var userSearchOptions = this.Bind<UserSearchOptions>();
+                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userSearchOptions);
 
             }
             catch (Exception ex)
@@ -368,10 +371,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            GetUsersParams getUsersParams;
+            UserSearchOptions getUsersParams;
             try
             {
-                getUsersParams = this.Bind<GetUsersParams>();
+                getUsersParams = this.Bind<UserSearchOptions>();
             }
 
             catch (Exception ex)
@@ -572,10 +575,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            GetUsersParams getGuestUsersParams;
+            UserSearchOptions getGuestUsersParams;
             try
             {
-                getGuestUsersParams = this.Bind<GetUsersParams>();
+                getGuestUsersParams = this.Bind<UserSearchOptions>();
             }
             catch (Exception ex)
             {
