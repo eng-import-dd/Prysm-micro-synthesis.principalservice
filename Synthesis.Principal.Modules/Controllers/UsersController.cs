@@ -705,7 +705,7 @@ namespace Synthesis.PrincipalService.Controllers
             var filteredUserCount = guestUsersInTenant.Count;
             var returnMetaData = new PagingMetadata<User>
             {
-                CurrentCount = filteredUserCount,
+                FilteredRecords = filteredUserCount,
                 List = guestUsersInTenant,
                 SearchValue = userSearchOptions.SearchValue,
                 ContinuationToken = guestUsersInTenantResult.ContinuationToken,
@@ -1269,6 +1269,8 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var tenantUsers = tenantUsersResponse.Payload.ToList();
+            var totalRecords = tenantUsers.Count;
+
             var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, userSearchOptions);
             var batch = await _queryRunner.RunQuery(query);
             var userList = batch.ToList();
@@ -1285,7 +1287,7 @@ namespace Synthesis.PrincipalService.Controllers
                     break;
             }
 
-            var filteredUsersCount = userList.Count;
+            var filteredRecords = userList.Count;
 
             if (userSearchOptions.PageNumber >= 1 && userSearchOptions.PageSize >= 1)
             {
@@ -1296,8 +1298,8 @@ namespace Synthesis.PrincipalService.Controllers
 
             return new PagingMetadata<User>
             {
-                CurrentCount = filteredUsersCount,
-                TotalRecords = filteredUsersCount,
+                FilteredRecords = filteredRecords,
+                TotalRecords = totalRecords,
                 List = userList,
                 SearchValue = userSearchOptions.SearchValue
             };

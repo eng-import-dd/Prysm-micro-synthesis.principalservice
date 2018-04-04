@@ -508,7 +508,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userSearchOptions);
             Assert.Empty(result.List);
-            Assert.Equal(0, result.CurrentCount);
+            Assert.Equal(0, result.FilteredRecords);
             Assert.True(result.IsLastChunk);
             Assert.Null(result.SearchValue);
             Assert.Null(result.SortColumn);
@@ -531,7 +531,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userSearchOptions);
 
             Assert.Equal(3, result.List.Count);
-            Assert.Equal(3, result.CurrentCount);
+            Assert.Equal(3, result.FilteredRecords);
             Assert.Equal("test", result.ContinuationToken);
             Assert.False(result.IsLastChunk);
         }
