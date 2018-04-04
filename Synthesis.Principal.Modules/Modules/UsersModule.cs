@@ -43,7 +43,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(User.Example())
                 .ResponseFormat(User.Example());
 
-            CreateRoute("GetUsersForTenant", HttpMethod.Post, "/v1/users", GetUsersForTenantAsync)
+            CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsersForTenant, GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(UserSearchOptions.Example())

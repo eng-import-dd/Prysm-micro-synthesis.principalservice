@@ -1285,7 +1285,7 @@ namespace Synthesis.PrincipalService.Controllers
                     break;
             }
 
-            var totalRecords = userList.Count;
+            var filteredUsersCount = userList.Count;
 
             if (userSearchOptions.PageNumber >= 1 && userSearchOptions.PageSize >= 1)
             {
@@ -1294,19 +1294,10 @@ namespace Synthesis.PrincipalService.Controllers
                     .ToList();
             }
 
-            //return new PagingMetadata<User>
-            //{
-            //    CurrentCount = filteredUserCount,
-            //    List = currentpage,
-            //    SearchValue = userSearchOptions.SearchValue,
-            //    ContinuationToken = batch.ContinuationToken,
-            //    IsLastChunk = string.IsNullOrEmpty(batch.ContinuationToken)
-            //};
-
             return new PagingMetadata<User>
             {
-                CurrentCount = userList.Count,
-                TotalRecords = totalRecords,
+                CurrentCount = filteredUsersCount,
+                TotalRecords = filteredUsersCount,
                 List = userList,
                 SearchValue = userSearchOptions.SearchValue
             };
