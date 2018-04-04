@@ -7,6 +7,6 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUserSearchBuilder
     {
-        IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserSearchOptions searchOptions);
+        IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions);
     }
 }

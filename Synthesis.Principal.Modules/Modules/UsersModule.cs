@@ -46,7 +46,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsersForTenant, GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UserSearchOptions.Example())
+                .RequestFormat(UserFilteringOptions.Example())
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
 
             CreateRoute("UpdateUser", HttpMethod.Put, "/v1/users/{id:guid}", UpdateUserAsync)
@@ -106,7 +106,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUsersBasic", HttpMethod.Post, "/v1/users/basic", GetUsersBasicAsync)
                 .Description("Retrieves a users basic details")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UserSearchOptions.Example())
+                .RequestFormat(UserFilteringOptions.Example())
                 .ResponseFormat(new PagingMetadata<BasicUser> { List = new List<BasicUser> { BasicUser.Example() } });
 
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, "/v1/users/{userId:guid}/basic", GetUserByIdBasicAsync)
@@ -127,7 +127,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetGuestUsersForTenant", HttpMethod.Post, "/v1/users/guests", GetGuestUsersForTenantAsync)
                 .Description("Gets a guest User Resource for the specified Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
-                .RequestFormat(UserSearchOptions.Example())
+                .RequestFormat(UserFilteringOptions.Example())
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
             
             CreateRoute("DeleteUser", HttpMethod.Delete, "/v1/users/{id:guid}", DeleteUserAsync)
@@ -304,8 +304,8 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var userSearchOptions = this.Bind<UserSearchOptions>();
-                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userSearchOptions);
+                var userFilteringOptions = this.Bind<UserFilteringOptions>();
+                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userFilteringOptions);
 
             }
             catch (Exception ex)
@@ -371,10 +371,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            UserSearchOptions getUsersParams;
+            UserFilteringOptions userFilteringOptions;
             try
             {
-                getUsersParams = this.Bind<UserSearchOptions>();
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
             }
 
             catch (Exception ex)
@@ -385,7 +385,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetUsersForTenantAsync(getUsersParams, TenantId, PrincipalId);
+                return await _userController.GetUsersForTenantAsync(userFilteringOptions, TenantId, PrincipalId);
             }
             catch (NotFoundException)
             {
@@ -575,10 +575,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            UserSearchOptions getGuestUsersParams;
+            UserFilteringOptions userFilteringOptions;
             try
             {
-                getGuestUsersParams = this.Bind<UserSearchOptions>();
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
             }
             catch (Exception ex)
             {
@@ -588,7 +588,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetGuestUsersForTenantAsync(TenantId, getGuestUsersParams);
+                return await _userController.GetGuestUsersForTenantAsync(TenantId, userFilteringOptions);
             }
             catch (NotFoundException)
             {

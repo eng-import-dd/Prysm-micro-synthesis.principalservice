@@ -15,34 +15,28 @@ namespace Synthesis.PrincipalService.Controllers
             _userRepository = repositoryFactor.CreateRepository<User>();
         }
 
-        public IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserSearchOptions searchOptions)
+        public IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
-            //var batchOptions = new BatchOptions
-            //{
-            //    BatchSize = searchOptions.PageSize,
-            //    ContinuationToken = searchOptions.ContinuationToken
-            //};
-
             var query = _userRepository.CreateItemQuery();
-            query = BuildWhereClause(currentUserId, userIds, searchOptions, query);
-            var batch = BuildOrderByClause(searchOptions, query);
+            query = BuildWhereClause(currentUserId, userIds, filteringOptions, query);
+            var batch = BuildOrderByClause(filteringOptions, query);
             return batch;
         }
 
-        private IQueryable<User> BuildWhereClause(Guid? currentUserId, List<Guid> userIds, UserSearchOptions searchOptions, IQueryable<User> query)
+        private IQueryable<User> BuildWhereClause(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, IQueryable<User> query)
         {
             query = query.Where(user => userIds.Contains(user.Id ?? Guid.Empty));
 
-            if (searchOptions.OnlyCurrentUser)
+            if (filteringOptions.OnlyCurrentUser)
             {
                 query = query.Where(user => userIds.Contains(currentUserId ?? Guid.Empty));
             }
 
-            if (!searchOptions.IncludeInactive)
+            if (!filteringOptions.IncludeInactive)
             {
                 query = query.Where(user => user.IsLocked == false);
             }
-            switch (searchOptions.IdpFilter)
+            switch (filteringOptions.IdpFilter)
             {
                 case IdpFilter.IdpUsers:
                     query = query.Where(user => user.IsIdpUser == true);
@@ -55,9 +49,9 @@ namespace Synthesis.PrincipalService.Controllers
                     break;
             }
 
-            if (!string.IsNullOrEmpty(searchOptions.SearchValue))
+            if (!string.IsNullOrEmpty(filteringOptions.SearchValue))
             {
-                var searchValue = searchOptions.SearchValue.ToLower();
+                var searchValue = filteringOptions.SearchValue.ToLower();
                 query = query.Where(
                     user => (user.FirstName + " " + user.LastName).ToLower().Contains(searchValue)
                         || user.Email.ToLower().Contains(searchValue)
@@ -67,21 +61,21 @@ namespace Synthesis.PrincipalService.Controllers
             return query;
         }
 
-        private IQueryable<User> BuildOrderByClause(UserSearchOptions searchOptions, IQueryable<User> query)
+        private IQueryable<User> BuildOrderByClause(UserFilteringOptions filteringOptions, IQueryable<User> query)
         {
             // TODO: See CU-568 - Define an index for each of these attributes
             return query;
-            //switch (searchOptions.SortColumn?.ToLower())
+            //switch (filteringOptions.SortColumn?.ToLower())
             //{
             //    case "lastname":
-            //        return searchOptions.SortDescending ? query.OrderByDescending(x => x.LastName) : query.OrderBy(x => x.LastName);
+            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.LastName) : query.OrderBy(x => x.LastName);
             //    case "email":
-            //        return searchOptions.SortDescending ? query.OrderByDescending(x => x.Email) : query.OrderBy(x => x.Email);
+            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Email) : query.OrderBy(x => x.Email);
             //    case "username":
-            //        return searchOptions.SortDescending ? query.OrderByDescending(x => x.Username) : query.OrderBy(x => x.Username);
+            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Username) : query.OrderBy(x => x.Username);
             //    case "firstname":
             //    default:
-            //        return searchOptions.SortDescending ? query.OrderByDescending(x => x.FirstName) : query.OrderBy(x => x.FirstName);
+            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.FirstName) : query.OrderBy(x => x.FirstName);
             //}
         }
     }

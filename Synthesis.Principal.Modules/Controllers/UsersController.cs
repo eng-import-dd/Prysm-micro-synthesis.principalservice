@@ -176,7 +176,7 @@ namespace Synthesis.PrincipalService.Controllers
         }
 
         /// <inheritdoc />
-        public async Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserSearchOptions userSearchOptions)
+        public async Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -185,7 +185,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var userListResult = await GetTenantUsersFromDb(tenantId, userId, userSearchOptions);
+            var userListResult = await GetTenantUsersFromDb(tenantId, userId, userFilteringOptions);
             if (userListResult == null)
             {
                 _logger.Error($"Users resource could not be found for input data.");
@@ -196,7 +196,7 @@ namespace Synthesis.PrincipalService.Controllers
             return basicUserResponse;
         }
 
-        public async Task<PagingMetadata<User>> GetUsersForTenantAsync(UserSearchOptions userSearchOptions, Guid tenantId, Guid currentUserId)
+        public async Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(currentUserId);
             var tenantIdValidationresult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
@@ -229,7 +229,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"Users for the tenant could not be found");
             }
 
-            return await GetTenantUsersFromDb(tenantId, currentUserId, userSearchOptions);
+            return await GetTenantUsersFromDb(tenantId, currentUserId, userFilteringOptions);
         }
 
         public async Task<User> UpdateUserAsync(Guid userId, User userModel)
@@ -628,7 +628,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.PromotionNotPossible;
         }
 
-        public async Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserSearchOptions userSearchOptions)
+        public async Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserFilteringOptions userFilteringOptions)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -652,22 +652,22 @@ namespace Synthesis.PrincipalService.Controllers
 
             criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
 
-            if (!string.IsNullOrEmpty(userSearchOptions.SearchValue))
+            if (!string.IsNullOrEmpty(userFilteringOptions.SearchValue))
             {
                 criteria.Add(x =>
                     x != null &&
                     (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                        userSearchOptions.SearchValue.ToLower()) ||
-                    x != null && x.Email.ToLower().Contains(userSearchOptions.SearchValue.ToLower()) ||
-                    x != null && x.Username.ToLower().Contains(userSearchOptions.SearchValue.ToLower()));
+                        userFilteringOptions.SearchValue.ToLower()) ||
+                    x != null && x.Email.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()) ||
+                    x != null && x.Username.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()));
             }
-            if (string.IsNullOrWhiteSpace(userSearchOptions.SortColumn))
+            if (string.IsNullOrWhiteSpace(userFilteringOptions.SortColumn))
             {
                 orderBy = u => u.FirstName;
             }
             else
             {
-                switch (userSearchOptions.SortColumn.ToLower())
+                switch (userFilteringOptions.SortColumn.ToLower())
                 {
                     case "firstname":
                         orderBy = u => u.FirstName;
@@ -695,9 +695,9 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 Criteria = criteria,
                 OrderBy = orderBy,
-                SortDescending = userSearchOptions.SortDescending,
-                ContinuationToken = userSearchOptions.ContinuationToken,
-                ChunkSize = userSearchOptions.PageSize
+                SortDescending = userFilteringOptions.SortDescending,
+                ContinuationToken = userFilteringOptions.ContinuationToken,
+                ChunkSize = userFilteringOptions.PageSize
             };
 
             var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
@@ -707,7 +707,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 FilteredRecords = filteredUserCount,
                 List = guestUsersInTenant,
-                SearchValue = userSearchOptions.SearchValue,
+                SearchValue = userFilteringOptions.SearchValue,
                 ContinuationToken = guestUsersInTenantResult.ContinuationToken,
                 IsLastChunk = guestUsersInTenantResult.IsLastChunk
             };
@@ -1247,11 +1247,11 @@ namespace Synthesis.PrincipalService.Controllers
             return !users.Any();
         }
 
-        public async Task<PagingMetadata<User>> GetTenantUsersFromDb(Guid tenantId, Guid currentUserId, UserSearchOptions userSearchOptions)
+        public async Task<PagingMetadata<User>> GetTenantUsersFromDb(Guid tenantId, Guid currentUserId, UserFilteringOptions userFilteringOptions)
         {
-            if (userSearchOptions == null)
+            if (userFilteringOptions == null)
             {
-                userSearchOptions = new UserSearchOptions
+                userFilteringOptions = new UserFilteringOptions
                 {
                     SearchValue = "",
                     OnlyCurrentUser = false,
@@ -1271,17 +1271,17 @@ namespace Synthesis.PrincipalService.Controllers
             var tenantUsers = tenantUsersResponse.Payload.ToList();
             var totalRecords = tenantUsers.Count;
 
-            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, userSearchOptions);
+            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, userFilteringOptions);
             var batch = await _queryRunner.RunQuery(query);
             var userList = batch.ToList();
 
-            switch (userSearchOptions.GroupingType)
+            switch (userFilteringOptions.GroupingType)
             {
-                case UserGroupingType.Project when !userSearchOptions.UserGroupingId.Equals(Guid.Empty):
-                    userList = await FilterListByProject(userList, userSearchOptions);
+                case UserGroupingType.Project when !userFilteringOptions.UserGroupingId.Equals(Guid.Empty):
+                    userList = await FilterListByProject(userList, userFilteringOptions);
                     break;
                 case UserGroupingType.Group:
-                    userList = await FilterListByGroup(userList, tenantId, currentUserId, userSearchOptions);
+                    userList = await FilterListByGroup(userList, tenantId, currentUserId, userFilteringOptions);
                     break;
                 case UserGroupingType.None:
                     break;
@@ -1289,10 +1289,10 @@ namespace Synthesis.PrincipalService.Controllers
 
             var filteredRecords = userList.Count;
 
-            if (userSearchOptions.PageNumber >= 1 && userSearchOptions.PageSize >= 1)
+            if (userFilteringOptions.PageNumber >= 1 && userFilteringOptions.PageSize >= 1)
             {
-                userList = userList.Skip((userSearchOptions.PageNumber - 1) * userSearchOptions.PageSize)
-                    .Take(userSearchOptions.PageSize)
+                userList = userList.Skip((userFilteringOptions.PageNumber - 1) * userFilteringOptions.PageSize)
+                    .Take(userFilteringOptions.PageSize)
                     .ToList();
             }
 
@@ -1301,22 +1301,22 @@ namespace Synthesis.PrincipalService.Controllers
                 FilteredRecords = filteredRecords,
                 TotalRecords = totalRecords,
                 List = userList,
-                SearchValue = userSearchOptions.SearchValue
+                SearchValue = userFilteringOptions.SearchValue
             };
         }
 
         private async Task<List<User>> FilterListByGroup(List<User> userList,
                                                          Guid tenantId,
                                                          Guid currentUserId,
-                                                         UserSearchOptions userSearchOptions)
+                                                         UserFilteringOptions userFilteringOptions)
         {
-            var usersIdsInGroup = await GetUserIdsByGroupIdAsync(userSearchOptions.UserGroupingId, tenantId, currentUserId);
+            var usersIdsInGroup = await GetUserIdsByGroupIdAsync(userFilteringOptions.UserGroupingId, tenantId, currentUserId);
             if (usersIdsInGroup.Count <= 0)
             {
                 return userList;
             }
 
-            if (userSearchOptions.ExcludeUsersInGroup)
+            if (userFilteringOptions.ExcludeUsersInGroup)
             {
                 var excludedUsers = userList.Where(u => !usersIdsInGroup.Contains(u.Id ?? Guid.Empty));
                 userList = excludedUsers.ToList();
@@ -1330,16 +1330,16 @@ namespace Synthesis.PrincipalService.Controllers
             return userList;
         }
 
-        private async Task<List<User>> FilterListByProject(List<User> userList, UserSearchOptions userSearchOptions)
+        private async Task<List<User>> FilterListByProject(List<User> userList, UserFilteringOptions userFilteringOptions)
         {
-            var project = await _projectApi.GetProjectByIdAsync(userSearchOptions.UserGroupingId);
+            var project = await _projectApi.GetProjectByIdAsync(userFilteringOptions.UserGroupingId);
             if (project.Payload == null)
             {
                 return userList;
             }
 
             var usersInProject = project.Payload.UserIds.ToList();
-            if (userSearchOptions.ExcludeUsersInGroup)
+            if (userFilteringOptions.ExcludeUsersInGroup)
             {
                 var excludedUsers = userList.Where(u => !usersInProject.Contains(u.Id ?? Guid.Empty));
                 userList = excludedUsers.ToList();

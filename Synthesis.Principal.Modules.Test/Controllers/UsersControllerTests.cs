@@ -504,9 +504,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
             var tenantId = Guid.NewGuid();
-            var userSearchOptions = new UserSearchOptions();
+            var userFilteringOptions = new UserFilteringOptions();
 
-            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userSearchOptions);
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userFilteringOptions);
             Assert.Empty(result.List);
             Assert.Equal(0, result.FilteredRecords);
             Assert.True(result.IsLastChunk);
@@ -520,7 +520,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetOrderedPaginatedItemsAsync(It.IsAny<OrderedQueryParameters<User, string>>()))
                 .ReturnsAsync(new PaginatedResponse<User> { ContinuationToken = "test", Items = new List<User> { new User(), new User(), new User() } });
             var tenantId = Guid.NewGuid();
-            var userSearchOptions = new UserSearchOptions();
+            var userFilteringOptions = new UserFilteringOptions();
             _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
@@ -528,7 +528,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
-            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userSearchOptions);
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userFilteringOptions);
 
             Assert.Equal(3, result.List.Count);
             Assert.Equal(3, result.FilteredRecords);
@@ -707,9 +707,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var userSearchOptions = new UserSearchOptions();
+            var userFilteringOptions = new UserFilteringOptions();
 
-            var result = await _controller.GetUsersBasicAsync(tenantId, userId, userSearchOptions);
+            var result = await _controller.GetUsersBasicAsync(tenantId, userId, userFilteringOptions);
             Assert.Equal(count, result.List.Count);
         }
 
@@ -750,10 +750,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var userSearchOptions = new UserSearchOptions();
+            var userFilteringOptions = new UserFilteringOptions();
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { userId }.AsEnumerable()));
-            var result = await _controller.GetUsersForTenantAsync(userSearchOptions, tenantId, userId);
+            var result = await _controller.GetUsersForTenantAsync(userFilteringOptions, tenantId, userId);
             Assert.Equal(count, result.List.Count);
         }
 

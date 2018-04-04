@@ -17,9 +17,9 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false);
 
-        Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserSearchOptions userSearchOptions);
+        Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
 
-        Task<PagingMetadata<User>> GetUsersForTenantAsync(UserSearchOptions userSearchOptions, Guid tenantId, Guid currentUserId);
+        Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId);
 
         Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds);
 
@@ -31,7 +31,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<List<Guid>> GetGroupIdsByUserIdAsync(Guid userId);
 
-        Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserSearchOptions userSearchOptions);
+        Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserFilteringOptions userFilteringOptions);
 
         Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy);
 
