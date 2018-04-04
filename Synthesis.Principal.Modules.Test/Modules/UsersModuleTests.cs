@@ -260,7 +260,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
+            var response = await UserTokenBrowser.Post("/api/v1/users/tenant", ctx =>BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -270,7 +270,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
+            var response = await UserTokenBrowser.Post("/api/v1/users/tenant", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -280,7 +280,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
+            var response = await UserTokenBrowser.Post("/api/v1/users/tenant", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -290,7 +290,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
-            var response = await UnauthenticatedBrowser.Get($"/api/v1/users", BuildRequest);
+            var response = await UnauthenticatedBrowser.Post("/api/v1/users/tenant", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -300,7 +300,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserSearchOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users", BuildRequest);
+            var response = await UserTokenBrowser.Post("/api/v1/users/tenant", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -772,7 +772,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGuestUsersForTenantSuccess()
         {
-            var response = await UserTokenBrowser.Get("/v1/users/guests", BuildRequest);
+            var response = await UserTokenBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -780,7 +780,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGuestUsersForTenantReturnsUnauthorized()
         {
-            var response = await UnauthenticatedBrowser.Get("/v1/users/guests", BuildRequest);
+            var response = await UnauthenticatedBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -791,7 +791,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<UserSearchOptions>()))
                            .ThrowsAsync(new Exception());
 
-            var response = await UserTokenBrowser.Get("/v1/users/guests", BuildRequest);
+            var response = await UserTokenBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserSearchOptions()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
