@@ -254,10 +254,11 @@ namespace Synthesis.PrincipalService.Controllers
 
                 var tenantUsersList = new List<User>();
 
+                var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+                var userIds = result.Payload.ToList();
+
                 foreach (var batch in invitedEmails.Batch(150))
                 {
-                    var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-                    var userIds = result.Payload.ToList();
                     var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email));
                     tenantUsersList.AddRange(tenantUsers);
                 }
