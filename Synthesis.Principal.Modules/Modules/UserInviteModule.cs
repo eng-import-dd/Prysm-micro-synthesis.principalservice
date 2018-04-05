@@ -129,7 +129,8 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            bool allUsers = input.allusers;
+            bool.TryParse(Request.Query["allusers"], out bool allUsers);
+
             try
             {
                 var result = await _userInviteController.GetUsersInvitedForTenantAsync(TenantId, allUsers);
