@@ -118,6 +118,8 @@ namespace Synthesis.PrincipalService.Controllers
             user.CreatedDate = DateTime.Now;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
+            user.Email = user.Email?.ToLower();
+            user.Username = user.Username?.ToLower();
 
             var result = await CreateUserInDb(user, tenantId);
 
@@ -265,6 +267,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            email = email?.ToLower();
             var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
             var existingUser = userList.FirstOrDefault();
             if (existingUser == null)
@@ -321,9 +324,11 @@ namespace Synthesis.PrincipalService.Controllers
             // Trim up the names
             request.FirstName = request.FirstName?.Trim();
             request.LastName = request.LastName?.Trim();
+            request.Email = request.Email?.ToLower();
+            request.Username = request.Username?.ToLower();
 
             //TODO : Set guest password - to be fixed in guest service, CU-577 added to address this
-            
+
             // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
@@ -558,7 +563,8 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationException("Email/Username is either empty or invalid");
             }
 
-            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.Username.Equals(username));
+            username = username?.ToLower();
+            var userList = await _userRepository.GetItemsAsync(u => u.Email == username || u.Username == username);
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
             {
@@ -768,11 +774,11 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (string.IsNullOrEmpty(user.Username))
             {
-                user.Username = existingUser.Username;
+                user.Username = existingUser.Username?.ToLower();
             }
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
-            existingUser.Email = user.Email;
+            existingUser.Email = user.Email?.ToLower();
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
@@ -1229,6 +1235,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {
+            username = username?.ToLower();
             var users = await _userRepository
                             .GetItemsAsync(u => userId == null || userId.Value == Guid.Empty
                                                     ? u.Username == username
@@ -1238,6 +1245,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueEmail(Guid? userId, string email)
         {
+            email = email?.ToLower();
             var users = await _userRepository
                             .GetItemsAsync(u => userId == null || userId.Value == Guid.Empty
                                                     ? u.Email == email
