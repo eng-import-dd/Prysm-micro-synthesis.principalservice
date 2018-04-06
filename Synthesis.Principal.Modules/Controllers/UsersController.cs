@@ -123,6 +123,8 @@ namespace Synthesis.PrincipalService.Controllers
             user.CreatedDate = DateTime.Now;
             user.FirstName = user.FirstName.Trim();
             user.LastName = user.LastName.Trim();
+            user.Email = user.Email?.ToLower();
+            user.Username = user.Username?.ToLower();
 
             var result = await CreateUserInDb(user, tenantId);
 
@@ -270,6 +272,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            email = email?.ToLower();
             var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(email));
             var existingUser = userList.FirstOrDefault();
             if (existingUser == null)
@@ -326,9 +329,11 @@ namespace Synthesis.PrincipalService.Controllers
             // Trim up the names
             request.FirstName = request.FirstName?.Trim();
             request.LastName = request.LastName?.Trim();
+            request.Email = request.Email?.ToLower();
+            request.Username = request.Username?.ToLower();
 
-            //TODO : Set guest password - to be fixed in guest service
-            
+            //TODO : Set guest password - to be fixed in guest service, CU-577 added to address this
+
             // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
@@ -385,7 +390,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Validation failed while attempting to promote guest.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            
+
             if (autoPromote)
             {
                 var licenseAvailable = await IsLicenseAvailable(tenantId, licenseType);
@@ -420,7 +425,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (!autoPromote && licenseType != LicenseType.Default)
             {
-                //Todo Check if the user has CanManageUserLicenses permission
+                //Todo Check if the user has CanManageUserLicenses permission, CU-577 added to address this
                 //var permissions = CollaborationService.GetGroupPermissionsForUser(UserId).Payload;
                 //if (permissions == null || !permissions.Contains(PermissionEnum.CanManageUserLicenses))
                 //{
@@ -446,7 +451,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new LicenseAssignmentFailedException(errorMessage, userId);
             }
 
-            await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = user.Email, FirstName = user.FirstName });
+            await SendWelcomeEmailAsync(user.Email, user.FirstName);
 
             return CanPromoteUserResultCode.UserCanBePromoted;
         }
@@ -471,7 +476,7 @@ namespace Synthesis.PrincipalService.Controllers
                 try
                 {
                     await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
-                    await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = model.EmailId, FirstName = model.FirstName });
+                    await SendWelcomeEmailAsync(model.EmailId, model.FirstName);
                 }
                 catch (Exception ex)
                 {
@@ -563,7 +568,8 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationException("Email/Username is either empty or invalid");
             }
 
-            var userList = await _userRepository.GetItemsAsync(u => u.Email.Equals(username) || u.Username.Equals(username));
+            username = username?.ToLower();
+            var userList = await _userRepository.GetItemsAsync(u => u.Email == username || u.Username == username);
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
             {
@@ -773,11 +779,11 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (string.IsNullOrEmpty(user.Username))
             {
-                user.Username = existingUser.Username;
+                user.Username = existingUser.Username?.ToLower();
             }
             existingUser.FirstName = user.FirstName;
             existingUser.LastName = user.LastName;
-            existingUser.Email = user.Email;
+            existingUser.Email = user.Email?.ToLower();
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
@@ -818,8 +824,8 @@ namespace Synthesis.PrincipalService.Controllers
 
                 if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
-                    /* If the user is created and a license successfully assigned, mail and return the user. */
-                    await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = user.Email, FirstName = user.FirstName });
+
+                    await SendWelcomeEmailAsync(user.Email, user.FirstName);
                     return;
                 }
             }
@@ -839,6 +845,18 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 var orgAdminReq = _mapper.Map<List<User>, List<UserEmailRequest>>(orgAdmins);
                 await _emailApi.SendUserLockedMail(new LockUserRequest{OrgAdmins = orgAdminReq,UserEmail = user.Email,UserFullName = $"{user.FirstName} {user.LastName}" });
+            }
+        }
+
+        private async Task SendWelcomeEmailAsync(string email, string firstName)
+        {
+            try
+            {
+                await _emailApi.SendWelcomeEmail(new UserEmailRequest { Email = email, FirstName = firstName });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Welcome email not sent", ex);
             }
         }
 
@@ -1222,6 +1240,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueUsername(Guid? userId, string username)
         {
+            username = username?.ToLower();
             var users = await _userRepository
                             .GetItemsAsync(u => userId == null || userId.Value == Guid.Empty
                                                     ? u.Username == username
@@ -1231,6 +1250,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueEmail(Guid? userId, string email)
         {
+            email = email?.ToLower();
             var users = await _userRepository
                             .GetItemsAsync(u => userId == null || userId.Value == Guid.Empty
                                                     ? u.Email == email
