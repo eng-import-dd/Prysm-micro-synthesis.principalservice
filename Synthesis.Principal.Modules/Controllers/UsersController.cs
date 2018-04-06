@@ -1262,6 +1262,12 @@ namespace Synthesis.PrincipalService.Controllers
                 };
             }
 
+            if (!userFilteringOptions.GroupingType.Equals(UserGroupingType.None) && userFilteringOptions.UserGroupingId.Equals(Guid.Empty))
+            {
+                throw new ValidationFailedException(new[] 
+                { new ValidationFailure(nameof(UserFilteringOptions), "If a GroupingType is specified then a valid GroupingId must also be provided") });
+            }
+
             var tenantUsersResponse = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
             if (!tenantUsersResponse.IsSuccess())
             {
@@ -1289,12 +1295,23 @@ namespace Synthesis.PrincipalService.Controllers
 
             var filteredRecords = userList.Count;
 
-            if (userFilteringOptions.PageNumber >= 1 && userFilteringOptions.PageSize >= 1)
+            if (userFilteringOptions.PageSize < 1)
             {
-                userList = userList.Skip((userFilteringOptions.PageNumber - 1) * userFilteringOptions.PageSize)
-                    .Take(userFilteringOptions.PageSize)
-                    .ToList();
+                return new PagingMetadata<User>
+                {
+                    FilteredRecords = filteredRecords,
+                    TotalRecords = totalRecords,
+                    List = userList,
+                    SearchValue = userFilteringOptions.SearchValue
+                };
             }
+
+            if (userFilteringOptions.PageNumber >= 1)
+            {
+                userList = userList.Skip((userFilteringOptions.PageNumber - 1) * userFilteringOptions.PageSize).ToList();
+            }
+
+            userList = userList.Take(userFilteringOptions.PageSize).ToList();
 
             return new PagingMetadata<User>
             {

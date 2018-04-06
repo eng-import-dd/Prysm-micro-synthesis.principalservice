@@ -24,6 +24,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
@@ -32,10 +33,95 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
     public class UsersControllerTests
     {
+        private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
+        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
+        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
+        private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
+        private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
+        private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
+        private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
+        private readonly Mock<IRepository<UserInvite>> _userInviteRepositoryMock = new Mock<IRepository<UserInvite>>();
+        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
+        private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
+        private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
+        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
+        private readonly Mock<ITenantDomainApi> _tenantDomainApiMock = new Mock<ITenantDomainApi>();
+        private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
+        private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
+
+        private readonly UsersController _controller;
+        private readonly IMapper _mapper;
+        private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
+        private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
+        private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
+
+        private List<User> _usersInSameProject;
+        private List<User> _usersInSameGroup;
+        private List<User> _wildcardUsers;
+        private List<User> _allUsers;
+        private Project _testProject;
+
         public UsersControllerTests()
         {
             _mapper = new MapperConfiguration(cfg => { cfg.AddProfile<UserProfile>(); }).CreateMapper();
 
+            SetupTestData();
+
+            SetupMocks();
+
+            const string deploymentType = "";
+
+            _controller = new UsersController(_repositoryFactoryMock.Object,
+                _validatorLocatorMock.Object,
+                _eventServiceMock.Object,
+                _loggerFactoryMock.Object,
+                _licenseApiMock.Object,
+                _emailApiMock.Object,
+                _projectApiMock.Object,
+                _mapper,
+                deploymentType,
+                _tenantDomainApiMock.Object,
+                _searchBuilderMock.Object,
+                _queryRunnerMock.Object,
+                _tenantApiMock.Object);
+        }
+
+        private void SetupTestData()
+        {
+            _usersInSameProject = new List<User>
+            {
+                new User{Id = Guid.NewGuid()},
+                new User{Id = Guid.NewGuid()},
+                new User{Id = Guid.NewGuid()}
+            };
+
+            _usersInSameGroup = new List<User>
+            {
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() }
+            };
+
+            _wildcardUsers = new List<User>
+            {
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() }
+            };
+
+            _allUsers = _wildcardUsers.Concat(_usersInSameProject).Concat(_usersInSameGroup).ToList();
+
+            _testProject = new Project
+            {
+                UserIds = _usersInSameProject.Select(u => u.Id ?? Guid.Empty).ToList()
+            };
+        }
+
+        private void SetupMocks()
+        {
             // repository mock
             _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
                 .Returns(_userRepositoryMock.Object);
@@ -64,44 +150,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _loggerFactoryMock.Setup(m => m.Get(It.IsAny<LogTopic>()))
                 .Returns(_loggerMock.Object);
 
-            const string deploymentType = "";
-            _controller = new UsersController(_repositoryFactoryMock.Object,
-                _validatorLocatorMock.Object,
-                _eventServiceMock.Object,
-                _loggerFactoryMock.Object,
-                _licenseApiMock.Object,
-                _emailApiMock.Object,
-                _projectApiMock.Object,
-                _mapper,
-                deploymentType,
-                _tenantDomainApiMock.Object,
-                _searchBuilderMock.Object,
-                _queryRunnerMock.Object,
-                _tenantApiMock.Object);
+            // project internal api mock
+            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _testProject));
         }
-
-        private readonly Mock<IRepositoryFactory> _repositoryFactoryMock = new Mock<IRepositoryFactory>();
-        private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
-        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
-        private readonly Mock<ILoggerFactory> _loggerFactoryMock = new Mock<ILoggerFactory>();
-        private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
-        private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
-        private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
-        private readonly Mock<IRepository<UserInvite>> _userInviteRepositoryMock = new Mock<IRepository<UserInvite>>();
-        private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
-        private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
-        private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
-        private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
-        private readonly Mock<ITenantDomainApi> _tenantDomainApiMock = new Mock<ITenantDomainApi>();
-        private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
-        private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
-
-        private readonly UsersController _controller;
-        private readonly IMapper _mapper;
-        private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
-        private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
-        private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         [Fact]
         public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
@@ -1308,6 +1360,187 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             Assert.Equal(firstName.Trim(), result.FirstName);
             Assert.Equal(lastName.Trim(), result.LastName);
+        }
+
+        //private Guid _tenantId = Guid.NewGuid();
+        //private Guid _currentUserId = Guid.NewGuid();
+        //private Guid _groupId = Guid.NewGuid();
+        //private Guid _projectId = Guid.NewGuid();
+
+        [Fact]
+        public async Task GetTenantUsersFromDbFiltersUsersByProjectWhenProjectGroupingTypeIsPassedIn()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                GroupingType = UserGroupingType.Project,
+                UserGroupingId = Guid.NewGuid(),
+                PageNumber = 1,
+                PageSize = 10
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(result.FilteredRecords, _usersInSameProject.Count);
+            Assert.All(_usersInSameProject, x => Assert.Contains(x.Id, result.List.Select(y => y.Id)));
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbReturnsUsersNotInProjectWhenGroupingTypeIsProjectAndExcludeUsersIsTrue()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                GroupingType = UserGroupingType.Project,
+                UserGroupingId = Guid.NewGuid(),
+                PageNumber = 1,
+                PageSize = 10,
+                ExcludeUsersInGroup = true
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(result.FilteredRecords, _allUsers.Count - _usersInSameProject.Count);
+            Assert.All(_usersInSameProject, x => Assert.DoesNotContain(x.Id, result.List.Select(y => y.Id)));
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbFiltersUsersByGroupWhenGroupGroupingTypeIsPassedIn()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                GroupingType = UserGroupingType.Group,
+                UserGroupingId = Guid.NewGuid(),
+                PageNumber = 1,
+                PageSize = 10
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            _tenantApiMock.Setup(x => x.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(_usersInSameGroup);
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(result.FilteredRecords, _usersInSameGroup.Count);
+            Assert.All(_usersInSameGroup, x => Assert.Contains(x.Id, result.List.Select(y => y.Id)));
+
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbReturnsUsersNotInGroupWhenGroupingTypeIsGroupAndExcludeUsersIsTrue()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                GroupingType = UserGroupingType.Group,
+                UserGroupingId = Guid.NewGuid(),
+                PageNumber = 1,
+                PageSize = 10,
+                ExcludeUsersInGroup = true
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            _tenantApiMock.Setup(x => x.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(_usersInSameGroup);
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(result.FilteredRecords, _allUsers.Count - _usersInSameGroup.Count);
+            Assert.All(_usersInSameGroup, x => Assert.DoesNotContain(x.Id, result.List.Select(y => y.Id)));
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbReturnsCorrectChunkOfUsersWhenPageNumberIsSpecified()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                PageNumber = 2,
+                PageSize = 3,
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(result.List[0], _allUsers[3]);
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbReturnsCorrectNumberOfUsersWhenPageSizeIsSpecified()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                PageSize = 3
+            };
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(3, result.List.Count);
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbReturnsAllFilteredUsersIfPageSizeIsNotSpecified()
+        {
+            var filteringOptions = new UserFilteringOptions();
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+
+            var batchMock = WrapUsersInBatchMock(_allUsers);
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+
+            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            Assert.Equal(_allUsers.Count, result.List.Count);
         }
     }
 }
