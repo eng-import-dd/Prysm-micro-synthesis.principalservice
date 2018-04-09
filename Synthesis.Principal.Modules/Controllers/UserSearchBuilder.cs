@@ -1,29 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.ProjectService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
 {
     public class UserSearchBuilder : IUserSearchBuilder
     {
         private readonly IRepository<User> _userRepository;
+        private readonly IProjectApi _projectApi;
 
-        public UserSearchBuilder(IRepositoryFactory repositoryFactor)
+        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectApi projectApi)
         {
             _userRepository = repositoryFactor.CreateRepository<User>();
+            _projectApi = projectApi;
         }
 
-        public IQueryable<User> BuildSearchQuery(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
+        public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
             var query = _userRepository.CreateItemQuery();
-            query = BuildWhereClause(currentUserId, userIds, filteringOptions, query);
+            query = await BuildWhereClauseAsync(currentUserId, userIds, filteringOptions, query);
             var batch = BuildOrderByClause(filteringOptions, query);
             return batch;
         }
 
-        private IQueryable<User> BuildWhereClause(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, IQueryable<User> query)
+        private async Task<IQueryable<User>> BuildWhereClauseAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, IQueryable<User> query)
         {
             query = query.Where(user => userIds.Contains(user.Id ?? Guid.Empty));
 
@@ -36,6 +40,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 query = query.Where(user => user.IsLocked == false);
             }
+
             switch (filteringOptions.IdpFilter)
             {
                 case IdpFilter.IdpUsers:
@@ -49,6 +54,20 @@ namespace Synthesis.PrincipalService.Controllers
                     break;
             }
 
+            switch (filteringOptions.GroupingType)
+            {
+                case UserGroupingType.Project when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
+                    query = await AddFilterByProjectToQuery(query, filteringOptions);
+                    break;
+                case UserGroupingType.Group when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
+                    query = filteringOptions.ExcludeUsersInGroup ?
+                        query.Where(user => !user.Groups.Contains(filteringOptions.UserGroupingId)) :
+                        query.Where(user => user.Groups.Contains(filteringOptions.UserGroupingId));
+                    break;
+                case UserGroupingType.None:
+                    break;
+            }
+
             if (!string.IsNullOrEmpty(filteringOptions.SearchValue))
             {
                 var searchValue = filteringOptions.SearchValue.ToLower();
@@ -57,6 +76,23 @@ namespace Synthesis.PrincipalService.Controllers
                         || user.Email.ToLower().Contains(searchValue)
                         || user.Username.ToLower().Contains(searchValue));
             }
+
+            return query;
+        }
+
+        private async Task<IQueryable<User>> AddFilterByProjectToQuery(IQueryable<User> query, UserFilteringOptions userFilteringOptions)
+        {
+            var project = await _projectApi.GetProjectByIdAsync(userFilteringOptions.UserGroupingId);
+            if (project.Payload == null)
+            {
+                return query;
+            }
+
+            var usersInProject = project.Payload.UserIds.ToList();
+
+            query = userFilteringOptions.ExcludeUsersInGroup ?
+                query.Where(user => !usersInProject.Contains(user.Id ?? Guid.Empty)) :
+                query.Where(user => usersInProject.Contains(user.Id ?? Guid.Empty));
 
             return query;
         }

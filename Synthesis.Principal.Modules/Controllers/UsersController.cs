@@ -1297,21 +1297,9 @@ namespace Synthesis.PrincipalService.Controllers
             var tenantUsers = tenantUsersResponse.Payload.ToList();
             var totalRecords = tenantUsers.Count;
 
-            var query = _searchBuilder.BuildSearchQuery(currentUserId, tenantUsers, userFilteringOptions);
+            var query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
             var batch = await _queryRunner.RunQuery(query);
             var userList = batch.ToList();
-
-            switch (userFilteringOptions.GroupingType)
-            {
-                case UserGroupingType.Project when !userFilteringOptions.UserGroupingId.Equals(Guid.Empty):
-                    userList = await FilterListByProject(userList, userFilteringOptions);
-                    break;
-                case UserGroupingType.Group:
-                    userList = await FilterListByGroup(userList, tenantId, currentUserId, userFilteringOptions);
-                    break;
-                case UserGroupingType.None:
-                    break;
-            }
 
             var filteredRecords = userList.Count;
 
@@ -1340,54 +1328,6 @@ namespace Synthesis.PrincipalService.Controllers
                 List = userList,
                 SearchValue = userFilteringOptions.SearchValue
             };
-        }
-
-        private async Task<List<User>> FilterListByGroup(List<User> userList,
-                                                         Guid tenantId,
-                                                         Guid currentUserId,
-                                                         UserFilteringOptions userFilteringOptions)
-        {
-            var usersIdsInGroup = await GetUserIdsByGroupIdAsync(userFilteringOptions.UserGroupingId, tenantId, currentUserId);
-            if (usersIdsInGroup.Count <= 0)
-            {
-                return userList;
-            }
-
-            if (userFilteringOptions.ExcludeUsersInGroup)
-            {
-                var excludedUsers = userList.Where(u => !usersIdsInGroup.Contains(u.Id ?? Guid.Empty));
-                userList = excludedUsers.ToList();
-            }
-            else
-            {
-                var usersGroupedByPermissions = userList.Where(u => usersIdsInGroup.Contains(u.Id ?? Guid.Empty)).ToList();
-                userList = usersGroupedByPermissions.ToList();
-            }
-
-            return userList;
-        }
-
-        private async Task<List<User>> FilterListByProject(List<User> userList, UserFilteringOptions userFilteringOptions)
-        {
-            var project = await _projectApi.GetProjectByIdAsync(userFilteringOptions.UserGroupingId);
-            if (project.Payload == null)
-            {
-                return userList;
-            }
-
-            var usersInProject = project.Payload.UserIds.ToList();
-            if (userFilteringOptions.ExcludeUsersInGroup)
-            {
-                var excludedUsers = userList.Where(u => !usersInProject.Contains(u.Id ?? Guid.Empty));
-                userList = excludedUsers.ToList();
-            }
-            else
-            {
-                var usersGroupedByProject = userList.Where(u => usersInProject.Contains(u.Id ?? Guid.Empty));
-                userList = usersGroupedByProject.ToList();
-            }
-
-            return userList;
         }
 
         private void TrimNameOfUser(User user)
