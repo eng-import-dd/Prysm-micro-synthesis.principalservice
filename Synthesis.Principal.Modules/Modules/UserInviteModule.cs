@@ -46,7 +46,7 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(new List<UserInvite> { UserInvite.Example() })
                 .ResponseFormat(new List<UserInvite> { UserInvite.Example() });
 
-            CreateRoute("GetUsersInviteForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
+            CreateRoute("GetUserInvitesForTenantAsync", HttpMethod.Get, "/v1/userinvites", GetUsersInvitedForTenantAsync)
                 .Description("Gets all invited users for Tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new PagingMetadata<UserInvite> { List = new List<UserInvite> { UserInvite.Example() } });
@@ -129,7 +129,8 @@ namespace Synthesis.PrincipalService.Modules
                 .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
-            bool allUsers = input.allusers;
+            bool.TryParse(Request.Query["allusers"], out bool allUsers);
+
             try
             {
                 var result = await _userInviteController.GetUsersInvitedForTenantAsync(TenantId, allUsers);

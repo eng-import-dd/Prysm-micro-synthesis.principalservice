@@ -48,6 +48,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
+using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
@@ -316,6 +317,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<TenantApi>().As<ITenantApi>();
             builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
+            builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
