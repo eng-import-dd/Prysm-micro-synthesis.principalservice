@@ -14,6 +14,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -27,45 +28,45 @@ namespace Synthesis.PrincipalService.Modules
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
-            : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
+            : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _machineController = machineController;
 
             this.RequiresAuthentication();
 
-            CreateRoute("CreateMachine", HttpMethod.Post, "/v1/machines", CreateMachineAsync)
+            CreateRoute("CreateMachine", HttpMethod.Post, Routing.Machines, CreateMachineAsync)
                 .Description("Create a new machine resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(Machine.Example())
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("GetMachineById", HttpMethod.Get, "/v1/machines/{id:guid}", GetMachineByIdAsync)
+            CreateRoute("GetMachineById", HttpMethod.Get, Routing.MachinesWithId, GetMachineByIdAsync)
                 .Description("Gets a machine by its unique identifier")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("GetMachineByKey", HttpMethod.Get, "/v1/machines", GetMachineByKeyAsync, c => c.Request.Query.ContainsKey("machinekey"))
+            CreateRoute("GetMachineByKey", HttpMethod.Get, Routing.Machines, GetMachineByKeyAsync, c => c.Request.Query.ContainsKey("machinekey"))
                 .Description("Get a machine by machine key")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("UpdateMachine", HttpMethod.Put, "/v1/machines/{id:guid}", UpdateMachineAsync)
+            CreateRoute("UpdateMachine", HttpMethod.Put, Routing.MachinesWithId, UpdateMachineAsync)
                 .Description("Update a Principal resource.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(Machine.Example())
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("DeleteMachine", HttpMethod.Delete, "/v1/machines/{id:guid}", DeleteMachineAsync)
+            CreateRoute("DeleteMachine", HttpMethod.Delete, Routing.MachinesWithId, DeleteMachineAsync)
                 .Description("Deletes a machine")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("ChangeMachineTenant", HttpMethod.Put, "/v1/machines/{id:guid}/changetenant", ChangeMachineTenantAsync)
+            CreateRoute("ChangeMachineTenant", HttpMethod.Put, Routing.ChangeMachineTenant, ChangeMachineTenantAsync)
                 .Description("Changes a machine's tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(Machine.Example())
                 .ResponseFormat(Machine.Example());
 
-            CreateRoute("GetTenantMachines", HttpMethod.Get, "/v1/machines", GetTenantMachinesAsync, c => !c.Request.Query.ContainsKey("machinekey"))
+            CreateRoute("GetTenantMachines", HttpMethod.Get, Routing.Machines, GetTenantMachinesAsync, c => !c.Request.Query.ContainsKey("machinekey"))
                 .Description("Retrieves a list of machines for the tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<Machine> { Machine.Example() });

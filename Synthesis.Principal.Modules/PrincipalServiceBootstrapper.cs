@@ -44,6 +44,7 @@ using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Events;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
@@ -60,13 +61,11 @@ namespace Synthesis.PrincipalService
 {
     public class PrincipalServiceBootstrapper : AutofacNancyBootstrapper
     {
-        public const string ServiceName = "Synthesis.PrincipalService";
-        public const string ServiceNameShort = "principal";
         private const int RedisConnectRetryTimes = 30;
         private const int RedisConnectTimeoutInMilliseconds = 10 * 1000;
         private const int RedisSyncTimeoutInMilliseconds = 15 * 1000;
-        public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceName);
-        public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceName}.EventHub");
+        public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceInformation.ServiceName);
+        public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceInformation.ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
 
         public PrincipalServiceBootstrapper()
@@ -346,7 +345,7 @@ namespace Synthesis.PrincipalService
 
             var messageContent = logLayout.Get<LogLayoutMetadata>();
             messageContent.LocalIP = localIpHostEntry.AddressList.FirstOrDefault(i => i.AddressFamily == AddressFamily.InterNetwork)?.ToString() ?? string.Empty;
-            messageContent.ApplicationName = ServiceName;
+            messageContent.ApplicationName = ServiceInformation.ServiceName;
             messageContent.Environment = settingsReader.GetValue<string>("Environment");
             messageContent.Facility = settingsReader.GetValue<string>("Principal.Facility");
             messageContent.Host = Environment.MachineName;
@@ -378,7 +377,7 @@ namespace Synthesis.PrincipalService
         {
             // Event Service registration.
             builder.RegisterKafkaEventBusComponents(
-                ServiceName,
+                ServiceInformation.ServiceName,
                 (metadata, bldr) =>
                 {
                     bldr.RegisterType<EventServicePublishExtender>()

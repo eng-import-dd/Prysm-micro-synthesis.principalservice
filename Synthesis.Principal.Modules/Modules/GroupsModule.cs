@@ -13,6 +13,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Models;
 
@@ -27,33 +28,33 @@ namespace Synthesis.PrincipalService.Modules
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
-            : base(PrincipalServiceBootstrapper.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
+            : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _groupsController = groupsController;
 
             this.RequiresAuthentication();
 
-            CreateRoute("CreateGroup", HttpMethod.Post, "/v1/groups", CreateGroupAsync)
+            CreateRoute("CreateGroup", HttpMethod.Post, Routing.Groups, CreateGroupAsync)
                 .Description("Creates a new group")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(Group.Example())
                 .ResponseFormat(Group.Example());
 
-            CreateRoute("GetGroupById", HttpMethod.Get, "/v1/groups/{id}", GetGroupByIdAsync)
+            CreateRoute("GetGroupById", HttpMethod.Get, Routing.GroupsWithId, GetGroupByIdAsync)
                 .Description("Get a group by its unique identifier")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
 
-            CreateRoute("GetGroupsForTenant", HttpMethod.Get, "/v1/groups", GetGroupsForTenantAsync)
+            CreateRoute("GetGroupsForTenant", HttpMethod.Get, Routing.Groups, GetGroupsForTenantAsync)
                 .Description("Get Group for a tenant")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(Group.Example());
 
-            CreateRoute("DeleteGroup", HttpMethod.Delete, "/v1/groups/{groupId}", DeleteGroupAsync)
+            CreateRoute("DeleteGroup", HttpMethod.Delete, Routing.GroupsWithId, DeleteGroupAsync)
                 .Description("Deletes a Group")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
 
-            CreateRoute("UpdateGroup", HttpMethod.Put, "/v1/groups", UpdateGroupAsync)
+            CreateRoute("UpdateGroup", HttpMethod.Put, Routing.Groups, UpdateGroupAsync)
                 .Description("Updates an existing Group")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(Group.Example())
@@ -165,7 +166,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                Guid groupId = Guid.Parse(input.groupId);
+                Guid groupId = input.id;
                 await _groupsController.DeleteGroupAsync(groupId, PrincipalId);
 
                 return new Response

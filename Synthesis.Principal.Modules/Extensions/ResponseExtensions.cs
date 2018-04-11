@@ -1,6 +1,7 @@
 ﻿using Nancy;
 using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.InternalApi.Constants;
 
 namespace Synthesis.PrincipalService.Extensions
 {

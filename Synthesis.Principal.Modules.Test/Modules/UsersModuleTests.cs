@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 
@@ -30,7 +31,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task RespondWithUnauthorizedNoBearerAsync()
         {
-            var response = await UnauthenticatedBrowser.Get("/v1/users/2c1156fa-5902-4978-9c3d-ebcb77ae0d55", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get(string.Format(Routing.UsersWithItemBase, "2c1156fa-5902-4978-9c3d-ebcb77ae0d55"), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -43,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User { Id = currentUserId });
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UsersWithItemBase, currentUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -104,7 +105,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsCreatedAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, new User()));
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -113,14 +114,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var user = User.Example();
             user.ProjectAccessCode = null;
-            await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, user));
+            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
             _controllerMock.Verify(x => x.CreateUserAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
         }
 
         [Fact]
         public async Task CreateUserWithProjectAccessCodeCreatesGuestUserAsync()
         {
-            await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, User.Example()));
+            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, User.Example()));
             _controllerMock.Verify(x => x.CreateGuestAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
         }
 
@@ -130,7 +131,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -138,7 +139,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserWithInvalidRequestReturnsBadRequest()
         {
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -150,7 +151,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new UserNotInvitedException());
 
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, User.Example()));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, User.Example()));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
@@ -162,7 +163,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Throws(new UserExistsException());
             var user = User.Example();
             user.ProjectAccessCode = "test";
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, user));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
@@ -173,7 +174,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -182,7 +183,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReadsTenantIdFromUserClaimAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -199,7 +200,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validUserId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users/{validUserId}/basic", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserByIdBasicBase, validUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -211,7 +212,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validUserId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users/{validUserId}/basic", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserByIdBasicBase, validUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -223,7 +224,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validUserId = Guid.NewGuid();
 
-            var response = await UnauthenticatedBrowser.Get($"/api/v1/users/{validUserId}/basic", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get(string.Format(Routing.UserByIdBasicBase, validUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -235,7 +236,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validUserId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users/{validUserId}/basic", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserByIdBasicBase, validUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -247,7 +248,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var validUserId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/api/v1/users/{validUserId}/basic", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserByIdBasicBase, validUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -260,7 +261,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
-            var response = await UserTokenBrowser.Post("/api/v1/users/queries/usersfortenant", ctx =>BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx =>BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -270,7 +271,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
-            var response = await UserTokenBrowser.Post("/api/v1/users/queries/usersfortenant", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -280,7 +281,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(),It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/api/v1/users/queries/usersfortenant", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -290,7 +291,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new PagingMetadata<User>()));
 
-            var response = await UnauthenticatedBrowser.Post("/api/v1/users/queries/usersfortenant", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UnauthenticatedBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -300,7 +301,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/api/v1/users/queries/usersfortenant", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -310,7 +311,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task PromoteGuestRespondWithUnauthorizedNoBearerAsync()
         {
-            var response = await UnauthenticatedBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UnauthenticatedBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -318,7 +319,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task PromoteGuestRespondWithOkAsync()
         {
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -330,7 +331,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -338,7 +339,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task PromoteGuestReturnsItemWithInvalidBodyReturnsBadRequest()
         {
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -351,7 +352,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -364,7 +365,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                 .Throws(new PromotionFailedException(""));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             Assert.Equal(ResponseReasons.PromotionFailed, response.ReasonPhrase);
@@ -377,7 +378,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<bool>()))
                 .Throws(new LicenseAssignmentFailedException("", Guid.NewGuid()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/C3220603-09D9-452B-B204-6CC3946CE1F4/promote", ctx => BuildRequest(ctx, LicenseType.UserLicense));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             Assert.Equal(ResponseReasons.LicenseAssignmentFailed, response.ReasonPhrase);
@@ -390,7 +391,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var expectedId = Guid.NewGuid();
             var request = LicenseType.UserLicense;
 
-            var response = await UserTokenBrowser.Post($"/v1/users/{expectedId}/promote", ctx => BuildRequest(ctx, request));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, expectedId), ctx => BuildRequest(ctx, request));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -410,7 +411,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User() { CreatedBy = createdBy });
 
-            var response = await UserTokenBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, Guid.NewGuid()), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -419,7 +420,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsUnauthorized()
         {
-            var response = await UnauthenticatedBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, new User()));
+            var response = await UnauthenticatedBrowser.Put(string.Format(Routing.UsersWithItemBase, Guid.NewGuid()), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -435,7 +436,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>()))
                            .Throws(new NotFoundException("user not found"));
 
-            var response = await UserTokenBrowser.Put($"/v1/users/{currentUserId}", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, currentUserId), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -443,7 +444,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsBadRequestDueToBindingException()
         {
-            var response = await UserTokenBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, "invlaid body"));
+            var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, Guid.NewGuid()), ctx => BuildRequest(ctx, "invlaid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -459,7 +460,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User(){CreatedBy = createdBy });
 
-            var response = await UserTokenBrowser.Put($"/v1/users/{Guid.NewGuid()}", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, Guid.NewGuid()), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -473,7 +474,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
-            var response = await UserTokenBrowser.Post("/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock", ctx => BuildRequest(ctx, new User() { IsLocked = true }));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.LockUserBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), ctx => BuildRequest(ctx, new User() { IsLocked = true }));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -485,7 +486,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
-            var response = await UserTokenBrowser.Post("/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.LockUserBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -497,7 +498,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.LockUserBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -509,7 +510,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<bool>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users/f629f87c-366d-4790-ac34-964e3558bdcd/lock", ctx => BuildRequest(ctx, new User()));
+            var response = await UserTokenBrowser.Post(string.Format(Routing.LockUserBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -522,7 +523,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new CanPromoteUser()));
 
-            var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -533,7 +534,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -544,7 +545,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{ValidTestEmail}", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -555,18 +556,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException("User Doesn't Exist"));
 
-            var response = await UserTokenBrowser.Get($"api/v1/users/canpromoteuser/{EmptyTestEmail}", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
         #endregion
-       
 
         #region CreateUserGroup
         [Fact]
         public async Task CreateUserGroupReturnsCreated()
         {
-            var response = await UserTokenBrowser.Post("/v1/usergroups", ctx => BuildRequest(ctx, new UserGroup()));
+            var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, new UserGroup()));
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -577,7 +577,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
            _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/usergroups", ctx => BuildRequest(ctx, new UserGroup()));
+            var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, new UserGroup()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -585,7 +585,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserGroupReturnsItemWithInvalidBodyReturnsBadRequest()
         {
-            var response = await UserTokenBrowser.Post("/v1/usergroups", ctx => BuildRequest(ctx, "invalid body"));
+            var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, "invalid body"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -597,7 +597,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post("/v1/usergroups", ctx => BuildRequest(ctx, new UserGroup()));
+            var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, new UserGroup()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
@@ -614,7 +614,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
-            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}/users", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserIdsByGroupIdBase, validGroupId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -628,7 +628,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException(string.Empty));
 
-            var response = await UserTokenBrowser.Get($"/v1/usergroups/{validGroupId}", BuildRequest);
+            var response = await UserTokenBrowser.Get($"{Routing.UserGroups}/{validGroupId}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -642,7 +642,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(Enumerable.Empty<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}/users", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserIdsByGroupIdBase, validGroupId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -656,7 +656,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new List<Guid>()));
 
-            var response = await UnauthenticatedBrowser.Get($"/v1/groups/{validGroupId}/users", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get(string.Format(Routing.UserIdsByGroupIdBase, validGroupId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -670,7 +670,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get($"/v1/groups/{validGroupId}/users", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.UserIdsByGroupIdBase, validGroupId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -688,7 +688,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User(){Id = currentUserId});
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}/groups", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, currentUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -704,7 +704,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User() { Id = currentUserId });
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}/groups", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, currentUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -720,7 +720,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User() { Id = currentUserId });
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{currentUserId}/groups", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, currentUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -736,7 +736,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User() { Id = currentUserId });
 
-            var response = await UnauthenticatedBrowser.Get($"/v1/users/{currentUserId}/groups", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, currentUserId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -746,7 +746,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var userId = Guid.NewGuid();
 
-            var response = await UnauthenticatedBrowser.Get($"/v1/users/{userId}/groups", BuildRequest);
+            var response = await UnauthenticatedBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -762,7 +762,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             //_userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Id == userId))
             //                   .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{userId}/groups", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.GroupIdsByUserIdBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -772,7 +772,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGuestUsersForTenantSuccess()
         {
-            var response = await UserTokenBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GuestUsersForTenant, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -780,7 +780,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGuestUsersForTenantReturnsUnauthorized()
         {
-            var response = await UnauthenticatedBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UnauthenticatedBrowser.Post(Routing.GuestUsersForTenant, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -791,7 +791,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGuestUsersForTenantAsync(It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
                            .ThrowsAsync(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users/guests", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.GuestUsersForTenant, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -801,7 +801,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnUser()
         {
-            var response = await UserTokenBrowser.Post("/v1/users/autoprovisionrefreshgroups", ctx => BuildRequest(ctx, new IdpUserRequest()));
+            var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, new IdpUserRequest()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -812,7 +812,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post("/v1/users/autoprovisionrefreshgroups", ctx => BuildRequest(ctx, new IdpUserRequest()));
+            var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, new IdpUserRequest()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -823,7 +823,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new User()));
 
-            var response = await UserTokenBrowser.Post("/v1/users/autoprovisionrefreshgroups", ctx => BuildRequest(ctx, "invalid idp request"));
+            var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, "invalid idp request"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
@@ -839,7 +839,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(),It.IsAny<Guid>(),It.IsAny<Guid>()))
                            .Returns(Task.FromResult(true));
 
-            var response = await UserTokenBrowser.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", BuildRequest);
+            var response = await UserTokenBrowser.Delete(string.Format(Routing.RemoveUserFromPermissionGroupBase, Guid.NewGuid(), userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
@@ -850,7 +850,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new DocumentNotFoundException("Couldn't find the user"));
 
-            var response = await UserTokenBrowser.Delete($"/v1/groups/{Guid.NewGuid()}/users/{Guid.NewGuid()}", BuildRequest);
+            var response = await UserTokenBrowser.Delete(string.Format(Routing.RemoveUserFromPermissionGroupBase, Guid.NewGuid(), Guid.NewGuid()), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -861,7 +861,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Delete($"/v1/groups/{Guid.NewGuid()}/users/{Guid.NewGuid()}", BuildRequest);
+            var response = await UserTokenBrowser.Delete(string.Format(Routing.RemoveUserFromPermissionGroupBase, Guid.NewGuid(), Guid.NewGuid()), BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -871,7 +871,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             Guid.TryParse("16367A84-65E7-423C-B2A5-5C42F8F1D5F2", out var userId);
 
-            var response = await UserTokenBrowser.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", ctx => BuildRequest(ctx, "invalid data"));
+            var response = await UserTokenBrowser.Delete(string.Format(Routing.RemoveUserFromPermissionGroupBase, Guid.NewGuid(), userId), ctx => BuildRequest(ctx, "invalid data"));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -884,7 +884,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.RemoveUserFromPermissionGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                            .ThrowsAsync(new Exception());
 
-            var response = await UserTokenBrowser.Delete($"/v1/groups/{Guid.NewGuid()}/users/{userId}", BuildRequest);
+            var response = await UserTokenBrowser.Delete(string.Format(Routing.RemoveUserFromPermissionGroupBase, Guid.NewGuid(), userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -935,7 +935,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var userId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{userId}/licensetypes", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.LicenseTypeForUserBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -949,7 +949,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var userId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{userId}/licensetypes", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.LicenseTypeForUserBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -963,7 +963,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var userId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{userId}/licensetypes", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.LicenseTypeForUserBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -978,7 +978,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             var userId = Guid.NewGuid();
 
-            var response = await UserTokenBrowser.Get($"/v1/users/{userId}/licensetypes", BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format(Routing.LicenseTypeForUserBase, userId), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
