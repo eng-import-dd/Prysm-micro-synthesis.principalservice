@@ -369,6 +369,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
+    <Compile Include="Services\DocumentDbIndexRegistrar.cs" />
+    <Compile Include="Services\IIndexRegistrar.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />

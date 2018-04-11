@@ -48,6 +48,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
+using Synthesis.PrincipalService.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.Tracking;
@@ -190,6 +191,7 @@ namespace Synthesis.PrincipalService
                 .InstancePerRequest();
 
             // DocumentDB registration.
+            builder.RegisterType<DocumentDbIndexRegistrar>().As<IIndexRegistrar<DocumentDbContext>>().SingleInstance();
             builder.Register(c =>
             {
                 var settings = c.Resolve<IAppSettingsReader>();
@@ -298,6 +300,8 @@ namespace Synthesis.PrincipalService
         /// <param name="builder"></param>
         private static void RegisterServiceSpecificRegistrations(ContainerBuilder builder)
         {
+            // The indexing policy also needs to be included in the documentdb section
+
             var mapper = new MapperConfiguration(cfg => {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
@@ -321,7 +325,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
-
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

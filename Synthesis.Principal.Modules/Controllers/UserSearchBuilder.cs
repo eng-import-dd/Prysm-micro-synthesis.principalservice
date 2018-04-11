@@ -99,20 +99,19 @@ namespace Synthesis.PrincipalService.Controllers
 
         private IQueryable<User> BuildOrderByClause(UserFilteringOptions filteringOptions, IQueryable<User> query)
         {
-            // TODO: See CU-568 - Define an index for each of these attributes
-            return query;
-            //switch (filteringOptions.SortColumn?.ToLower())
-            //{
-            //    case "lastname":
-            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.LastName) : query.OrderBy(x => x.LastName);
-            //    case "email":
-            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Email) : query.OrderBy(x => x.Email);
-            //    case "username":
-            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Username) : query.OrderBy(x => x.Username);
-            //    case "firstname":
-            //    default:
-            //        return filteringOptions.SortDescending ? query.OrderByDescending(x => x.FirstName) : query.OrderBy(x => x.FirstName);
-            //}
+            switch (filteringOptions.SortColumn?.ToLower())
+            {
+                case "lastname":
+                    return filteringOptions.SortDescending ? query.OrderByDescending(x => x.LastName) : query.OrderBy(x => x.LastName);
+                case "email":
+                    return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Email) : query.OrderBy(x => x.Email);
+                case "username":
+                    return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Username) : query.OrderBy(x => x.Username);
+                case "firstname":
+                    return filteringOptions.SortDescending ? query.OrderByDescending(x => x.FirstName) : query.OrderBy(x => x.FirstName);
+                default:
+                    return query;
+            }
         }
     }
 }
