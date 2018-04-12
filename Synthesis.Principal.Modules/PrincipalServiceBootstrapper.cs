@@ -33,6 +33,7 @@ using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
 using Synthesis.Logging.Log4Net;
+using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -195,12 +196,17 @@ namespace Synthesis.PrincipalService
             builder.Register(c =>
             {
                 var settings = c.Resolve<IAppSettingsReader>();
-                return new DocumentDbContext
+                var context = new DocumentDbContext
                 {
                     AuthKey = settings.GetValue<string>("Principal.DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("Principal.DocumentDB.Endpoint"),
                     DatabaseName = settings.GetValue<string>("Principal.DocumentDB.DatabaseName")
                 };
+
+                var indexRegistrar = c.Resolve<IIndexRegistrar<DocumentDbContext>>();
+                indexRegistrar.RegisterDatabaseIndexes(context);
+
+                return context;
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
 
@@ -324,7 +330,29 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
+            builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();
+
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
+
+            builder.RegisterType<RepositoryHealthReporter<User>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("repoName",    nameof(User));
+
+            builder.RegisterType<RepositoryHealthReporter<Machine>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("repoName",    nameof(Machine));
+
+            builder.RegisterType<RepositoryHealthReporter<UserInvite>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("repoName",    nameof(UserInvite));
+
+            builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
+                .SingleInstance()
+                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("repoName",    nameof(Group));
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
