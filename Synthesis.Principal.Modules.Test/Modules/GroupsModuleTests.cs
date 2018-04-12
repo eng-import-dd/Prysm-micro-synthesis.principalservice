@@ -191,7 +191,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get("/v1/groups", BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.Groups, BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
