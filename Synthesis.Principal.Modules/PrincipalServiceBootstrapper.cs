@@ -335,23 +335,19 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<RepositoryHealthReporter<User>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
-                .WithParameter("repoName",    nameof(User));
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
 
             builder.RegisterType<RepositoryHealthReporter<Machine>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
-                .WithParameter("repoName",    nameof(Machine));
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
 
             builder.RegisterType<RepositoryHealthReporter<UserInvite>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
-                .WithParameter("repoName",    nameof(UserInvite));
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
 
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
-                .WithParameter("repoName",    nameof(Group));
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
