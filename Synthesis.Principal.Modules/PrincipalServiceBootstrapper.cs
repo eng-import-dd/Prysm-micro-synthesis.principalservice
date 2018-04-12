@@ -335,22 +335,22 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<RepositoryHealthReporter<User>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
                 .WithParameter("repoName",    nameof(User));
 
             builder.RegisterType<RepositoryHealthReporter<Machine>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
                 .WithParameter("repoName",    nameof(Machine));
 
             builder.RegisterType<RepositoryHealthReporter<UserInvite>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
                 .WithParameter("repoName",    nameof(UserInvite));
 
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
-                .WithParameter("serviceName", ServiceNameShort)
+                .WithParameter("serviceName", ServiceInformation.ServiceNameShort)
                 .WithParameter("repoName",    nameof(Group));
         }
 
