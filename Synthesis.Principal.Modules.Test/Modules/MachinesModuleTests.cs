@@ -8,7 +8,7 @@ using Nancy;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
