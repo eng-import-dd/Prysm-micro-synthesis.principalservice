@@ -65,7 +65,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
                 .Returns(Task.FromResult(new Group()));
 
-            var tenantId = Guid.Empty;
+            var tenantId = Guid.NewGuid();
             await _controller.CreateDefaultGroupsAsync(tenantId);
 
             _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.Basic && x.IsLocked && x.IsBasic)));
@@ -77,7 +77,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
                 .Returns(Task.FromResult(new Group()));
 
-            var tenantId = Guid.Empty;
+            var tenantId = Guid.NewGuid();
             await _controller.CreateDefaultGroupsAsync(tenantId);
 
             _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.TenantAdmin && x.IsLocked && x.IsTenantAdmin)));
