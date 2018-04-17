@@ -60,7 +60,7 @@ namespace Synthesis.PrincipalService.Controllers
                 {
                     TenantId = tenantId,
                     Name = GroupNames.TenantAdmin,
-                    IsTenantAdmin = true,
+                    Type = GroupType.TenantAdmin,
                     IsLocked = true
                 }, tenantId, Guid.Empty);
             }
@@ -75,7 +75,7 @@ namespace Synthesis.PrincipalService.Controllers
                 {
                     TenantId = tenantId,
                     Name = GroupNames.Basic,
-                    IsBasic = true,
+                    Type = GroupType.Basic,
                     IsLocked = true
                 }, tenantId, Guid.Empty);
             }
