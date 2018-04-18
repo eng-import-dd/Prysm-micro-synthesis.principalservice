@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.InternalApi.Models;
 
-namespace Synthesis.PrincipalService.Controllers.Interfaces
+namespace Synthesis.PrincipalService.Controllers
 {
     public interface IMachineController
     {

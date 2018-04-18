@@ -13,6 +13,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 
@@ -59,15 +60,27 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly GroupsController _controller;
 
         [Fact]
-        public async Task DefaultGroupIsCreated()
+        public async Task BasicGroupIsCreated()
         {
             _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
                 .Returns(Task.FromResult(new Group()));
 
-            var tenantId = Guid.Empty;
-            await _controller.CreateDefaultGroupAsync(tenantId);
+            var tenantId = Guid.NewGuid();
+            await _controller.CreateDefaultGroupsAsync(tenantId);
 
-            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == "Basic_User" && x.IsLocked && x.IsDefault)));
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.Basic && x.IsLocked && x.Type == GroupType.Basic)));
+        }
+
+        [Fact]
+        public async Task TenantAdminGroupIsCreated()
+        {
+            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .Returns(Task.FromResult(new Group()));
+
+            var tenantId = Guid.NewGuid();
+            await _controller.CreateDefaultGroupsAsync(tenantId);
+
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.TenantAdmin && x.IsLocked && x.Type == GroupType.TenantAdmin)));
         }
 
         [Fact]

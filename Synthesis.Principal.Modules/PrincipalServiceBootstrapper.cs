@@ -43,7 +43,6 @@ using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
-using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.Events;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
