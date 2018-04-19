@@ -278,7 +278,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <returns>Task object of true or false.</returns>
         private async Task<bool> IsUniqueGroup(Guid? groupId, string groupName, Guid tenantId)
         {
-            var groups = await _groupRepository.GetItemsAsync(g => groupId == null || groupId.Value == Guid.Empty ? g.Name == groupName && g.TenantId == tenantId : g.Id != groupId && g.Name == groupName);
+            var groups = await _groupRepository.GetItemsAsync(g => g.Name == groupName && g.TenantId == tenantId && (groupId == null || groupId.Value == Guid.Empty || g.Id != groupId));
             return !groups.Any();
         }
 
