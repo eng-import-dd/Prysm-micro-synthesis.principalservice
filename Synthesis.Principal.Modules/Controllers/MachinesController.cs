@@ -10,7 +10,6 @@ using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Controllers.Interfaces;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;

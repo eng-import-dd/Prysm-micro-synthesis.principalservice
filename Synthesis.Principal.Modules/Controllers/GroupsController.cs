@@ -52,17 +52,37 @@ namespace Synthesis.PrincipalService.Controllers
             _logger = loggerFactory.GetLogger(this);
         }
 
-        public async Task<Group> CreateDefaultGroupAsync(Guid tenantId)
+        public async Task CreateDefaultGroupsAsync(Guid tenantId)
         {
-            var defaultGroup = new Group()
+            try
             {
-                TenantId = tenantId,
-                Name = "Basic_User",
-                IsLocked = true,
-                IsDefault = true
-            };
+                await CreateGroupAsync(new Group()
+                {
+                    TenantId = tenantId,
+                    Name = GroupNames.TenantAdmin,
+                    Type = GroupType.TenantAdmin,
+                    IsLocked = true
+                }, tenantId, Guid.Empty);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error creating admin group for {tenantId}", ex);
+            }
 
-            return await CreateGroupAsync(defaultGroup, tenantId, Guid.Empty);
+            try
+            {
+                await CreateGroupAsync(new Group()
+                {
+                    TenantId = tenantId,
+                    Name = GroupNames.Basic,
+                    Type = GroupType.Basic,
+                    IsLocked = true
+                }, tenantId, Guid.Empty);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error creating basic group for {tenantId}", ex);
+            }
         }
 
         /// <summary>

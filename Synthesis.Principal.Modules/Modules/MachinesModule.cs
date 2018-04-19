@@ -13,7 +13,7 @@ using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PrincipalService.Constants;
-using Synthesis.PrincipalService.Controllers.Interfaces;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 

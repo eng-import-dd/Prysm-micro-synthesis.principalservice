@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -29,6 +28,6 @@ namespace Synthesis.PrincipalService.Controllers
         Task<bool> DeleteGroupAsync(Guid groupId, Guid userId);
 
         Task<Group> UpdateGroupAsync(Group group, Guid tenantId, Guid userId);
-        Task<Group> CreateDefaultGroupAsync(Guid tenantId);
+        Task CreateDefaultGroupsAsync(Guid tenantId);
     }
 }
