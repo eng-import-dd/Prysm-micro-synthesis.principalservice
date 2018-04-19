@@ -160,11 +160,11 @@ namespace Synthesis.PrincipalService.Controllers
                 return false;
             }
 
-            var usersWithGroupToBeDeleted= await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
+            var usersWithGroupToBeDeleted = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
             foreach (var user in usersWithGroupToBeDeleted)
             {
                 user.Groups.Remove(groupId);
-                await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty,user);
+                await _userRepository.UpdateItemAsync(user.Id ?? Guid.Empty, user);
             }
 
             await _groupRepository.DeleteItemAsync(groupId);
@@ -254,7 +254,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if (!await IsUniqueGroup(group.Id, group.Name))
+            if (!await IsUniqueGroup(group.Id, group.Name, group.TenantId))
             {
                 validationErrors.Add(new ValidationFailure(nameof(group.Name), "A group with that Group name already exists."));
             }
@@ -274,10 +274,11 @@ namespace Synthesis.PrincipalService.Controllers
         /// </summary>
         /// <param name="groupId">The group identifier.</param>
         /// <param name="groupName">Name of the group.</param>
+        /// <param name="tenantId"></param>
         /// <returns>Task object of true or false.</returns>
-        private async Task<bool> IsUniqueGroup(Guid? groupId, string groupName)
+        private async Task<bool> IsUniqueGroup(Guid? groupId, string groupName, Guid tenantId)
         {
-            var groups = await _groupRepository.GetItemsAsync(g => groupId == null || groupId.Value == Guid.Empty ? g.Name == groupName : g.Id != groupId && g.Name == groupName);
+            var groups = await _groupRepository.GetItemsAsync(g => g.Name == groupName && g.TenantId == tenantId && (groupId == null || groupId.Value == Guid.Empty || g.Id != groupId));
             return !groups.Any();
         }
 
