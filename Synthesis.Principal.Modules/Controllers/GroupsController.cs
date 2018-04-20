@@ -54,36 +54,32 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task CreateDefaultGroupsAsync(Guid tenantId)
         {
-            try
+            await Task.WhenAll(new List<Task>()
             {
-                await CreateGroupAsync(new Group()
-                {
-                    TenantId = tenantId,
-                    Name = GroupNames.TenantAdmin,
-                    Type = GroupType.TenantAdmin,
-                    IsLocked = true
-                }, tenantId, Guid.Empty);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error creating admin group for {tenantId}", ex);
-            }
+                CreateDefaultGroup(tenantId, GroupType.Default, GroupNames.Default),
+                CreateDefaultGroup(tenantId, GroupType.Basic, GroupNames.Basic),
+                CreateDefaultGroup(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin),
+            });
+        }
 
+        private async Task CreateDefaultGroup(Guid tenantId, GroupType type, string groupName)
+        {
             try
             {
                 await CreateGroupAsync(new Group()
                 {
                     TenantId = tenantId,
-                    Name = GroupNames.Basic,
-                    Type = GroupType.Basic,
+                    Name = groupName,
+                    Type = type,
                     IsLocked = true
                 }, tenantId, Guid.Empty);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error creating basic group for {tenantId}", ex);
+                _logger.Error($"Error creating {groupName} group for {tenantId}", ex);
             }
         }
+
 
         /// <summary>
         /// Creates the group asynchronous.

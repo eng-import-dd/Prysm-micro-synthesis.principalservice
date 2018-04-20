@@ -59,8 +59,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
         private readonly GroupsController _controller;
 
-        [Fact]
-        public async Task BasicGroupIsCreated()
+        [Theory]
+        [InlineData(GroupType.Basic, GroupNames.Basic)]
+        [InlineData(GroupType.Default, GroupNames.Default)]
+        [InlineData(GroupType.TenantAdmin, GroupNames.TenantAdmin)]
+        public async Task DefaultGroupsAreCreated(GroupType type, string groupName)
         {
             _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
                 .Returns(Task.FromResult(new Group()));
@@ -68,19 +71,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             await _controller.CreateDefaultGroupsAsync(tenantId);
 
-            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.Basic && x.IsLocked && x.Type == GroupType.Basic)));
-        }
-
-        [Fact]
-        public async Task TenantAdminGroupIsCreated()
-        {
-            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
-                .Returns(Task.FromResult(new Group()));
-
-            var tenantId = Guid.NewGuid();
-            await _controller.CreateDefaultGroupsAsync(tenantId);
-
-            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == GroupNames.TenantAdmin && x.IsLocked && x.Type == GroupType.TenantAdmin)));
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == groupName && x.IsLocked && x.Type == type)));
         }
 
         [Fact]
