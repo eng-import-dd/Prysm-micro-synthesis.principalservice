@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -25,11 +24,13 @@ namespace Synthesis.PrincipalService.Controllers
     {
         private readonly IRepository<Group> _groupRepository;
         private readonly IRepository<User> _userRepository;
-        private readonly IValidator _createGroupValidator;
-        private readonly IValidator _updateGroupValidator;
-        private readonly IValidator _groupValidatorId;
+        //private readonly IValidator _createGroupValidator;
+        //private readonly IValidator _createCustomGroupValidator;
+        //private readonly IValidator _updateGroupValidator;
+        //private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
+        private readonly IValidatorLocator _validatorLocator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GroupsController" /> class.
@@ -45,24 +46,20 @@ namespace Synthesis.PrincipalService.Controllers
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _userRepository = repositoryFactory.CreateRepository<User>();
-            _createGroupValidator = validatorLocator.GetValidator(typeof(CreateGroupRequestValidator));
-            _updateGroupValidator = validatorLocator.GetValidator(typeof(UpdateGroupRequestValidator));
-            _groupValidatorId = validatorLocator.GetValidator(typeof(GroupIdValidator));
+            _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
         }
 
-        public async Task CreateDefaultGroupsAsync(Guid tenantId)
+        public async Task CreateBuiltInGroupsAsync(Guid tenantId)
         {
-            await Task.WhenAll(new List<Task>()
-            {
-                CreateDefaultGroup(tenantId, GroupType.Default, GroupNames.Default),
-                CreateDefaultGroup(tenantId, GroupType.Basic, GroupNames.Basic),
-                CreateDefaultGroup(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin),
-            });
+            await Task.WhenAll(
+                CreateBuiltInGroupAsync(tenantId, GroupType.Default, GroupNames.Default),
+                CreateBuiltInGroupAsync(tenantId, GroupType.Basic, GroupNames.Basic),
+                CreateBuiltInGroupAsync(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin));
         }
 
-        private async Task CreateDefaultGroup(Guid tenantId, GroupType type, string groupName)
+        private async Task CreateBuiltInGroupAsync(Guid tenantId, GroupType type, string groupName)
         {
             try
             {
@@ -72,7 +69,7 @@ namespace Synthesis.PrincipalService.Controllers
                     Name = groupName,
                     Type = type,
                     IsLocked = true
-                }, tenantId, Guid.Empty);
+                }, tenantId, Guid.Empty, false);
             }
             catch (Exception ex)
             {
@@ -80,20 +77,23 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-
         /// <summary>
         /// Creates the group asynchronous.
         /// </summary>
         /// <param name="model">The model.</param>
         /// <param name="tenantId">The tenant identifier.</param>
         /// <param name="currentUserId">The user identifier.</param>
+        /// <param name="preventBuiltInGroup"></param>
         /// <returns>
         /// Group object.
         /// </returns>
         /// <exception cref="ValidationFailedException"></exception>
-        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId)
+        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId, bool preventBuiltInGroup)
         {
-            var validationResult = await _createGroupValidator.ValidateAsync(model);
+            var validationResult = preventBuiltInGroup ?
+                await _validatorLocator.GetValidator(typeof(CreateCustomGroupRequestValidator)).ValidateAsync(model) :
+                await _validatorLocator.GetValidator(typeof(CreateGroupRequestValidator)).ValidateAsync(model);
+
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a Group resource.");
@@ -117,7 +117,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId)
         {
-            var validationResult = await _groupValidatorId.ValidateAsync(groupId);
+            var validationResult = await _validatorLocator.GetValidator(typeof(GroupIdValidator)).ValidateAsync(groupId);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id while attempting to retrieve a Group resource.");
@@ -142,7 +142,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<bool> DeleteGroupAsync(Guid groupId, Guid userId)
         {
-            var validationResult = await _groupValidatorId.ValidateAsync(groupId);
+            var validationResult = await _validatorLocator.GetValidator(typeof(GroupIdValidator)).ValidateAsync(groupId);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to delete a Group resource.");
@@ -175,7 +175,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<Group> UpdateGroupAsync(Group model, Guid tenantId, Guid userId)
         {
-            var validationResult = await _updateGroupValidator.ValidateAsync(model);
+            var validationResult = await _validatorLocator.GetValidator(typeof(UpdateGroupRequestValidator)).ValidateAsync(model);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to update an existing Group resource.");

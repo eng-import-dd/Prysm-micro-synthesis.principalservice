@@ -32,7 +32,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), true))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Groups, ctx => BuildRequest(ctx, new Group()));
@@ -44,7 +44,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), true))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.Groups, ctx => BuildRequest(ctx, new Group()));

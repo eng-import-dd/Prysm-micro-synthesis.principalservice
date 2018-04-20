@@ -757,12 +757,11 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            user.Groups = new List<Guid>();
-            var basicUserGroupId = await GetBuiltInGroupId(tenantId, BasicUserRoleName);
-            if (basicUserGroupId != null)
+            user.Groups = new List<Guid>
             {
-                user.Groups.Add(basicUserGroupId.Value);
-            }
+                (await GetBuiltInGroupId(tenantId, GroupType.Default)).GetValueOrDefault(),
+                (await GetBuiltInGroupId(tenantId, GroupType.Basic)).GetValueOrDefault()
+            };
 
             var result = await _userRepository.CreateItemAsync(user);
             return result;
@@ -862,7 +861,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<List<User>> GetTenantAdminsByIdAsync(Guid userTenantId)
         {
-            var adminGroupId = await GetBuiltInGroupId(userTenantId, OrgAdminRoleName);
+            var adminGroupId = await GetBuiltInGroupId(userTenantId, GroupType.TenantAdmin);
             if (adminGroupId != null)
             {
                 var userIds = await _tenantApi.GetUserIdsByTenantIdAsync(userTenantId);
@@ -878,10 +877,25 @@ namespace Synthesis.PrincipalService.Controllers
             return new List<User>();
         }
 
-        private async Task<Guid?> GetBuiltInGroupId(Guid userTenantId, string groupName)
+        private async Task<Guid?> GetBuiltInGroupId(Guid tenantId, GroupType groupType)
         {
-            var groups = await _groupRepository.GetItemsAsync(g => g.TenantId == userTenantId && g.Name == groupName && g.IsLocked);
-            return groups.FirstOrDefault()?.Id;
+            try
+            {
+                var group = (await _groupRepository
+                    .GetItemsAsync(g => g.Type == groupType && g.TenantId == tenantId))
+                    .SingleOrDefault();
+
+                if (group == null)
+                {
+                    throw new Exception($"A {groupType.ToString()} group does not exist for tenant {tenantId}");
+                }
+
+                return group.Id.GetValueOrDefault();
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new Exception($"Multiple {groupType.ToString()} groups exist for tenant {tenantId}", ex);
+            }
         }
 
         private async Task<User> LockUser(Guid userId, bool locked)

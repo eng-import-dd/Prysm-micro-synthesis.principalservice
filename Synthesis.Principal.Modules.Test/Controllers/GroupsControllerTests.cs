@@ -15,6 +15,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Validators;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
@@ -35,6 +36,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
                 .ReturnsAsync(new ValidationResult());
+
+            _validatorFailureMock
+                .Setup(x => x.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
+                .ReturnsAsync(new ValidationResult(new List<ValidationFailure> {new ValidationFailure("", "")}));
 
             // validator mock
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
@@ -57,6 +62,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
+        private readonly Mock<IValidator> _validatorFailureMock = new Mock<IValidator>();
         private readonly GroupsController _controller;
 
         [Theory]
@@ -69,7 +75,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(Task.FromResult(new Group()));
 
             var tenantId = Guid.NewGuid();
-            await _controller.CreateDefaultGroupsAsync(tenantId);
+            await _controller.CreateBuiltInGroupsAsync(tenantId);
 
             _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == groupName && x.IsLocked && x.Type == type)));
         }
@@ -83,8 +89,25 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var newGroupRequest = new Group();
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId, userId);
+            var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId, userId, true);
             Assert.IsType<Group>(result);
+        }
+
+        [Fact]
+        public async Task CreateGroupAsyncThrowsValidationExceptionIfBuiltInGroupsAreNotPermitted()
+        {
+            _groupRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .Returns(Task.FromResult(new Group()));
+
+            _validatorLocatorMock
+                .Setup(m => m.GetValidator(It.IsAny<Type>()))
+                .Returns(_validatorFailureMock.Object);
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGroupAsync(new Group()
+            {
+                Type = GroupType.Basic
+            },  Guid.NewGuid(), Guid.NewGuid(), true));
         }
 
         [Fact]
