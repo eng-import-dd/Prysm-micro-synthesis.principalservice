@@ -22,7 +22,7 @@ namespace Synthesis.PrincipalService.EventHandlers
         {
             try
             {
-                await _policyChangesController.CreateBuiltInGroupsAsync(tenant.Id.ToGuid());
+                await _policyChangesController.CreateBuiltInGroupsAsync(tenant.Id.GetValueOrDefault());
             }
             catch (Exception ex)
             {
