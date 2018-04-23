@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Validators
                 .WithMessage("The Group Name must be less than 100 characters long");
 
             RuleFor(request => request.Type )
-                .NotEqual(request => GroupType.Custom)
+                .Equal(request => GroupType.Custom)
                 .WithMessage("Only custom groups may be created");
         }
     }

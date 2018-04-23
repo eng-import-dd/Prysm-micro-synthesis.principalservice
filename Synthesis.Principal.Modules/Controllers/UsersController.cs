@@ -887,7 +887,7 @@ namespace Synthesis.PrincipalService.Controllers
 
                 if (group == null)
                 {
-                    throw new Exception($"A {groupType.ToString()} group does not exist for tenant {tenantId}");
+                    throw new Exception($"{groupType.ToString()} group does not exist for tenant {tenantId}");
                 }
 
                 return group.Id.GetValueOrDefault();

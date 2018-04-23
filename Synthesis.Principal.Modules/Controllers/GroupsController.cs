@@ -74,6 +74,7 @@ namespace Synthesis.PrincipalService.Controllers
             catch (Exception ex)
             {
                 _logger.Error($"Error creating {groupName} group for {tenantId}", ex);
+                throw;
             }
         }
 
@@ -182,10 +183,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var existingGroupInDb = _groupRepository.GetItemAsync(model.Id.ToGuid());
-            if (existingGroupInDb.Result != null)
+            var existingGroupInDb = await _groupRepository.GetItemAsync(model.Id.ToGuid());
+            if (existingGroupInDb != null)
             {
-                if ((existingGroupInDb.Result.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
+                if ((existingGroupInDb.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
                 {
                     _logger.Error("Invalid operation. Locked groups cannot be edited.");
                     throw new InvalidOperationException("You can not edit a locked group");
@@ -201,7 +202,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             // Replace any fields in the DTO that shouldn't be changed here
             model.TenantId = tenantId;
-
+            model.Type = existingGroupInDb.Type;
             var result = await _groupRepository.UpdateItemAsync(model.Id.ToGuid(), model);
 
             _eventService.Publish(EventNames.GroupUpdated, result);
