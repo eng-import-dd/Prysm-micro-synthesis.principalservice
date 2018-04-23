@@ -24,10 +24,6 @@ namespace Synthesis.PrincipalService.Controllers
     {
         private readonly IRepository<Group> _groupRepository;
         private readonly IRepository<User> _userRepository;
-        //private readonly IValidator _createGroupValidator;
-        //private readonly IValidator _createCustomGroupValidator;
-        //private readonly IValidator _updateGroupValidator;
-        //private readonly IValidator _groupValidatorId;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IValidatorLocator _validatorLocator;
