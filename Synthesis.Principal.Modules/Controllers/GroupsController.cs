@@ -80,14 +80,14 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="model">The model.</param>
         /// <param name="tenantId">The tenant identifier.</param>
         /// <param name="currentUserId">The user identifier.</param>
-        /// <param name="preventBuiltInGroup"></param>
+        /// <param name="preventChangesToBuiltInGroups"></param>
         /// <returns>
         /// Group object.
         /// </returns>
         /// <exception cref="ValidationFailedException"></exception>
-        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId, bool preventBuiltInGroup)
+        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId, bool preventChangesToBuiltInGroups)
         {
-            var validationResult = preventBuiltInGroup ?
+            var validationResult = preventChangesToBuiltInGroups ?
                 await _validatorLocator.GetValidator(typeof(CreateCustomGroupRequestValidator)).ValidateAsync(model) :
                 await _validatorLocator.GetValidator(typeof(CreateGroupRequestValidator)).ValidateAsync(model);
 

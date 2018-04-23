@@ -16,11 +16,11 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="group">The group.</param>
         /// <param name="tenantId">The tenant identifier.</param>
         /// <param name="userId">The user identifier.</param>
-        /// <param name="isCustomGroup"></param>
+        /// <param name="preventChangesToBuiltInGroups"></param>
         /// <returns>
         /// Group object.
         /// </returns>
-        Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId, bool isCustomGroup);
+        Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId, bool preventChangesToBuiltInGroups);
 
         Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
 
