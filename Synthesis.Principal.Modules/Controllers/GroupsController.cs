@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation.Results;
+using Microsoft.Azure.Documents.SystemFunctions;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
@@ -224,7 +225,7 @@ namespace Synthesis.PrincipalService.Controllers
                 }
              */
 
-            var result = await _groupRepository.GetItemsAsync(g => g.TenantId == tenantId);
+            var result = await _groupRepository.GetItemsAsync(g => g.TenantId == tenantId && g.Type != GroupType.Default);
 
             if (result == null)
             {
