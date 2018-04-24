@@ -384,7 +384,6 @@
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\GeUserNamesByIdsValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
-    <Compile Include="Validators\CreateCustomGroupRequestValidator.cs" />
     <Compile Include="Validators\GuestCreationRequestValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\NameValidator.cs" />
