@@ -80,7 +80,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _groupsController.CreateGroupAsync(newGroup, TenantId, PrincipalId, true);
+                var result = await _groupsController.CreateGroupAsync(newGroup, TenantId, PrincipalId, false);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.Created);
             }

@@ -89,7 +89,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var newGroupRequest = new Group();
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
-            var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId, userId, true);
+            var result = await _controller.CreateGroupAsync(newGroupRequest, tenantId, userId, false);
             Assert.IsType<Group>(result);
         }
 
@@ -107,7 +107,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGroupAsync(new Group()
             {
                 Type = GroupType.Basic
-            },  Guid.NewGuid(), Guid.NewGuid(), true));
+            },  Guid.NewGuid(), Guid.NewGuid(), false));
         }
 
         [Fact]

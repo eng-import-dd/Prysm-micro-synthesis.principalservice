@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentValidation.Results;
-using Microsoft.Azure.Documents.SystemFunctions;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
 using Synthesis.Logging;
@@ -66,7 +65,7 @@ namespace Synthesis.PrincipalService.Controllers
                     Name = groupName,
                     Type = type,
                     IsLocked = true
-                }, tenantId, Guid.Empty, false);
+                }, tenantId, Guid.Empty, true);
             }
             catch (Exception ex)
             {
@@ -81,16 +80,19 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="model">The model.</param>
         /// <param name="tenantId">The tenant identifier.</param>
         /// <param name="currentUserId">The user identifier.</param>
-        /// <param name="preventChangesToBuiltInGroups"></param>
+        /// <param name="isBuiltInGroup"></param>
         /// <returns>
         /// Group object.
         /// </returns>
         /// <exception cref="ValidationFailedException"></exception>
-        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId, bool preventChangesToBuiltInGroups)
+        public async Task<Group> CreateGroupAsync(Group model, Guid tenantId, Guid currentUserId, bool isBuiltInGroup)
         {
-            var validationResult = preventChangesToBuiltInGroups ?
-                await _validatorLocator.GetValidator(typeof(CreateCustomGroupRequestValidator)).ValidateAsync(model) :
-                await _validatorLocator.GetValidator(typeof(CreateGroupRequestValidator)).ValidateAsync(model);
+            if (!isBuiltInGroup)
+            {
+                model.Type = GroupType.Custom;
+            }
+
+            var validationResult = await _validatorLocator.GetValidator(typeof(CreateGroupRequestValidator)).ValidateAsync(model);
 
             if (!validationResult.IsValid)
             {
