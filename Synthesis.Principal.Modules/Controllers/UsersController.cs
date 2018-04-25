@@ -224,7 +224,21 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new Exception("Unable to find users for the tenant id");
             }
 
-            var usersInTenant = await _userRepository.GetItemsAsync(u => tenantUsers.Payload.Contains(u.Id??Guid.Empty));
+            if (!(tenantUsers.Payload?.Any()).GetValueOrDefault())
+            {
+                return new PagingMetadata<User>
+                {
+                    IsLastChunk = true,
+                    FilteredRecords = 0,
+                    List = new List<User>(),
+                    SearchValue = userFilteringOptions.SearchValue,
+                    SortColumn = userFilteringOptions.SortColumn,
+                    SortDescending = userFilteringOptions.SortDescending,
+                    TotalRecords = 0
+                };
+            }
+
+            var usersInTenant = await _userRepository.GetItemsAsync(u => tenantUsers.Payload.Contains(u.Id ?? Guid.Empty));
             if (!usersInTenant.Any())
             {
                 _logger.Error("Users for the tenant could not be found");
