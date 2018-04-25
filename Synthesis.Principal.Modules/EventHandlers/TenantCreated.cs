@@ -22,11 +22,11 @@ namespace Synthesis.PrincipalService.EventHandlers
         {
             try
             {
-                await _policyChangesController.CreateDefaultGroupsAsync(tenant.Id.ToGuid());
+                await _policyChangesController.CreateBuiltInGroupsAsync(tenant.Id.GetValueOrDefault());
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                _logger.Error(e);
+                _logger.Error($"BuiltIn groups were not created for tenant {tenant.Id}", ex);
             }
         }
     }

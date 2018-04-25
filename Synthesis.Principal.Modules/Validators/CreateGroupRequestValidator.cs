@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Validators
 {
@@ -12,7 +11,7 @@ namespace Synthesis.PrincipalService.Validators
     public class CreateGroupRequestValidator : AbstractValidator<Group>
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CreateGroupRequestValidator" /> class.
+        ///     Initializes a new instance of the <see cref="CreateCustomGroupRequestValidator" /> class.
         /// </summary>
         public CreateGroupRequestValidator()
         {
