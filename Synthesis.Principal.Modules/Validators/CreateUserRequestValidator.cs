@@ -21,8 +21,13 @@ namespace Synthesis.PrincipalService.Validators
                 .SetValidator(new EmailValidator(nameof(User.Email)));
 
             RuleFor(request => request.Username)
-                .NotNull().WithMessage($"{nameof(User.Username)} cannot be null")
-                .SetValidator(new UserNameValidator());
+                .NotNull().WithMessage($"{nameof(User.Username)} cannot be null");
+
+            RuleFor(request => request.Username)
+                .SetValidator(new UserNameValidator()).Unless(u => u.Username.Contains("@"));
+
+            RuleFor(request => request.Username)
+                .SetValidator(new EmailValidator()).When(u => u.Username.Contains("@"));
         }
     }
 }
