@@ -348,6 +348,11 @@ namespace Synthesis.PrincipalService.Modules
                 .ExecuteAsync(CancellationToken.None);
 
             string userName = input.userName;
+
+            // To work around nancy bug https://github.com/NancyFx/Nancy/issues/1280 https://github.com/NancyFx/Nancy/issues/1499
+            // Usernames/emailIds will never have spaces in them, so this workaround shouldn't break anything
+            userName = userName?.Replace(" ", "+");
+
             try
             {
                 return await _userController.GetUserByUserNameOrEmailAsync(userName);

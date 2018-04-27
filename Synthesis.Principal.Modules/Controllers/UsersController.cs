@@ -575,7 +575,8 @@ namespace Synthesis.PrincipalService.Controllers
         
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)
         {
-            var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
+            var unameValidationResult = username.Contains("@") ? _validatorLocator.Validate<EmailValidator>(username) : _validatorLocator.Validate<UserNameValidator>(username);
+
             if (!unameValidationResult.IsValid)
             {
                 _logger.Error("Email/Username is either empty or invalid.");
