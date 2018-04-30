@@ -155,7 +155,7 @@
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.4\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta011\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta012\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
@@ -195,10 +195,10 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Microservice.1.0.0-beta007\lib\net452\Synthesis.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Microservice.1.0.0-beta008\lib\net452\Synthesis.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta037\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta040\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
