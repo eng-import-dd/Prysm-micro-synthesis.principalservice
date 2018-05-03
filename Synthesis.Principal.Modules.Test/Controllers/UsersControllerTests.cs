@@ -13,6 +13,8 @@ using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
 using Synthesis.Http.Microservice;
+using Synthesis.IdentityService.InternalApi.Api;
+using Synthesis.IdentityService.InternalApi.Models;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
@@ -49,6 +51,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<ITenantDomainApi> _tenantDomainApiMock = new Mock<ITenantDomainApi>();
         private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
         private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
+        private readonly Mock<IIdentityUserApi> _identityUserApiMock = new Mock<IIdentityUserApi>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
@@ -81,13 +84,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailApiMock.Object,
-                _projectApiMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantDomainApiMock.Object,
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
-                _tenantApiMock.Object);
+                _tenantApiMock.Object,
+                _identityUserApiMock.Object);
         }
 
         private void SetupTestData()
@@ -164,6 +167,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _groupRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
                 .ReturnsAsync(new List<Group> { new Group { Id = _defaultGroupId, TenantId = _defaultTenantId, Type = GroupType.Default } }.AsEnumerable());
+
+            _tenantApiMock.Setup(x => x.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+
+            _identityUserApiMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
         }
 
         [Fact]
@@ -442,7 +449,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     return u;
                 });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
@@ -462,7 +469,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { new User() });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -476,7 +483,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { new User() });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -499,9 +506,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _groupRepositoryMock
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
-                .ReturnsAsync(new List<Group>() { new Group() });
+                .ReturnsAsync(new List<Group> { new Group() });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             await _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), Guid.NewGuid());
 
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.Is<User>(u => u.Groups.Count == 2)));
@@ -521,7 +528,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
                 .ReturnsAsync(new List<Group> { new Group(), new Group() });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), Guid.NewGuid()));
         }
 
@@ -539,7 +546,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
                 .ReturnsAsync(new List<Group>());
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), Guid.NewGuid()));
         }
 
@@ -564,7 +571,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
@@ -603,7 +610,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
             var user = await _controller.CreateUserAsync(createUserRequest, tenantId, createdBy);
@@ -928,15 +935,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailApiMock.Object,
-                _projectApiMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantDomainApiMock.Object,
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
-                _tenantApiMock.Object);
+                _tenantApiMock.Object,
+                _identityUserApiMock.Object);
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385");
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -954,15 +961,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _loggerFactoryMock.Object,
                 _licenseApiMock.Object,
                 _emailApiMock.Object,
-                _projectApiMock.Object,
                 _mapper,
                 deploymentType,
                 _tenantDomainApiMock.Object,
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
-                _tenantApiMock.Object);
+                _tenantApiMock.Object,
+                _identityUserApiMock.Object);
 
-            var createUserRequest = new User { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
+            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap" };
             var tenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3");
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, tenantId, createdBy));
@@ -1347,7 +1354,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(GuestCreationRequestValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1356,7 +1363,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(TenantIdValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1365,7 +1372,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(UserIdValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1374,7 +1381,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { User.Example() });
 
-            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1383,13 +1390,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
                 .ReturnsAsync(new List<UserInvite> { UserInvite.Example() });
 
-            await Assert.ThrowsAsync<UserNotInvitedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<UserNotInvitedException>(() => _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
         public async Task CreateGuestCreatesUser()
         {
-            await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
 
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<User>()));
         }
@@ -1400,7 +1407,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.Example());
 
-            await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
         }
@@ -1411,7 +1418,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.Example());
 
-            var result = await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestAsync(CreateUserRequest.Example(), Guid.NewGuid(), Guid.NewGuid());
             Assert.NotNull(result);
         }
 
@@ -1421,7 +1428,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             const string firstName = "  FirstName  ";
             const string lastName = "  LastName  ";
 
-            var request = User.Example();
+            var request = CreateUserRequest.Example();
             request.FirstName = firstName;
             request.LastName = lastName;
 

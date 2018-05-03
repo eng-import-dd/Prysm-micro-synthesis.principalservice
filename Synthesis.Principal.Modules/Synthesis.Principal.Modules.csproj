@@ -215,6 +215,9 @@
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta016\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.KeyManager, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.KeyManager.2.1.0-beta005\lib\net452\Synthesis.KeyManager.dll</HintPath>
     </Reference>
@@ -354,6 +357,8 @@
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="EventHandlers\TenantCreated.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
+    <Compile Include="Exceptions\IdentityPasswordException.cs" />
+    <Compile Include="Exceptions\TenantMappingException.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
     <Compile Include="Exceptions\UserNotInvitedException.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />

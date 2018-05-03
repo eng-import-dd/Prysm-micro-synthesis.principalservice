@@ -41,7 +41,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(User.Example())
+                .RequestFormat(CreateUserRequest.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
@@ -192,10 +192,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            User createUserRequest;
+            CreateUserRequest createUserRequest;
             try
             {
-                createUserRequest = this.Bind<User>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -228,6 +228,16 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Failed to create user because the user has not been invited yet.", ex);
                 return Response.UserNotInvited(ex.Message);
+            }
+            catch (TenantMappingException ex)
+            {
+                Logger.Error("Failed to create user, adding user to tenant failed.", ex);
+                return Response.TenantMappingFailed(ex.Message);
+            }
+            catch (IdentityPasswordException ex)
+            {
+                Logger.Error("Failed to create user, setting the user's password failed.", ex);
+                return Response.SetPasswordFailed(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
