@@ -29,9 +29,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _repositoryFactoryMock.Setup(m => m.CreateRepository<Machine>())
                 .Returns(_machineRepositoryMock.Object);
 
-            // event service mock
-            _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<Machine>>()));
-
             _validatorMock.Setup(m => m.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
                 .ReturnsAsync(new ValidationResult());
 
