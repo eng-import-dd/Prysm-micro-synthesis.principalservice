@@ -208,7 +208,8 @@ namespace Synthesis.PrincipalService.Modules
                 User userResponse;
                 if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
                 {
-                    userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
+                    var tenantId = IsServicePrincipal ? createUserRequest.TenantId.Value : TenantId;
+                    userResponse = await _userController.CreateUserAsync(createUserRequest, tenantId, PrincipalId);
                 }
                 else
                 {
