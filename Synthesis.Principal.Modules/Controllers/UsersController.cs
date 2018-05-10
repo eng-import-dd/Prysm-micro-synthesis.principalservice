@@ -139,6 +139,39 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
+        public async Task<User> CreateTrialUserAsync(User user, Guid createdBy)
+        {
+            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(user);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Validation failed while attempting to create a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            Guid tenantId = Guid.Empty;
+            if(Guid.TryParse(user.TenantId.ToString(), out tenantId))
+            {
+                if (IsBuiltInOnPremTenant(tenantId))
+                {
+                    _logger.Error("Validation failed while attempting to create a User resource.");
+                    throw new ValidationFailedException(new[] { new ValidationFailure(nameof(tenantId), "Users cannot be created under provisioning tenant") });
+                }
+            }
+
+            user.CreatedBy = createdBy;
+            user.CreatedDate = DateTime.Now;
+            user.FirstName = user.FirstName.Trim();
+            user.LastName = user.LastName.Trim();
+            user.Email = user.Email?.ToLower();
+            user.Username = user.Username?.ToLower();
+
+            var result = await CreateUserInDb(user, tenantId);
+
+            await _eventService.PublishAsync(EventNames.UserCreated, result);
+
+            return result;
+        }
+
         public async Task<User> GetUserAsync(Guid id)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(id);
@@ -338,7 +371,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<User> CreateGuestAsync(User request, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateGuestUserAsync(User request, Guid tenantId, Guid createdBy)
         {
             // Trim up the names
             request.FirstName = request.FirstName?.Trim();
@@ -351,7 +384,7 @@ namespace Synthesis.PrincipalService.Controllers
             // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
-                { typeof(GuestCreationRequestValidator), request },
+                { typeof(CreateGuestUserRequestValidator), request },
                 { typeof(TenantIdValidator), tenantId },
                 { typeof(UserIdValidator), createdBy }
             });
@@ -366,13 +399,6 @@ namespace Synthesis.PrincipalService.Controllers
             if (existingUser != null)
             {
                 throw new UserExistsException($"A user already exists for email = {request.Email}");
-            }
-
-            // Has an invite been sent to this user?
-            var invite = await _userInviteRepository.GetItemAsync(x => x.Email == request.Email);
-            if (invite != null)
-            {
-                throw new UserNotInvitedException("The user has not been invited yet");
             }
 
             // Create a new user for the guest

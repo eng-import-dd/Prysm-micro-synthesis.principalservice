@@ -19,6 +19,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -36,9 +37,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             _userController = userController;
 
-            this.RequiresAuthentication();
-
-            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
+            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserImplementationRouterAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(User.Example())
@@ -187,6 +186,36 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> CreateUserImplementationRouterAsync(dynamic input)
+        {
+            User createUserRequest;
+            try
+            {
+                createUserRequest = this.Bind<User>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            var userType = GetUserType(createUserRequest);
+            if (userType == UserType.Enterprise || userType == UserType.Undefined)
+            {
+                return await CreateUserAsync(input);
+            }
+            if (userType == UserType.Trial)
+            {
+                return await CreateTrialUserAsync(input);
+            }
+            if (userType == UserType.Guest)
+            {
+                return await CreateGuestUserAsync(input);
+            }
+
+            return await CreateUserAsync(input);
+        }
+
         private async Task<object> CreateUserAsync(dynamic input)
         {
             await RequiresAccess()
@@ -205,29 +234,11 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                User userResponse;
-                if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
-                {
-                    userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
-                }
-                else
-                {
-                    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
-                }
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
 
                 return Negotiate
                     .WithModel(userResponse)
                     .WithStatusCode(HttpStatusCode.Created);
-            }
-            catch (UserExistsException ex)
-            {
-                Logger.Error("Failed to create user because a user already exists.", ex);
-                return Response.UserExists(ex.Message);
-            }
-            catch (UserNotInvitedException ex)
-            {
-                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
-                return Response.UserNotInvited(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
@@ -238,6 +249,97 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to create user resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
+        }
+
+        private async Task<object> CreateTrialUserAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            User createUserRequest;
+            try
+            {
+                createUserRequest = this.Bind<User>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                var userResponse = await _userController.CreateTrialUserAsync(createUserRequest, PrincipalId);
+
+                return Negotiate
+                    .WithModel(userResponse)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to create user resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> CreateGuestUserAsync(dynamic input)
+        {
+            User createUserRequest;
+            try
+            {
+                createUserRequest = this.Bind<User>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest, TenantId, PrincipalId);
+
+                return Negotiate
+                    .WithModel(userResponse)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (UserExistsException ex)
+            {
+                Logger.Error("Failed to create user because a user already exists.", ex);
+                return Response.UserExists(ex.Message);
+            }
+            catch (ValidationFailedException ex)
+            {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to create user resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private UserType GetUserType(User createUserRequest)
+        {
+            if (TenantId != Guid.Empty || (TenantId != Guid.Empty && (createUserRequest.TenantId != null && createUserRequest.TenantId != Guid.Empty)))
+            {
+                return UserType.Enterprise;
+            }
+            else if (TenantId == Guid.Empty && (createUserRequest.TenantId != null && createUserRequest.TenantId != Guid.Empty))
+            {
+                return UserType.Trial;
+            }
+            else if (TenantId == Guid.Empty && (createUserRequest.TenantId == null || createUserRequest.TenantId == Guid.Empty))
+            {
+                return UserType.Guest;
+            }
+
+            return UserType.Undefined;
+
         }
 
         private async Task<object> GetUserByIdAsync(dynamic input)

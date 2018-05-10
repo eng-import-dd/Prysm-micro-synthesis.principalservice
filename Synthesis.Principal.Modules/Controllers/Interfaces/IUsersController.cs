@@ -9,6 +9,10 @@ namespace Synthesis.PrincipalService.Controllers
     {
         Task<User> CreateUserAsync(User model, Guid tenantId, Guid createdBy);
 
+        Task<User> CreateTrialUserAsync(User model, Guid createdBy);
+
+        Task<User> CreateGuestUserAsync(User request, Guid tenantId, Guid createdBy);
+
         Task<User> GetUserAsync(Guid userId);
 
         Task<User> UpdateUserAsync(Guid userId, User model);
@@ -44,7 +48,5 @@ namespace Synthesis.PrincipalService.Controllers
         Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
 
         Task<User> GetUserByUserNameOrEmailAsync(string username);
-
-        Task<User> CreateGuestAsync(User request, Guid tenantId, Guid createdBy);
     }
 }

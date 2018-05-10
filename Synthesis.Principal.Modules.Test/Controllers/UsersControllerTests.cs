@@ -1344,10 +1344,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestBadRequestThrowsValidationfailed()
         {
-            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(GuestCreationRequestValidator)))
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(CreateGuestUserRequestValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1356,7 +1356,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(TenantIdValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1365,7 +1365,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(UserIdValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
@@ -1374,22 +1374,27 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { User.Example() });
 
-            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
         }
 
         [Fact]
-        public async Task CreateGuestForUninvitedUserThrowsUserNotInvited()
+        public async Task CreateGuestForUninvitedUserSucceeds()
         {
             _userInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
-                .ReturnsAsync(new List<UserInvite> { UserInvite.Example() });
+                .ReturnsAsync(new List<UserInvite>());
 
-            await Assert.ThrowsAsync<UserNotInvitedException>(() => _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid()));
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>() ))
+                .ReturnsAsync(User.GuestUserExample());
+
+            var result = await _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
+
+            Assert.NotNull(result);
         }
 
         [Fact]
         public async Task CreateGuestCreatesUser()
         {
-            await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
 
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<User>()));
         }
@@ -1398,9 +1403,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateGuestSendsEvent()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .ReturnsAsync(User.Example());
+                .ReturnsAsync(User.GuestUserExample());
 
-            await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
         }
@@ -1409,9 +1414,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateGuestReturnsUser()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .ReturnsAsync(User.Example());
+                .ReturnsAsync(User.GuestUserExample());
 
-            var result = await _controller.CreateGuestAsync(User.Example(), Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestUserAsync(User.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
             Assert.NotNull(result);
         }
 
@@ -1421,7 +1426,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             const string firstName = "  FirstName  ";
             const string lastName = "  LastName  ";
 
-            var request = User.Example();
+            var request = User.GuestUserExample();
             request.FirstName = firstName;
             request.LastName = lastName;
 
@@ -1431,7 +1436,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     return Task.FromResult(u);
                 });
 
-            var result = await _controller.CreateGuestAsync(request, Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestUserAsync(request, Guid.NewGuid(), Guid.NewGuid());
 
             Assert.Equal(firstName.Trim(), result.FirstName);
             Assert.Equal(lastName.Trim(), result.LastName);

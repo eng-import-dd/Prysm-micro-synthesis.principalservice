@@ -23,6 +23,9 @@ namespace Synthesis.PrincipalService.Validators
             RuleFor(request => request.Username)
                 .NotNull().WithMessage($"{nameof(User.Username)} cannot be null")
                 .SetValidator(new UserNameValidator());
+
+            RuleFor(request => request.TenantId)
+                .NotEmpty().WithMessage($"{nameof(User.TenantId)} cannot be an empty Guid");
         }
     }
 }

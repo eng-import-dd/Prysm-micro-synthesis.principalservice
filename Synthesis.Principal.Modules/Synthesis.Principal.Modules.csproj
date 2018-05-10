@@ -249,7 +249,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta024\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta031\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta016\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -355,7 +355,6 @@
     <Compile Include="EventHandlers\TenantCreated.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
-    <Compile Include="Exceptions\UserNotInvitedException.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
@@ -384,13 +383,12 @@
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\GeUserNamesByIdsValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
-    <Compile Include="Validators\GuestCreationRequestValidator.cs" />
+    <Compile Include="Validators\CreateGuestUserRequestValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\NameValidator.cs" />
     <Compile Include="Validators\PasswordResetEmailRequestValidator.cs" />
     <Compile Include="Validators\PasswordValidator.cs" />
     <Compile Include="Validators\PrincipalIdValidator.cs" />
-    <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />
