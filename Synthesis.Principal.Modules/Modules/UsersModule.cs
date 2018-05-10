@@ -19,6 +19,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -41,7 +42,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(User.Example())
+                .RequestFormat(CreateUserRequest.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
@@ -134,7 +135,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("DeleteUser", HttpMethod.Delete, Routing.UsersWithId, DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
-
+            
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -192,10 +193,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            User createUserRequest;
+            CreateUserRequest createUserRequest;
             try
             {
-                createUserRequest = this.Bind<User>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -206,10 +207,13 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 User userResponse;
-                if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
+                if (createUserRequest.UserType == UserType.Enterprise || createUserRequest.UserType == UserType.Trial)
                 {
-                    var tenantId = IsServicePrincipal ? createUserRequest.TenantId.Value : TenantId;
-                    userResponse = await _userController.CreateUserAsync(createUserRequest, tenantId, PrincipalId);
+                    if (createUserRequest.TenantId == null)
+                    {
+                        createUserRequest.TenantId = TenantId;
+                    }
+                    userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
                 }
                 else
                 {
@@ -229,6 +233,16 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Failed to create user because the user has not been invited yet.", ex);
                 return Response.UserNotInvited(ex.Message);
+            }
+            catch (TenantMappingException ex)
+            {
+                Logger.Error("Failed to create user, adding user to tenant failed.", ex);
+                return Response.TenantMappingFailed(ex.Message);
+            }
+            catch (IdentityPasswordException ex)
+            {
+                Logger.Error("Failed to create user, setting the user's password failed.", ex);
+                return Response.SetPasswordFailed(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
