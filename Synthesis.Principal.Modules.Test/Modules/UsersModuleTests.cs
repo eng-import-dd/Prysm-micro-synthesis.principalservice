@@ -113,10 +113,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserWithProjectAccessCodeCreatesGuestUserAsync()
         {
-            var request = CreateUserRequest.Example();
-            request.UserType = UserType.Guest;
-
-            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, request));
+            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
 
             _controllerMock.Verify(x => x.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
         }
@@ -146,10 +143,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new UserNotInvitedException());
-            var request = CreateUserRequest.Example();
-            request.UserType = UserType.Guest;
 
-            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, request));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
@@ -159,10 +154,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Throws(new UserExistsException());
-            var request = CreateUserRequest.Example();
-            request.UserType = UserType.Guest;
 
-            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, request));
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
