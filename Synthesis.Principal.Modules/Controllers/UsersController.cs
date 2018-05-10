@@ -149,7 +149,7 @@ namespace Synthesis.PrincipalService.Controllers
             await AssignUserLicense(result, newUser.LicenseType, createUserRequest.TenantId.Value);
 
             var response = await _tenantApi.AddUserToTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
-            if (response.ResponseCode != HttpStatusCode.Created)
+            if (response.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
                 throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
