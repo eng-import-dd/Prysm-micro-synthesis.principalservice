@@ -103,7 +103,7 @@ namespace Synthesis.PrincipalService.Controllers
             _identityUserApi = identityUserApi;
         }
 
-        public async Task<User> CreateUserAsync(CreateUserRequest createUserRequest, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateUserAsync(CreateUserRequest createUserRequest, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
 
@@ -114,10 +114,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (IsBuiltInOnPremTenant(tenantId))
+            if (IsBuiltInOnPremTenant(createUserRequest.TenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(tenantId), "Users cannot be created under provisioning tenant") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(createUserRequest.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
             var newUser = new User
@@ -135,35 +135,27 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LastAccessDate = DateTime.Now,
                 LdapId = createUserRequest.LdapId,
-                LicenseType = createUserRequest.LicenseType,
-                ProjectAccessCode = createUserRequest.ProjectAccessCode
+                LicenseType = createUserRequest.LicenseType
             };
 
-            var result = await CreateUserInDb(newUser, tenantId);
+            // ReSharper disable once PossibleInvalidOperationException
+            var result = await CreateUserInDb(newUser, createUserRequest.TenantId.Value);
 
             if (result.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            //Tenant id will be null if the route is called using a service token. In that case don't try to assign a license (Trial user creation)
-            if (tenantId == Guid.Empty)
-            {
-                await _eventService.PublishAsync(EventNames.UserCreated, result);
-                return result;
-            }
+            await AssignUserLicense(result, newUser.LicenseType, createUserRequest.TenantId.Value);
 
-            await AssignUserLicense(result, newUser.LicenseType, tenantId);
-
-            var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
-            if (response.ResponseCode != HttpStatusCode.OK)
+            var response = await _tenantApi.AddUserToTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
+            if (response.ResponseCode != HttpStatusCode.Created)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
-                throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
+                throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
             }
 
             var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = createUserRequest.Password, UserId = (Guid)result.Id});
-
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
@@ -171,7 +163,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
                 if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
                 {
-                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {tenantId} failed.");
+                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {createUserRequest.TenantId} failed.");
                 }
 
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
@@ -513,7 +505,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
-        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -524,7 +516,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (model.UserId == null || model.UserId == Guid.Empty)
             {
-                return await AutoProvisionUserAsync(model, tenantId, createddBy);
+                return await AutoProvisionUserAsync(model, tenantId, createdBy);
             }
 
             var userId = model.UserId.Value;
@@ -559,10 +551,11 @@ namespace Synthesis.PrincipalService.Controllers
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
-                IsIdpUser = true
+                IsIdpUser = true,
+                TenantId = tenantId
             };
 
-            var result = await CreateUserAsync(createUserRequest, tenantId, createddBy);
+            var result = await CreateUserAsync(createUserRequest, createddBy);
             if (result != null && model.Groups != null)
             {
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.GetValueOrDefault(), model);
@@ -779,9 +772,9 @@ namespace Synthesis.PrincipalService.Controllers
             return returnMetaData;
         }
 
-        private bool IsBuiltInOnPremTenant(Guid tenantId)
+        private bool IsBuiltInOnPremTenant(Guid? tenantId)
         {
-            if (string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
+            if (tenantId == null ||  string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
             {
                 return false;
             }

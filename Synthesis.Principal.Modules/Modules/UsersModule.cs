@@ -19,6 +19,7 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -134,7 +135,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("DeleteUser", HttpMethod.Delete, Routing.UsersWithId, DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
-
+            
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -206,9 +207,13 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 User userResponse;
-                if (string.IsNullOrWhiteSpace(createUserRequest.ProjectAccessCode))
+                if (createUserRequest.UserType == UserType.Enterprise || createUserRequest.UserType == UserType.Trial)
                 {
-                    userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
+                    if (createUserRequest.TenantId == null)
+                    {
+                        createUserRequest.TenantId = TenantId;
+                    }
+                    userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
                 }
                 else
                 {
