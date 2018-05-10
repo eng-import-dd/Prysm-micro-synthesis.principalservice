@@ -18,10 +18,6 @@ namespace Synthesis.PrincipalService.Validators
             RuleFor(request => request.LastName)
                 .NotNull().WithMessage($"{nameof(User.LastName)} cannot be null")
                 .SetValidator(new NameValidator(nameof(User.LastName)));
-
-            RuleFor(request => request.ProjectAccessCode)
-                .NotNull().WithMessage($"{nameof(User.ProjectAccessCode)} cannot be null")
-                .SetValidator(new ProjectAccessCodeValidator());
         }
     }
 }
