@@ -668,7 +668,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
 
-                if (result.ResponseCode != HttpStatusCode.OK)
+                if (result.ResponseCode != HttpStatusCode.Created)
                 {
                     return CanPromoteUserResultCode.PromotionNotPossible;
                 }

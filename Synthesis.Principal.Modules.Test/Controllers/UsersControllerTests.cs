@@ -168,7 +168,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
                 .ReturnsAsync(new List<Group> { new Group { Id = _defaultGroupId, TenantId = _defaultTenantId, Type = GroupType.Default } }.AsEnumerable());
 
-            _tenantApiMock.Setup(x => x.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+            _tenantApiMock.Setup(x => x.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Created));
 
             _identityUserApiMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
         }
@@ -1058,7 +1058,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
             _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Created));
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
@@ -1190,7 +1190,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "test.com"}));
             _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.Created, true));
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
