@@ -1,5 +1,5 @@
 ﻿using System;
-using Synthesis.PrincipalService.Models;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 

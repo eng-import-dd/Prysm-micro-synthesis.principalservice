@@ -1,4 +1,4 @@
-﻿using Synthesis.PrincipalService.Requests;
+﻿using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         public void ShouldFailIfUserNameIsInvalid(string name)
         {
             var request = CreateUserRequest.Example();
-            request.UserName = name;
+            request.Username = name;
 
             var result = _validator.Validate(request);
 

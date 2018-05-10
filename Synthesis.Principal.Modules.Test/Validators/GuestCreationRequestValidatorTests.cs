@@ -1,4 +1,4 @@
-﻿using Synthesis.PrincipalService.Requests;
+﻿using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
@@ -11,14 +11,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassWithExample()
         {
-            var result = _validator.Validate(CreateUserRequest.GuestExample());
+            var result = _validator.Validate(User.GuestUserExample());
             Assert.True(result.IsValid);
         }
 
         [Fact]
         public void ShouldFailOnInvalidEmail()
         {
-            var request = CreateUserRequest.GuestExample();
+            var request = User.GuestUserExample();
             request.Email = "invalid.email.com";
 
             var result = _validator.Validate(request);
@@ -28,7 +28,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailOnInvalidFirstName()
         {
-            var request = CreateUserRequest.GuestExample();
+            var request = User.GuestUserExample();
             request.FirstName = "";
 
             var result = _validator.Validate(request);
@@ -38,38 +38,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailOnInvalidLastName()
         {
-            var request = CreateUserRequest.GuestExample();
+            var request = User.GuestUserExample();
             request.LastName = "";
-
-            var result = _validator.Validate(request);
-            Assert.False(result.IsValid);
-        }
-
-        [Fact]
-        public void ShouldFailOnInvalidPassword()
-        {
-            var request = CreateUserRequest.GuestExample();
-            request.Password = "";
-
-            var result = _validator.Validate(request);
-            Assert.False(result.IsValid);
-        }
-
-        [Fact]
-        public void ShouldFailOnInvalidPasswordConfirmation()
-        {
-            var request = CreateUserRequest.GuestExample();
-            request.PasswordConfirmation = null;
-
-            var result = _validator.Validate(request);
-            Assert.False(result.IsValid);
-        }
-
-        [Fact]
-        public void ShouldFailIfPasswordConfirmationDoesNoMatchPassword()
-        {
-            var request = CreateUserRequest.GuestExample();
-            request.PasswordConfirmation = "";
 
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
