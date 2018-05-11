@@ -152,14 +152,14 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (model.UserType == UserType.Enterprise)
             {
-                await AssignUserLicense(result, newUser.LicenseType, model.TenantId.Value);
+                await AssignUserLicense(result, newUser.LicenseType, tenantId);
             }
 
-            var response = await _tenantApi.AddUserToTenantAsync(model.TenantId.Value, (Guid)result.Id);
+            var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
             if (response.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
-                throw new TenantMappingException($"Adding the user to the tenant with Id {model.TenantId.Value} failed. The user was removed from the database");
+                throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
             }
 
             var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = model.Password, UserId = (Guid)result.Id});
