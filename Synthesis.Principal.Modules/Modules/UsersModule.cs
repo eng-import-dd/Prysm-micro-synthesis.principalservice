@@ -188,10 +188,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserImplementationRouterAsync(dynamic input)
         {
-            User createUserRequest;
+            CreateUserRequest createUserRequest;
             try
             {
-                createUserRequest = this.Bind<User>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -199,21 +199,17 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
-            var userType = GetUserType(createUserRequest);
-            if (userType == UserType.Enterprise || userType == UserType.Undefined)
+            switch (createUserRequest.UserType)
             {
-                return await CreateUserAsync(input);
+                case UserType.Enterprise:
+                case UserType.Trial:
+                case UserType.Undefined:
+                    return await CreateUserAsync(input);
+                case UserType.Guest:
+                    return await CreateGuestUserAsync(input);
+                default:
+                    return await CreateUserAsync(input);
             }
-            if (userType == UserType.Trial)
-            {
-                return await CreateTrialUserAsync(input);
-            }
-            if (userType == UserType.Guest)
-            {
-                return await CreateGuestUserAsync(input);
-            }
-
-            return await CreateUserAsync(input);
         }
 
         private async Task<object> CreateUserAsync(dynamic input)
@@ -234,46 +230,23 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var userResponse = await _userController.CreateUserAsync(createUserRequest, TenantId, PrincipalId);
+                createUserRequest.ReplaceNullOrEmptyTenantId(TenantId);
+
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
 
                 return Negotiate
                     .WithModel(userResponse)
                     .WithStatusCode(HttpStatusCode.Created);
             }
-            catch (ValidationFailedException ex)
+            catch (TenantMappingException ex)
             {
-                return Response.BadRequestValidationFailed(ex.Errors);
+                Logger.Error("Failed to create user, adding user to tenant failed.", ex);
+                return Response.TenantMappingFailed(ex.Message);
             }
-            catch (Exception ex)
+            catch (IdentityPasswordException ex)
             {
-                Logger.Error("Failed to create user resource due to an error", ex);
-                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
-            }
-        }
-
-        private async Task<object> CreateTrialUserAsync(dynamic input)
-        {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            User createUserRequest;
-            try
-            {
-                createUserRequest = this.Bind<User>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to create a User resource", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            try
-            {
-                var userResponse = await _userController.CreateTrialUserAsync(createUserRequest, PrincipalId);
-
-                return Negotiate
-                    .WithModel(userResponse)
-                    .WithStatusCode(HttpStatusCode.Created);
+                Logger.Error("Failed to create user, setting the user's password failed.", ex);
+                return Response.SetPasswordFailed(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
@@ -288,10 +261,10 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateGuestUserAsync(dynamic input)
         {
-            User createUserRequest;
+            CreateUserRequest createUserRequest;
             try
             {
-                createUserRequest = this.Bind<User>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -311,16 +284,6 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Failed to create user because a user already exists.", ex);
                 return Response.UserExists(ex.Message);
-            }
-            catch (UserNotInvitedException ex)
-            {
-                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
-                return Response.UserNotInvited(ex.Message);
-            }
-            catch (TenantMappingException ex)
-            {
-                Logger.Error("Failed to create user, adding user to tenant failed.", ex);
-                return Response.TenantMappingFailed(ex.Message);
             }
             catch (IdentityPasswordException ex)
             {

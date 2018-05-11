@@ -25,11 +25,13 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
+using Guid = System.Guid;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -103,59 +105,64 @@ namespace Synthesis.PrincipalService.Controllers
             _identityUserApi = identityUserApi;
         }
 
-        public async Task<User> CreateUserAsync(CreateUserRequest createUserRequest, Guid createdBy)
+        public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
 
-            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(createUserRequest);
+            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (IsBuiltInOnPremTenant(createUserRequest.TenantId))
+            Guid tenantId = model.TenantId.ToGuid();
+            
+            if (IsBuiltInOnPremTenant(tenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(createUserRequest.TenantId), "Users cannot be created under provisioning tenant") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
             var newUser = new User
             {
                 CreatedBy = createdBy,
                 CreatedDate = DateTime.Now,
-                FirstName = createUserRequest.FirstName.Trim(),
-                LastName = createUserRequest.LastName.Trim(),
-                Email = createUserRequest.Email?.ToLower(),
-                Username = createUserRequest.Username?.ToLower(),
-                Groups = createUserRequest.Groups,
-                IdpMappedGroups = createUserRequest.IdpMappedGroups,
-                Id = createUserRequest.Id,
-                IsIdpUser = createUserRequest.IsIdpUser,
+                FirstName = model.FirstName.Trim(),
+                LastName = model.LastName.Trim(),
+                Email = model.Email?.ToLower(),
+                EmailVerificationId = Guid.NewGuid(),
+                Username = model.Username?.ToLower(),
+                Groups = model.Groups,
+                IdpMappedGroups = model.IdpMappedGroups,
+                Id = model.Id,
+                IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
                 LastAccessDate = DateTime.Now,
-                LdapId = createUserRequest.LdapId,
-                LicenseType = createUserRequest.LicenseType
+                LdapId = model.LdapId,
+                LicenseType = model.LicenseType
             };
 
-            // ReSharper disable once PossibleInvalidOperationException
-            var result = await CreateUserInDb(newUser, createUserRequest.TenantId.Value);
+            var result = await CreateUserInDb(newUser, tenantId);
 
             if (result.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            await AssignUserLicense(result, newUser.LicenseType, createUserRequest.TenantId.Value);
+            if (model.UserType == UserType.Enterprise)
+            {
+                await AssignUserLicense(result, newUser.LicenseType, model.TenantId.Value);
+            }
 
-            var response = await _tenantApi.AddUserToTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
+            var response = await _tenantApi.AddUserToTenantAsync(model.TenantId.Value, (Guid)result.Id);
             if (response.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
-                throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
+                throw new TenantMappingException($"Adding the user to the tenant with Id {model.TenantId.Value} failed. The user was removed from the database");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = createUserRequest.Password, UserId = (Guid)result.Id});
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = model.Password, UserId = (Guid)result.Id});
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
@@ -163,44 +170,11 @@ namespace Synthesis.PrincipalService.Controllers
                 var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
                 if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
                 {
-                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {createUserRequest.TenantId} failed.");
+                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
                 }
 
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
-
-            await _eventService.PublishAsync(EventNames.UserCreated, result);
-
-            return result;
-        }
-
-        public async Task<User> CreateTrialUserAsync(User user, Guid createdBy)
-        {
-            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(user);
-            if (!validationResult.IsValid)
-            {
-                _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            Guid tenantId = Guid.Empty;
-            if(Guid.TryParse(user.TenantId.ToString(), out tenantId))
-            {
-                if (IsBuiltInOnPremTenant(tenantId))
-                {
-                    _logger.Error("Validation failed while attempting to create a User resource.");
-                    throw new ValidationFailedException(new[] { new ValidationFailure(nameof(tenantId), "Users cannot be created under provisioning tenant") });
-                }
-            }
-
-            user.CreatedBy = createdBy;
-            user.CreatedDate = DateTime.Now;
-            user.FirstName = user.FirstName.Trim();
-            user.LastName = user.LastName.Trim();
-            user.Email = user.Email?.ToLower();
-            user.Username = user.Username?.ToLower();
-
-            var result = await CreateUserInDb(user, tenantId);
 
             await _eventService.PublishAsync(EventNames.UserCreated, result);
 
@@ -409,12 +383,10 @@ namespace Synthesis.PrincipalService.Controllers
         public async Task<User> CreateGuestUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             // Trim up the names
-            model.FirstName = request.FirstName?.Trim();
-            model.LastName = request.LastName?.Trim();
-            model.Email = request.Email?.ToLower();
-            model.Username = request.Username?.ToLower();
-
-            //TODO : Set guest password - to be fixed in guest service, CU-577 added to address this
+            model.FirstName = model.FirstName?.Trim();
+            model.LastName = model.LastName?.Trim();
+            model.Email = model.Email?.ToLower();
+            model.Username = model.Username?.ToLower();
 
             // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
@@ -440,17 +412,44 @@ namespace Synthesis.PrincipalService.Controllers
             var user = new User
             {
                 CreatedBy = createdBy,
-                CreatedDate = DateTime.UtcNow,
-                Email = model.Email,
-                FirstName = model.FirstName,
-                Groups = new List<Guid>(),
+                CreatedDate = DateTime.Now,
+                FirstName = model.FirstName.Trim(),
+                LastName = model.LastName.Trim(),
+                Email = model.Email?.ToLower(),
+                EmailVerificationId = Guid.NewGuid(),
+                Username = model.Username?.ToLower(),
+                Groups = model.Groups,
+                IdpMappedGroups = model.IdpMappedGroups,
+                Id = model.Id,
+                IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
-                LastName = model.LastName,
-                Username = model.Email
+                LastAccessDate = DateTime.Now,
+                LdapId = model.LdapId,
+                LicenseType = model.LicenseType
             };
+
             var result = await _userRepository.CreateItemAsync(user);
+
+            if (result.Id == null)
+            {
+                throw new ResourceException("User was incorrectly created with a null Id");
+            }
+
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
+            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            {
+                await _userRepository.DeleteItemAsync((Guid)result.Id);
+
+                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
+                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
+                {
+                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
+                }
+
+                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
+            }
+
             _eventService.Publish(EventNames.UserCreated, result);
 
             return result;
@@ -578,7 +577,8 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
-                TenantId = tenantId
+                TenantId = tenantId,
+                UserType = UserType.Enterprise
             };
 
             var result = await CreateUserAsync(createUserRequest, createddBy);
@@ -828,17 +828,27 @@ namespace Synthesis.PrincipalService.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
 
+            if (tenantId == Guid.Empty)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(tenantId), "The tenant Id cannot be an empty Guid."));
+            }
+
             if (validationErrors.Any())
             {
                 _logger.Error($"Validation failed creating user {user.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 
-            user.Groups = new List<Guid>
+            if (user.Groups == null)
+            {
+                user.Groups = new List<Guid>();
+            }
+
+            user.Groups.AddRange(new List<Guid>
             {
                 (await GetBuiltInGroupId(tenantId, GroupType.Default)).GetValueOrDefault(),
                 (await GetBuiltInGroupId(tenantId, GroupType.Basic)).GetValueOrDefault()
-            };
+            });
 
             var result = await _userRepository.CreateItemAsync(user);
             return result;

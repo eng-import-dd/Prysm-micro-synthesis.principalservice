@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Validators
                 .SetValidator(new EmailValidator()).When(u => u.Username.Contains("@"));
 
             RuleFor(request => request.TenantId)
-                .NotEmpty().WithMessage($"{nameof(User.TenantId)} cannot be an empty Guid");
+                .NotEmpty().WithMessage($"{nameof(CreateUserRequest.TenantId)} cannot be an empty or null Guid");
         }
     }
 }

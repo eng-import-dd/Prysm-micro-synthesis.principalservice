@@ -360,6 +360,7 @@
     <Compile Include="Exceptions\IdentityPasswordException.cs" />
     <Compile Include="Exceptions\TenantMappingException.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
+    <Compile Include="Extensions\CreateUserRequestExtension.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
