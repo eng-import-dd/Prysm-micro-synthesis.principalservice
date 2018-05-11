@@ -418,15 +418,11 @@ namespace Synthesis.PrincipalService.Controllers
                 Email = model.Email?.ToLower(),
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
-                Groups = model.Groups,
-                IdpMappedGroups = model.IdpMappedGroups,
                 Id = model.Id,
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.Now,
-                LdapId = model.LdapId,
-                LicenseType = model.LicenseType
+                LastAccessDate = DateTime.Now
             };
 
             var result = await _userRepository.CreateItemAsync(user);
