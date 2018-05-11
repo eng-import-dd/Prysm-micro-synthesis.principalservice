@@ -1,5 +1,4 @@
-﻿
-namespace Synthesis.PrincipalService.Validators
+﻿namespace Synthesis.PrincipalService.Validators
 {
     public class MachineIdValidator : GuidValidator
     {

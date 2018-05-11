@@ -96,7 +96,6 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var validationResult = await _validatorLocator.GetValidator(typeof(CreateGroupRequestValidator)).ValidateAsync(model);
-
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a Group resource.");

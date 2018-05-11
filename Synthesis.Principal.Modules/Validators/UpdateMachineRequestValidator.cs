@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using Synthesis.PrincipalService.Requests;
 using System;
 using Synthesis.PrincipalService.InternalApi.Models;
 

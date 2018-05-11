@@ -301,6 +301,20 @@
     <Compile Include="Modules\UserInviteModuleTests.cs" />
     <Compile Include="Modules\UsersModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Validators\BulkUploadEmailValidatorTests.cs" />
+    <Compile Include="Validators\CreateGroupRequestValidatorTests.cs" />
+    <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
+    <Compile Include="Validators\UserGroupValidatorTests.cs" />
+    <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />
+    <Compile Include="Validators\EmailValidatorTests.cs" />
+    <Compile Include="Validators\GetUsersByIdValidatorTests.cs" />
+    <Compile Include="Validators\NameValidatorTests.cs" />
+    <Compile Include="Validators\PasswordResetEmailRequestValidatorTests.cs" />
+    <Compile Include="Validators\PasswordValidatorTests.cs" />
+    <Compile Include="Validators\UpdateGroupRequestValidatorTests.cs" />
+    <Compile Include="Validators\UpdateMachineRequestValidatorTests.cs" />
+    <Compile Include="Validators\UpdateUserRequestValidatorTests.cs" />
+    <Compile Include="Validators\UserNameValidatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">

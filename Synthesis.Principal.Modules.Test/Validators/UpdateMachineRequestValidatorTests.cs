@@ -1,4 +1,4 @@
-﻿using Synthesis.PrincipalService.Requests;
+﻿using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfMachineKeyIsGreaterThanMaxLength()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             request.MachineKey = "1122334455667788990011";
 
             var result = _validator.Validate(request);
@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfMachineKeyContainsSpecialCharacters()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             request.MachineKey = "11223344556@#$";
 
             var result = _validator.Validate(request);
@@ -31,7 +31,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfMachineKeyIsNull()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             request.MachineKey = null;
 
             var result = _validator.Validate(request);
@@ -42,7 +42,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLocationIsNull()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             request.Location = null;
 
             var result = _validator.Validate(request);
@@ -52,7 +52,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailIfLocationLengthIsGreaterThanMaxLength()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             request.Location = "asjhdjashdjkhasjdhjkashdjkashdjkhaskjdhjkashdjkashjkdhasj";
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
@@ -61,7 +61,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassOnValidRequest()
         {
-            var request = UpdateMachineRequest.Example();
+            var request = Machine.Example();
             var result = _validator.Validate(request);
             Assert.True(result.IsValid);
         }

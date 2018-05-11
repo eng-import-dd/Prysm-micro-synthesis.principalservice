@@ -27,7 +27,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         protected override List<object> BrowserDependencies => new List<object> { _controllerMock.Object };
 
         private const string ValidTestEmail = "asd@hmm.com";
-        private const string EmptyTestEmail = "";
 
         [Fact]
         public async Task RespondWithUnauthorizedNoBearerAsync()
