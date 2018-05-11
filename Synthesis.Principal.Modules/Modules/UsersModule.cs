@@ -1,7 +1,6 @@
 using FluentValidation;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -19,7 +18,6 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
-using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -37,10 +35,16 @@ namespace Synthesis.PrincipalService.Modules
         {
             _userController = userController;
 
-            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, RouteRequestToCreateUserImplementation)
-                .Description("Create a new User resource")
+            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
+                .Description("Create a new EnterpriseUser or TrialUser resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.Example())
+                .ResponseFormat(User.Example());
+
+            CreateRoute("CreateGuest", HttpMethod.Post, Routing.Guests, CreateGuestUserAsync)
+                .Description("Create a new GuestUser resource")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(CreateUserRequest.GuestUserExample())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
@@ -186,32 +190,6 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> RouteRequestToCreateUserImplementation(dynamic input)
-        {
-            CreateUserRequest createUserRequest;
-            try
-            {
-                createUserRequest = this.Bind<CreateUserRequest>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Binding failed while attempting to create a User resource", ex);
-                return Response.BadRequestBindingException();
-            }
-
-            switch (createUserRequest.UserType)
-            {
-                case UserType.Enterprise:
-                case UserType.Trial:
-                case UserType.Undefined:
-                    return await CreateUserAsync(input);
-                case UserType.Guest:
-                    return await CreateGuestUserAsync(input);
-                default:
-                    return await CreateUserAsync(input);
-            }
-        }
-
         private async Task<object> CreateUserAsync(dynamic input)
         {
             await RequiresAccess()
@@ -274,7 +252,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest, TenantId, PrincipalId);
+                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest);
 
                 return Negotiate
                     .WithModel(userResponse)
@@ -292,6 +270,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)

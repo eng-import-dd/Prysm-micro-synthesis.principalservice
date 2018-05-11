@@ -1350,25 +1350,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(CreateGuestUserRequestValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
-        }
-
-        [Fact]
-        public async Task CreateGuestBadTenantIdThrowsValidationfailed()
-        {
-            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(TenantIdValidator)))
-                .Returns(_validatorFailsMock.Object);
-
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
-        }
-
-        [Fact]
-        public async Task CreateGuestBadCreatedByIdThrowsValidationfailed()
-        {
-            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(UserIdValidator)))
-                .Returns(_validatorFailsMock.Object);
-
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
         }
 
         [Fact]
@@ -1377,7 +1359,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User> { User.Example() });
 
-            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid()));
+            await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
         }
 
         [Fact]
@@ -1389,7 +1371,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>() ))
                 .ReturnsAsync(User.GuestUserExample());
 
-            var result = await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
 
             Assert.NotNull(result);
         }
@@ -1403,7 +1385,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .Returns(Task.FromResult(User.GuestUserExample()));
 
-            await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
 
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<User>()));
         }
@@ -1414,7 +1396,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
 
-            await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
+            await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
 
             _eventServiceMock.Verify(x => x.PublishAsync(It.IsAny<ServiceBusEvent<User>>()));
         }
@@ -1425,7 +1407,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
 
-            var result = await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample(), Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
             Assert.NotNull(result);
         }
 
@@ -1445,7 +1427,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     return Task.FromResult(u);
                 });
 
-            var result = await _controller.CreateGuestUserAsync(request, Guid.NewGuid(), Guid.NewGuid());
+            var result = await _controller.CreateGuestUserAsync(request);
 
             Assert.Equal(firstName.Trim(), result.FirstName);
             Assert.Equal(lastName.Trim(), result.LastName);

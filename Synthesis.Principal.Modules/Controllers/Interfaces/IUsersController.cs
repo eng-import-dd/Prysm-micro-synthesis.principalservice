@@ -9,7 +9,7 @@ namespace Synthesis.PrincipalService.Controllers
     {
         Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy);
 
-        Task<User> CreateGuestUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy);
+        Task<User> CreateGuestUserAsync(CreateUserRequest model);
 
         Task<User> GetUserAsync(Guid userId);
 

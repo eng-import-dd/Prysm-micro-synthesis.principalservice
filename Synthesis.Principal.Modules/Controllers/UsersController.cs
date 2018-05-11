@@ -29,7 +29,6 @@ using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
-using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -52,7 +51,6 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantDomainApi _tenantDomainApi;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
-        private readonly IRepository<UserInvite> _userInviteRepository;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
 
@@ -89,7 +87,6 @@ namespace Synthesis.PrincipalService.Controllers
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
-            _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -116,7 +113,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Convert to non-null Guid. If had been null or empty, would fail validation before this point.
-            Guid tenantId = model.TenantId.GetValueOrDefault();
+            var tenantId = model.TenantId.GetValueOrDefault();
 
             if (IsBuiltInOnPremTenant(tenantId))
             {
@@ -380,7 +377,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<User> CreateGuestUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateGuestUserAsync(CreateUserRequest model)
         {
             // Trim up the names
             model.FirstName = model.FirstName?.Trim();
@@ -388,14 +385,7 @@ namespace Synthesis.PrincipalService.Controllers
             model.Email = model.Email?.ToLower();
             model.Username = model.Username?.ToLower();
 
-            // Validate incoming params
-            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
-            {
-                { typeof(CreateGuestUserRequestValidator), model },
-                { typeof(TenantIdValidator), tenantId },
-                { typeof(UserIdValidator), createdBy }
-            });
-
+            var validationResult = _validatorLocator.Validate<CreateGuestUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 throw new ValidationFailedException(validationResult.Errors);
@@ -411,10 +401,9 @@ namespace Synthesis.PrincipalService.Controllers
             // Create a new user for the guest
             var user = new User
             {
-                CreatedBy = createdBy,
                 CreatedDate = DateTime.UtcNow,
-                FirstName = model.FirstName.Trim(),
-                LastName = model.LastName.Trim(),
+                FirstName = model.FirstName?.Trim(),
+                LastName = model.LastName?.Trim(),
                 Email = model.Email?.ToLower(),
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
@@ -641,7 +630,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationException("Email/Username is either empty or invalid");
             }
 
-            username = username?.ToLower();
+            username = username.ToLower();
             var userList = await _userRepository.GetItemsAsync(u => u.Email == username || u.Username == username);
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
@@ -1057,7 +1046,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var userTenantIds = result.Payload;
 
-            if (userTenantIds.Count()==0 || !userTenantIds.Contains(tenantId))
+            if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
             }
@@ -1248,11 +1237,13 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userTenantIds = result.Payload;
-            if (userTenantIds.Count()==0)
+            // ReSharper disable once PossibleMultipleEnumeration
+            if (!userTenantIds.Any())
             {
                 throw new NotFoundException($"A User resource could not be found for id {userId}");
             }
 
+            // ReSharper disable once PossibleMultipleEnumeration
             if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
