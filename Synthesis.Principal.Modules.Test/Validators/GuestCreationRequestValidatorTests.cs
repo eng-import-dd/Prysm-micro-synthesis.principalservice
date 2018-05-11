@@ -11,14 +11,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldPassWithExample()
         {
-            var result = _validator.Validate(User.GuestUserExample());
+            var result = _validator.Validate(CreateUserRequest.GuestUserExample());
             Assert.True(result.IsValid);
         }
 
         [Fact]
         public void ShouldFailOnInvalidEmail()
         {
-            var request = User.GuestUserExample();
+            var request = CreateUserRequest.GuestUserExample();
             request.Email = "invalid.email.com";
 
             var result = _validator.Validate(request);
@@ -28,7 +28,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailOnInvalidFirstName()
         {
-            var request = User.GuestUserExample();
+            var request = CreateUserRequest.GuestUserExample();
             request.FirstName = "";
 
             var result = _validator.Validate(request);
@@ -38,7 +38,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         [Fact]
         public void ShouldFailOnInvalidLastName()
         {
-            var request = User.GuestUserExample();
+            var request = CreateUserRequest.GuestUserExample();
             request.LastName = "";
 
             var result = _validator.Validate(request);
