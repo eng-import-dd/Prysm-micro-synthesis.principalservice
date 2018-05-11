@@ -24,8 +24,8 @@ namespace Synthesis.PrincipalService.Validators
                 .NotEmpty().WithMessage($"{nameof(CreateUserRequest.Username)} cannot be empty");
 
             RuleFor(request => request.Username)
-                .SetValidator(new UserNameValidator()).When(u => u.Username != null && u.Username.Contains("@"))
-                .SetValidator(new EmailValidator()).When(u => u.Username != null && !u.Username.Contains("@"));
+                .SetValidator(new UserNameValidator()).When(u => u.Username != null && !u.Username.Contains("@"))
+                .SetValidator(new EmailValidator()).When(u => u.Username != null && u.Username.Contains("@"));
         }
     }
 }
