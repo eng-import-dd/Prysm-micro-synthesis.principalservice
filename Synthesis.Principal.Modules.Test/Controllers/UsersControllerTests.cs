@@ -1397,6 +1397,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestCreatesUser()
         {
+            // TODO CU-597: This needs a fix. The repository function return shouldn't be necessary to mock.
+            // However, without the mock, the line _userRepository.CreateItemAsync(user) in CreateGuestUserAsync returned a null user.
+            // I don't understand why that behavior changed. Mocking function return so work can continue on CU-597.
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .Returns(Task.FromResult(User.GuestUserExample()));
 

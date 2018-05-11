@@ -37,7 +37,7 @@ namespace Synthesis.PrincipalService.Modules
         {
             _userController = userController;
 
-            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserImplementationRouterAsync)
+            CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, RouteRequestToCreateUserImplementation)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.Example())
@@ -186,7 +186,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> CreateUserImplementationRouterAsync(dynamic input)
+        private async Task<object> RouteRequestToCreateUserImplementation(dynamic input)
         {
             CreateUserRequest createUserRequest;
             try
@@ -299,25 +299,6 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to create user resource due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
-        }
-
-        private UserType GetUserType(User createUserRequest)
-        {
-            if (TenantId != Guid.Empty || (TenantId != Guid.Empty && (createUserRequest.TenantId != null && createUserRequest.TenantId != Guid.Empty)))
-            {
-                return UserType.Enterprise;
-            }
-            else if (TenantId == Guid.Empty && (createUserRequest.TenantId != null && createUserRequest.TenantId != Guid.Empty))
-            {
-                return UserType.Trial;
-            }
-            else if (TenantId == Guid.Empty && (createUserRequest.TenantId == null || createUserRequest.TenantId == Guid.Empty))
-            {
-                return UserType.Guest;
-            }
-
-            return UserType.Undefined;
-
         }
 
         private async Task<object> GetUserByIdAsync(dynamic input)

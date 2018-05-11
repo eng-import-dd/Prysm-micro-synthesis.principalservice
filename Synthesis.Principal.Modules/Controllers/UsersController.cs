@@ -31,7 +31,6 @@ using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
-using Guid = System.Guid;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -116,8 +115,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            Guid tenantId = model.TenantId.ToGuid();
-            
+            // Convert to non-null Guid. If had been null or empty, would fail validation before this point.
+            Guid tenantId = model.TenantId.GetValueOrDefault();
+
             if (IsBuiltInOnPremTenant(tenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
@@ -127,7 +127,7 @@ namespace Synthesis.PrincipalService.Controllers
             var newUser = new User
             {
                 CreatedBy = createdBy,
-                CreatedDate = DateTime.Now,
+                CreatedDate = DateTime.UtcNow,
                 FirstName = model.FirstName.Trim(),
                 LastName = model.LastName.Trim(),
                 Email = model.Email?.ToLower(),
@@ -138,7 +138,7 @@ namespace Synthesis.PrincipalService.Controllers
                 Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.Now,
+                LastAccessDate = DateTime.UtcNow,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType
             };
@@ -412,7 +412,7 @@ namespace Synthesis.PrincipalService.Controllers
             var user = new User
             {
                 CreatedBy = createdBy,
-                CreatedDate = DateTime.Now,
+                CreatedDate = DateTime.UtcNow,
                 FirstName = model.FirstName.Trim(),
                 LastName = model.LastName.Trim(),
                 Email = model.Email?.ToLower(),
@@ -422,7 +422,7 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.Now
+                LastAccessDate = DateTime.UtcNow
             };
 
             var result = await _userRepository.CreateItemAsync(user);
