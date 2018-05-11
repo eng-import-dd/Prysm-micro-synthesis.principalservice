@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Validators
     public class CreateGroupRequestValidator : AbstractValidator<Group>
     {
         /// <summary>
-        ///     Initializes a new instance of the <see cref="CreateCustomGroupRequestValidator" /> class.
+        ///     Initializes a new instance of the <see cref="CreateGroupRequestValidator" /> class.
         /// </summary>
         public CreateGroupRequestValidator()
         {
