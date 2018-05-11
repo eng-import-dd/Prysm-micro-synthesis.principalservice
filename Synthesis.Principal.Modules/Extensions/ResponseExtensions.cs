@@ -8,7 +8,7 @@ namespace Synthesis.PrincipalService.Extensions
     public static class ResponseExtensions
     {
         /// <summary>
-        /// A static method that returns a Response object with a 409 conflict http status code.  This method should be used when returning a custom reason phrase.
+        /// A static method that returns a Response object with a 409 conflict http status code. This method should be used when returning a custom reason phrase.
         /// </summary>
         /// <param name="formatter"></param>
         /// <param name="reasonPhrase"></param>
@@ -22,7 +22,7 @@ namespace Synthesis.PrincipalService.Extensions
         }
 
         /// <summary>
-        /// A static method that returns a Response object with a 409 conflict http status code.  This method should be used when returning a custom reason phrase.
+        /// A static method that returns a Response object with a 409 conflict http status code. This method should be used when returning a custom reason phrase.
         /// </summary>
         /// <param name="formatter"></param>
         /// <param name="reasonPhrase"></param>
@@ -32,6 +32,34 @@ namespace Synthesis.PrincipalService.Extensions
             var response = FormatResponse(formatter, ErrorCodes.UserNotInvited, ErrorMessages.UserNotInvited);
             response.ReasonPhrase = reasonPhrase;
             response.StatusCode = HttpStatusCode.Conflict;
+            return response;
+        }
+
+        /// <summary>
+        /// A static method that returns a Response object with a 424 failed dependency http status code. This method should be used when returning a custom reason phrase.
+        /// </summary>
+        /// <param name="formatter"></param>
+        /// <param name="reasonPhrase"></param>
+        /// <returns>Nancy.Response</returns>
+        public static Response TenantMappingFailed(this IResponseFormatter formatter, string reasonPhrase)
+        {
+            var response = FormatResponse(formatter, ErrorCodes.TenantMappingFailed, ErrorMessages.TenantMappingFailed);
+            response.ReasonPhrase = reasonPhrase;
+            response.StatusCode = HttpStatusCode.FailedDependency;
+            return response;
+        }
+
+        /// <summary>
+        /// A static method that returns a Response object with a 424 failed dependency http status code. This method should be used when returning a custom reason phrase.
+        /// </summary>
+        /// <param name="formatter"></param>
+        /// <param name="reasonPhrase"></param>
+        /// <returns>Nancy.Response</returns>
+        public static Response SetPasswordFailed(this IResponseFormatter formatter, string reasonPhrase)
+        {
+            var response = FormatResponse(formatter, ErrorCodes.SetPasswordFailed, ErrorMessages.SetPasswordFailed);
+            response.ReasonPhrase = reasonPhrase;
+            response.StatusCode = HttpStatusCode.FailedDependency;
             return response;
         }
 

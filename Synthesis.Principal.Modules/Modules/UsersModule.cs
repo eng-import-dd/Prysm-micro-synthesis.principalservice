@@ -40,7 +40,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserImplementationRouterAsync)
                 .Description("Create a new User resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(User.Example())
+                .RequestFormat(CreateUserRequest.Example())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
@@ -133,7 +133,7 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("DeleteUser", HttpMethod.Delete, Routing.UsersWithId, DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
-
+            
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -221,10 +221,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
-            User createUserRequest;
+            CreateUserRequest createUserRequest;
             try
             {
-                createUserRequest = this.Bind<User>();
+                createUserRequest = this.Bind<CreateUserRequest>();
             }
             catch (Exception ex)
             {
@@ -311,6 +311,21 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Failed to create user because a user already exists.", ex);
                 return Response.UserExists(ex.Message);
+            }
+            catch (UserNotInvitedException ex)
+            {
+                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
+                return Response.UserNotInvited(ex.Message);
+            }
+            catch (TenantMappingException ex)
+            {
+                Logger.Error("Failed to create user, adding user to tenant failed.", ex);
+                return Response.TenantMappingFailed(ex.Message);
+            }
+            catch (IdentityPasswordException ex)
+            {
+                Logger.Error("Failed to create user, setting the user's password failed.", ex);
+                return Response.SetPasswordFailed(ex.Message);
             }
             catch (ValidationFailedException ex)
             {
@@ -450,6 +465,11 @@ namespace Synthesis.PrincipalService.Modules
                 .ExecuteAsync(CancellationToken.None);
 
             string userName = input.userName;
+
+            // To work around nancy bug https://github.com/NancyFx/Nancy/issues/1280 https://github.com/NancyFx/Nancy/issues/1499
+            // Usernames/emailIds will never have spaces in them, so this workaround shouldn't break anything
+            userName = userName?.Replace(" ", "+");
+
             try
             {
                 return await _userController.GetUserByUserNameOrEmailAsync(userName);

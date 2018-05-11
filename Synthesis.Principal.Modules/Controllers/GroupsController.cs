@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.EventBus.Events;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -53,6 +54,8 @@ namespace Synthesis.PrincipalService.Controllers
                 CreateBuiltInGroupAsync(tenantId, GroupType.Default, GroupNames.Default),
                 CreateBuiltInGroupAsync(tenantId, GroupType.Basic, GroupNames.Basic),
                 CreateBuiltInGroupAsync(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin));
+
+            _eventService.Publish(EventNames.BuiltInGroupsCreatedForTenant, new GuidEvent(tenantId));
         }
 
         private async Task CreateBuiltInGroupAsync(Guid tenantId, GroupType type, string groupName)

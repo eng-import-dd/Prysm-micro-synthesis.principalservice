@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using AutoMapper;
 using Castle.Core.Internal;
+using Castle.Core.Resource;
 using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
@@ -13,6 +14,8 @@ using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
 using Synthesis.Http.Microservice;
+using Synthesis.IdentityService.InternalApi.Api;
+using Synthesis.IdentityService.InternalApi.Models;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
@@ -46,10 +49,8 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IMapper _mapper;
         private readonly string _deploymentType;
         private readonly ITenantDomainApi _tenantDomainApi;
-        private const string OrgAdminRoleName = "Org_Admin";
-        private const string BasicUserRoleName = "Basic_User";
         private readonly ITenantApi _tenantApi;
-        private readonly IProjectApi _projectApi;
+        private readonly IIdentityUserApi _identityUserApi;
         private readonly IRepository<UserInvite> _userInviteRepository;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
@@ -63,13 +64,13 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi">The license API.</param>
         /// <param name="emailApi">The email API.</param>
-        /// <param name="projectApi"></param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
         /// <param name="tenantDomainApi">The tenant domain API.</param>
         /// <param name="queryRunner"></param>
         /// <param name="tenantApi">The tenant API.</param>
         /// <param name="searchBuilder"></param>
+        /// <param name="identityUserApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -77,13 +78,13 @@ namespace Synthesis.PrincipalService.Controllers
             ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailApi emailApi,
-            IProjectApi projectApi,
             IMapper mapper,
             string deploymentType,
             ITenantDomainApi tenantDomainApi,
             IUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
-            ITenantApi tenantApi)
+            ITenantApi tenantApi,
+            IIdentityUserApi identityUserApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
@@ -99,39 +100,73 @@ namespace Synthesis.PrincipalService.Controllers
             _searchBuilder = searchBuilder;
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
-            _projectApi = projectApi;
+            _identityUserApi = identityUserApi;
         }
 
-        public async Task<User> CreateUserAsync(User user, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateUserAsync(CreateUserRequest createUserRequest, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
 
-            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(user);
+            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(createUserRequest);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (IsBuiltInOnPremTenant(tenantId))
+            if (IsBuiltInOnPremTenant(createUserRequest.TenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(tenantId), "Users cannot be created under provisioning tenant") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(createUserRequest.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
-            user.CreatedBy = createdBy;
-            user.CreatedDate = DateTime.Now;
-            user.FirstName = user.FirstName.Trim();
-            user.LastName = user.LastName.Trim();
-            user.Email = user.Email?.ToLower();
-            user.Username = user.Username?.ToLower();
-
-            var result = await CreateUserInDb(user, tenantId);
-
-            //Tenant id will be null if the route is called using a service token. In that case don't try to assign a license (Trial user creation)
-            if (tenantId != Guid.Empty)
+            var newUser = new User
             {
-                await AssignUserLicense(result, user.LicenseType, tenantId);
+                CreatedBy = createdBy,
+                CreatedDate = DateTime.Now,
+                FirstName = createUserRequest.FirstName.Trim(),
+                LastName = createUserRequest.LastName.Trim(),
+                Email = createUserRequest.Email?.ToLower(),
+                Username = createUserRequest.Username?.ToLower(),
+                Groups = createUserRequest.Groups,
+                IdpMappedGroups = createUserRequest.IdpMappedGroups,
+                Id = createUserRequest.Id,
+                IsIdpUser = createUserRequest.IsIdpUser,
+                IsLocked = false,
+                LastAccessDate = DateTime.Now,
+                LdapId = createUserRequest.LdapId,
+                LicenseType = createUserRequest.LicenseType
+            };
+
+            // ReSharper disable once PossibleInvalidOperationException
+            var result = await CreateUserInDb(newUser, createUserRequest.TenantId.Value);
+
+            if (result.Id == null)
+            {
+                throw new ResourceException("User was incorrectly created with a null Id");
+            }
+
+            await AssignUserLicense(result, newUser.LicenseType, createUserRequest.TenantId.Value);
+
+            var response = await _tenantApi.AddUserToTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
+            if (response.ResponseCode != HttpStatusCode.OK)
+            {
+                await _userRepository.DeleteItemAsync((Guid)result.Id);
+                throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
+            }
+
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = createUserRequest.Password, UserId = (Guid)result.Id});
+            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            {
+                await _userRepository.DeleteItemAsync((Guid)result.Id);
+
+                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
+                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
+                {
+                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {createUserRequest.TenantId} failed.");
+                }
+
+                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
 
             await _eventService.PublishAsync(EventNames.UserCreated, result);
@@ -371,20 +406,20 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<User> CreateGuestUserAsync(User request, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateGuestUserAsync(CreateUserRequest model, Guid tenantId, Guid createdBy)
         {
             // Trim up the names
-            request.FirstName = request.FirstName?.Trim();
-            request.LastName = request.LastName?.Trim();
-            request.Email = request.Email?.ToLower();
-            request.Username = request.Username?.ToLower();
+            model.FirstName = request.FirstName?.Trim();
+            model.LastName = request.LastName?.Trim();
+            model.Email = request.Email?.ToLower();
+            model.Username = request.Username?.ToLower();
 
             //TODO : Set guest password - to be fixed in guest service, CU-577 added to address this
 
             // Validate incoming params
             var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
             {
-                { typeof(CreateGuestUserRequestValidator), request },
+                { typeof(CreateGuestUserRequestValidator), model },
                 { typeof(TenantIdValidator), tenantId },
                 { typeof(UserIdValidator), createdBy }
             });
@@ -395,10 +430,10 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Does a user already exist that uses email or has a username equal to the email?
-            var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.Username == request.Email);
+            var existingUser = await _userRepository.GetItemAsync(x => x.Email == model.Email || x.Username == model.Email);
             if (existingUser != null)
             {
-                throw new UserExistsException($"A user already exists for email = {request.Email}");
+                throw new UserExistsException($"A user already exists for email = {model.Email}");
             }
 
             // Create a new user for the guest
@@ -406,14 +441,14 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 CreatedBy = createdBy,
                 CreatedDate = DateTime.UtcNow,
-                Email = request.Email,
-                FirstName = request.FirstName,
+                Email = model.Email,
+                FirstName = model.FirstName,
                 Groups = new List<Guid>(),
-                IsIdpUser = request.IsIdpUser,
+                IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
                 LastAccessDate = DateTime.UtcNow,
-                LastName = request.LastName,
-                Username = request.Email
+                LastName = model.LastName,
+                Username = model.Email
             };
             var result = await _userRepository.CreateItemAsync(user);
             _eventService.Publish(EventNames.UserCreated, result);
@@ -496,7 +531,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
-        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -507,7 +542,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (model.UserId == null || model.UserId == Guid.Empty)
             {
-                return await AutoProvisionUserAsync(model, tenantId, createddBy);
+                return await AutoProvisionUserAsync(model, tenantId, createdBy);
             }
 
             var userId = model.UserId.Value;
@@ -535,17 +570,18 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
         {
-            var user = new User
+            var createUserRequest = new CreateUserRequest
             {
                 Email = model.EmailId,
                 Username = model.EmailId,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
-                IsIdpUser = true
+                IsIdpUser = true,
+                TenantId = tenantId
             };
 
-            var result = await CreateUserAsync(user, tenantId, createddBy);
+            var result = await CreateUserAsync(createUserRequest, createddBy);
             if (result != null && model.Groups != null)
             {
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.GetValueOrDefault(), model);
@@ -601,7 +637,8 @@ namespace Synthesis.PrincipalService.Controllers
         
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)
         {
-            var unameValidationResult = _validatorLocator.Validate<UserNameValidator>(username);
+            var unameValidationResult = username.Contains("@") ? _validatorLocator.Validate<EmailValidator>(username) : _validatorLocator.Validate<UserNameValidator>(username);
+
             if (!unameValidationResult.IsValid)
             {
                 _logger.Error("Email/Username is either empty or invalid.");
@@ -761,9 +798,9 @@ namespace Synthesis.PrincipalService.Controllers
             return returnMetaData;
         }
 
-        private bool IsBuiltInOnPremTenant(Guid tenantId)
+        private bool IsBuiltInOnPremTenant(Guid? tenantId)
         {
-            if (string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
+            if (tenantId == null ||  string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
             {
                 return false;
             }

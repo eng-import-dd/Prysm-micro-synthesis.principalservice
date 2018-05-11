@@ -29,6 +29,7 @@ using Synthesis.EventBus.Kafka.Autofac;
 using Synthesis.Http;
 using Synthesis.Http.Configuration;
 using Synthesis.Http.Microservice;
+using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Logging;
@@ -326,6 +327,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
             builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();
