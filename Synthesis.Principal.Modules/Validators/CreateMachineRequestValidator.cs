@@ -1,7 +1,6 @@
 ﻿using System;
 using FluentValidation;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Validators
 {

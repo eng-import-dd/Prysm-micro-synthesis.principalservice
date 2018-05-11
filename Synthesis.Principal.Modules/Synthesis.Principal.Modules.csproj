@@ -383,7 +383,7 @@
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
-    <Compile Include="Validators\CreateUserGroupRequestValidator.cs" />
+    <Compile Include="Validators\UserGroupValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
     <Compile Include="Validators\EmailValidator.cs" />
     <Compile Include="Validators\GetUsersByIdValidator.cs" />

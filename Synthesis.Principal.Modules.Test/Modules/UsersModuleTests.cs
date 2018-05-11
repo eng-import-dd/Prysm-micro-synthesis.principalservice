@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Constants;
-using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 
@@ -27,7 +26,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         private readonly Mock<IUsersController> _controllerMock = new Mock<IUsersController>();
 
         private const string ValidTestEmail = "asd@hmm.com";
-        private const string EmptyTestEmail = "";
 
         [Fact]
         public async Task RespondWithUnauthorizedNoBearerAsync()

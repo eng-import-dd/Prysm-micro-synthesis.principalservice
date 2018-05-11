@@ -21,12 +21,7 @@ namespace Synthesis.PrincipalService.Validators
 
         public bool IsFormatValid(string emailString)
         {
-            if (_regexForBulkUpload.Match(emailString).Length > 0)
-            {
-                return true;
-            }
-
-            return false;
+            return _regexForBulkUpload.Match(emailString).Length > 0;
         }
     }
 }
