@@ -140,7 +140,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var user = CreateUserRequest.GuestUserExample();
 
-            var response = await UnauthenticatedBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
+            var response = await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, user));
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -149,7 +149,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var user = CreateUserRequest.GuestUserExample();
 
-            await UnauthenticatedBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
+            await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, user));
             _controllerMock.Verify(x => x.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()));
         }
 
@@ -179,7 +179,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()))
                 .Throws(new UserExistsException());
 
-            var response = await UnauthenticatedBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
+            var response = await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
