@@ -3,7 +3,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Validators
 {
-    public class GuestCreationRequestValidator : AbstractValidator<User>
+    public class GuestCreationRequestValidator : AbstractValidator<CreateUserRequest>
     {
         public GuestCreationRequestValidator()
         {
