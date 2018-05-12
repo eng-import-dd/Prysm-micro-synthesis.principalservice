@@ -155,7 +155,14 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = createUserRequest.Password, UserId = (Guid)result.Id});
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser
+            {
+                Password = createUserRequest.Password,
+                PasswordHash = createUserRequest.PasswordHash,
+                PasswordSalt = createUserRequest.PasswordSalt,
+                UserId = (Guid)result.Id
+            });
+
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
