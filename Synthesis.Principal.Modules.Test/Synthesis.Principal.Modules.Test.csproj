@@ -174,7 +174,7 @@
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta014\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta010\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
