@@ -22,6 +22,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
@@ -385,6 +386,7 @@ namespace Synthesis.PrincipalService.Controllers
             model.Email = model.Email?.ToLower();
             model.Username = model.Username?.ToLower();
 
+            // Validate the input
             var validationResult = _validatorLocator.Validate<CreateGuestUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
@@ -414,13 +416,14 @@ namespace Synthesis.PrincipalService.Controllers
                 LastAccessDate = DateTime.UtcNow
             };
 
+            // Create the user in the DB
             var result = await _userRepository.CreateItemAsync(user);
-
             if (result.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
+            // Set the password
             var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
@@ -437,7 +440,29 @@ namespace Synthesis.PrincipalService.Controllers
 
             _eventService.Publish(EventNames.UserCreated, result);
 
+            await SendGuestVerificationEmailAsync(model.FirstName, model.Email);
+
             return result;
+        }
+
+        private async Task SendGuestVerificationEmailAsync(string firstName, string email)
+        {
+            // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
+
+            // TODO: Grab the EmailVerificationId - this was previously gathered with _identityUserApi.GetTempTokenDataAsync()
+            var emailVerificationId = Guid.NewGuid().ToString();   // Added a temp ID for now until the EmailVerificationId TODO is handled
+
+            // TODO: If the users email has already been verified, then throw an EmailAlreadyVerifiedException
+
+            // TODO: If a verification email was sent less than a minute ago, then throw a EmailRecentlySentException
+
+            var request = VerifyGuestEmail.BuildRequest(
+                firstName,
+                email,
+                "" /*ProjectAccessCode // TODO: Remove accessCode here or fix to consume it*/,
+                emailVerificationId);
+
+            await _emailApi.SendEmailAsync(request);
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
