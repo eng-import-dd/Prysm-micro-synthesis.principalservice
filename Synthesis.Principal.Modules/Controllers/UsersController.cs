@@ -162,9 +162,9 @@ namespace Synthesis.PrincipalService.Controllers
 
             var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser
             {
-                Password = createUserRequest.Password,
-                PasswordHash = createUserRequest.PasswordHash,
-                PasswordSalt = createUserRequest.PasswordSalt,
+                Password = model.Password,
+                PasswordHash = model.PasswordHash,
+                PasswordSalt = model.PasswordSalt,
                 UserId = (Guid)result.Id
             });
 
