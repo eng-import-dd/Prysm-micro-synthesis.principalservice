@@ -160,6 +160,14 @@ namespace Synthesis.PrincipalService
         {
             var builder = new ContainerBuilder();
 
+            // Service To Service Resolver
+            builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceClient))))
+                .Keyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))
+                .InstancePerRequest();
+
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
 
@@ -325,7 +333,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
             builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
-            builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
@@ -349,6 +356,14 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+
+            builder.RegisterType<EmailApi>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
+                .WithParameter("serviceUrlSettingName", "Email.Url")
+                .As<IEmailApi>()
+                .InstancePerRequest();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

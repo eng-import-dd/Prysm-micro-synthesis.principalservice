@@ -358,6 +358,7 @@
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="EventHandlers\TenantCreated.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
+    <Compile Include="Exceptions\SendEmailException.cs" />
     <Compile Include="Exceptions\EmailRecentlySentException.cs" />
     <Compile Include="Exceptions\EmailAlreadyVerifiedException.cs" />
     <Compile Include="Exceptions\BuildEmailException.cs" />
@@ -370,6 +371,7 @@
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="ServiceToServiceMicroserviceHttpClientResolver.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />
@@ -414,7 +416,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Email\Templates\VerifyNewAccount.html" />
+    <Content Include="Email\Templates\VerifyNewAccount.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="librdkafka\x64\librdkafka.dll" />
     <Content Include="librdkafka\x64\librdkafkacpp.dll" />
     <Content Include="librdkafka\x64\msvcr120.dll" />

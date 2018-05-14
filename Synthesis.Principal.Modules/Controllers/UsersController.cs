@@ -417,40 +417,45 @@ namespace Synthesis.PrincipalService.Controllers
             };
 
             // Create the user in the DB
-            var result = await _userRepository.CreateItemAsync(user);
-            if (result.Id == null)
+            var guestUser = await _userRepository.CreateItemAsync(user);
+            if (guestUser.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            // Set the password
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
-            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            try
             {
-                await _userRepository.DeleteItemAsync((Guid)result.Id);
-
-                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
-                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
+                // Set the password
+                var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)guestUser.Id });
+                if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
                 {
-                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
+                    throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
                 }
 
-                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
+                // Send the verification email
+                var emailResponse = await SendGuestVerificationEmailAsync(model.FirstName, model.Email);
+                if (emailResponse.ResponseCode != HttpStatusCode.OK)
+                {
+                    throw new SendEmailException($"Error sending guest user invite email. Reason = '{emailResponse.ReasonPhrase}' Error = '{emailResponse.ErrorResponse}'");
+                }
+
+                _eventService.Publish(EventNames.UserCreated, guestUser);
+
+                return guestUser;
             }
-
-            _eventService.Publish(EventNames.UserCreated, result);
-
-            await SendGuestVerificationEmailAsync(model.FirstName, model.Email);
-
-            return result;
+            catch (Exception)
+            {
+                await _userRepository.DeleteItemAsync((Guid)guestUser.Id);
+                throw;
+            }
         }
 
-        private async Task SendGuestVerificationEmailAsync(string firstName, string email)
+        private async Task<MicroserviceResponse> SendGuestVerificationEmailAsync(string firstName, string email)
         {
             // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
 
             // TODO: Grab the EmailVerificationId - this was previously gathered with _identityUserApi.GetTempTokenDataAsync()
-            var emailVerificationId = Guid.NewGuid().ToString();   // Added a temp ID for now until the EmailVerificationId TODO is handled
+            var emailVerificationId = Guid.NewGuid().ToString();   // NOTE: Added a temp ID for now until the EmailVerificationId TODO is handled
 
             // TODO: If the users email has already been verified, then throw an EmailAlreadyVerifiedException
 
@@ -462,7 +467,7 @@ namespace Synthesis.PrincipalService.Controllers
                 "" /*ProjectAccessCode // TODO: Remove accessCode here or fix to consume it*/,
                 emailVerificationId);
 
-            await _emailApi.SendEmailAsync(request);
+            return await _emailApi.SendEmailAsync(request);
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
