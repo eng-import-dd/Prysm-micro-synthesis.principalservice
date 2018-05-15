@@ -303,6 +303,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Validators\BulkUploadEmailValidatorTests.cs" />
     <Compile Include="Validators\CreateGroupRequestValidatorTests.cs" />
+    <Compile Include="Validators\CreateGuestUserRequestValidatorTests.cs" />
     <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
     <Compile Include="Validators\UserGroupValidatorTests.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />

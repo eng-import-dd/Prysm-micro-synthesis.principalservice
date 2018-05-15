@@ -1,4 +1,5 @@
 using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Validators
@@ -21,6 +22,10 @@ namespace Synthesis.PrincipalService.Validators
 
             RuleFor(request => request.TenantId)
                 .Empty().WithMessage($"{nameof(CreateUserRequest.TenantId)} must be empty or null").When(r => r.TenantId != null);
+
+            RuleFor(request => request.UserType)
+                .Must(x => x == UserType.Guest)
+                .WithMessage($"{nameof(CreateUserRequest.UserType)} must be {nameof(UserType.Guest)}");
         }
     }
 }
