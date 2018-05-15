@@ -1406,5 +1406,38 @@ namespace Synthesis.PrincipalService.Controllers
                 user.LastName = user.LastName.Trim();
             }
         }
+
+        public async Task<VerifyUserEmailResponse> VerifyEmailAsync(VerifyUserEmailRequest verifyRequest)
+        {
+            var user = await _userRepository.GetItemAsync(x => x.Email == verifyRequest.Email);
+            if (user == null)
+            {
+                _logger.Error($"A User resource could not be found with email {verifyRequest.Email}");
+                throw new NotFoundException($"A User resource could not be found with email {verifyRequest.Email}");
+            }
+
+            if (user.Id == null)
+            {
+                _logger.Error($"User resource with email {verifyRequest.Email} has a null Id");
+                throw new Exception($"User resource with email {verifyRequest.Email} has a null Id");
+            }
+
+            if (user.IsEmailVerified == null)
+            {
+                return new VerifyUserEmailResponse { Result = true };
+            }
+
+            if (user.EmailVerificationId == verifyRequest.VerificationId)
+            {
+                user.IsEmailVerified = true;
+                user.EmailVerifiedAt = DateTime.UtcNow;
+
+                await _userRepository.UpdateItemAsync((Guid)user.Id, user);
+
+                return new VerifyUserEmailResponse{Result = true};
+            }
+
+            return new VerifyUserEmailResponse{Result = false};
+        }
     }
 }

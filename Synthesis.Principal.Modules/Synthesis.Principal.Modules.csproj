@@ -251,9 +251,6 @@
     <Reference Include="Synthesis.PolicyEvaluator.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta031\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
-    </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta016\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
@@ -422,6 +419,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <ProjectReference Include="..\..\synthesis-principal-internalapi\Synthesis.Principal.InternalApi\Synthesis.Principal.InternalApi.csproj">
+      <Project>{D1219F07-AF2C-4F8A-9B6B-9BBCAA192415}</Project>
+      <Name>Synthesis.Principal.InternalApi</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
       <Project>{9b91b286-6a67-4f27-bcd0-206d74aa5efa}</Project>
       <Name>Synthesis.License.Manager</Name>

@@ -46,5 +46,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task<User> GetUserByUserNameOrEmailAsync(string username);
 
         Task<User> CreateGuestAsync(CreateUserRequest request, Guid tenantId, Guid createdBy);
+
+        Task<VerifyUserEmailResponse> VerifyEmailAsync(VerifyUserEmailRequest verifyRequest);
     }
 }
