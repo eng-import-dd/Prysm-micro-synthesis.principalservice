@@ -159,7 +159,14 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser{Password = model.Password, UserId = (Guid)result.Id});
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser
+            {
+                Password = model.Password,
+                PasswordHash = model.PasswordHash,
+                PasswordSalt = model.PasswordSalt,
+                UserId = (Guid)result.Id
+            });
+
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
@@ -402,11 +409,11 @@ namespace Synthesis.PrincipalService.Controllers
             var user = new User
             {
                 CreatedDate = DateTime.UtcNow,
-                FirstName = model.FirstName?.Trim(),
-                LastName = model.LastName?.Trim(),
-                Email = model.Email?.ToLower(),
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Email = model.Email,
                 EmailVerificationId = Guid.NewGuid(),
-                Username = model.Username?.ToLower(),
+                Username = model.Username,
                 Id = model.Id,
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
@@ -426,13 +433,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
 
-                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
-                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
-                {
-                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
-                }
-
-                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
+                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database.");
             }
 
             _eventService.Publish(EventNames.UserCreated, result);
