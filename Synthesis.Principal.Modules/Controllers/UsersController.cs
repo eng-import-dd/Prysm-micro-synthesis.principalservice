@@ -160,8 +160,8 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
 
-                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
-                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
+                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
+                if (removeUserResponse.ResponseCode != HttpStatusCode.NoContent)
                 {
                     throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {createUserRequest.TenantId} failed.");
                 }
