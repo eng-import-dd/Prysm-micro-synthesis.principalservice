@@ -135,7 +135,7 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LastAccessDate = DateTime.Now,
                 LdapId = createUserRequest.LdapId,
-                LicenseType = createUserRequest.LicenseType
+                LicenseType = createUserRequest.LicenseType,
             };
 
             // ReSharper disable once PossibleInvalidOperationException
@@ -559,7 +559,8 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
-                TenantId = tenantId
+                TenantId = tenantId,
+                Password = model.Password
             };
 
             var result = await CreateUserAsync(createUserRequest, createddBy);
