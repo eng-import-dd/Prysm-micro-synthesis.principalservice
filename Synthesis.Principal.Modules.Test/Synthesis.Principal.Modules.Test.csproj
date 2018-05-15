@@ -295,6 +295,7 @@
     <Compile Include="Controllers\MachinesControllerTests.cs" />
     <Compile Include="Controllers\UserInvitesControllerTests.cs" />
     <Compile Include="Controllers\UsersControllerTests.cs" />
+    <Compile Include="Email\EmailSendingServiceTests.cs" />
     <Compile Include="Modules\BaseModuleTests.cs" />
     <Compile Include="Modules\GroupsModuleTests.cs" />
     <Compile Include="Modules\MachinesModuleTests.cs" />
@@ -304,6 +305,7 @@
     <Compile Include="Validators\BulkUploadEmailValidatorTests.cs" />
     <Compile Include="Validators\CreateGroupRequestValidatorTests.cs" />
     <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
+    <Compile Include="Validators\GuestVerificationEmailRequestValidatorTests.cs" />
     <Compile Include="Validators\UserGroupValidatorTests.cs" />
     <Compile Include="Validators\CreateUserRequestValidatorTests.cs" />
     <Compile Include="Validators\EmailValidatorTests.cs" />

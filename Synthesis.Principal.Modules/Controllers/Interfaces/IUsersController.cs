@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.Http.Microservice;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -46,5 +48,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
 
         Task<User> GetUserByUserNameOrEmailAsync(string username);
+
+        Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request);
     }
 }

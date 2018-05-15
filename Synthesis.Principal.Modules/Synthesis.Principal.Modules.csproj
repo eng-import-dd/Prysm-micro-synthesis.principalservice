@@ -354,6 +354,8 @@
     <Compile Include="Controllers\UserQueryRunner.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\UserSearchBuilder.cs" />
+    <Compile Include="Email\EmailSendingService.cs" />
+    <Compile Include="Email\IEmailSendingService.cs" />
     <Compile Include="Email\VerifyGuestEmail.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="EventHandlers\TenantCreated.cs" />
@@ -371,6 +373,7 @@
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="Models\GuestVerificationEmailRequest.cs" />
     <Compile Include="ServiceToServiceMicroserviceHttpClientResolver.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
@@ -388,6 +391,7 @@
     <Compile Include="Utilities\CommonApiUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Validators\GuestVerificationEmailRequestValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\UserGroupValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />

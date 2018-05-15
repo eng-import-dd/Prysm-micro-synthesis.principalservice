@@ -28,9 +28,11 @@ using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
+using LockUserRequest = Synthesis.EmailService.InternalApi.Models.LockUserRequest;
 
 namespace Synthesis.PrincipalService.Controllers
 {
@@ -54,6 +56,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IIdentityUserApi _identityUserApi;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
+        private readonly IEmailSendingService _emailSendingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.
@@ -64,6 +67,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi">The license API.</param>
         /// <param name="emailApi">The email API.</param>
+        /// <param name="emailSendingService">The email sending service.</param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
         /// <param name="tenantDomainApi">The tenant domain API.</param>
@@ -78,6 +82,7 @@ namespace Synthesis.PrincipalService.Controllers
             ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailApi emailApi,
+            IEmailSendingService emailSendingService,
             IMapper mapper,
             string deploymentType,
             ITenantDomainApi tenantDomainApi,
@@ -100,6 +105,7 @@ namespace Synthesis.PrincipalService.Controllers
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
             _identityUserApi = identityUserApi;
+            _emailSendingService = emailSendingService;
         }
 
         public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
@@ -440,11 +446,7 @@ namespace Synthesis.PrincipalService.Controllers
                 }
 
                 // Send the verification email
-                var emailResponse = await SendGuestVerificationEmailAsync(model.FirstName, model.Email);
-                if (emailResponse.ResponseCode != HttpStatusCode.OK)
-                {
-                    throw new SendEmailException($"Error sending guest user invite email. Reason = '{emailResponse.ReasonPhrase}' Error = '{emailResponse.ErrorResponse}'");
-                }
+                await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email);
 
                 _eventService.Publish(EventNames.UserCreated, guestUser);
 
@@ -457,24 +459,16 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        private async Task<MicroserviceResponse> SendGuestVerificationEmailAsync(string firstName, string email)
+        public async Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request)
         {
-            // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
+            // Validate the input
+            var validationResult = _validatorLocator.Validate<GuestVerificationEmailRequestValidator>(request);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
 
-            // TODO: Grab the EmailVerificationId - this was previously gathered with _identityUserApi.GetTempTokenDataAsync()
-            var emailVerificationId = Guid.NewGuid().ToString();   // NOTE: Added a temp ID for now until the EmailVerificationId TODO is handled
-
-            // TODO: If the users email has already been verified, then throw an EmailAlreadyVerifiedException
-
-            // TODO: If a verification email was sent less than a minute ago, then throw a EmailRecentlySentException
-
-            var request = VerifyGuestEmail.BuildRequest(
-                firstName,
-                email,
-                "" /*ProjectAccessCode // TODO: Remove accessCode here or fix to consume it*/,
-                emailVerificationId);
-
-            return await _emailApi.SendEmailAsync(request);
+            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email);
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
