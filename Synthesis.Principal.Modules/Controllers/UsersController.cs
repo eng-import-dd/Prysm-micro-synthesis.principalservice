@@ -178,8 +178,8 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
 
-                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
-                if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
+                var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync(tenantId, (Guid)result.Id);
+                if (removeUserResponse.ResponseCode != HttpStatusCode.NoContent)
                 {
                     throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
                 }
@@ -417,11 +417,11 @@ namespace Synthesis.PrincipalService.Controllers
             var user = new User
             {
                 CreatedDate = DateTime.UtcNow,
-                FirstName = model.FirstName?.Trim(),
-                LastName = model.LastName?.Trim(),
-                Email = model.Email?.ToLower(),
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Email = model.Email,
                 EmailVerificationId = Guid.NewGuid(),
-                Username = model.Username?.ToLower(),
+                Username = model.Username,
                 Id = model.Id,
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
@@ -593,6 +593,7 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
+                Password = model.Password,
                 TenantId = tenantId,
                 UserType = UserType.Enterprise
             };
