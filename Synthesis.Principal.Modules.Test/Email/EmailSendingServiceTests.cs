@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Email
         [Fact]
         public async Task SendGuestVerificationEmailAsyncSendsEmail()
         {
-            await _target.SendGuestVerificationEmailAsync("first_name", "abc@xyz.com");
+            await _target.SendGuestVerificationEmailAsync("first_name", "abc@xyz.com", "redirect");
 
             _emailApiMock.Verify(x => x.SendEmailAsync(It.IsAny<SendEmailRequest>()));
         }

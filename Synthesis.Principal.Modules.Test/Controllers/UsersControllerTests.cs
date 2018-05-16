@@ -26,7 +26,6 @@ using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
-using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Models;
@@ -1425,7 +1424,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
-            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Throws<Exception>();
 
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
@@ -1436,13 +1435,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSendsVerificationEmail()
         {
-            var example = User.GuestUserExample();
+            var example = CreateUserRequest.GuestUserExample();
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .ReturnsAsync(example);
+                .ReturnsAsync(User.GuestUserExample());
 
             await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
 
-            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(example.FirstName, example.Email));
+            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(example.FirstName, example.Email, example.Redirect));
         }
 
         [Fact]
@@ -1568,7 +1567,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             await _controller.SendGuestVerificationEmailAsync(request);
 
-            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(request.FirstName, request.Email));
+            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect));
         }
 
         #endregion
