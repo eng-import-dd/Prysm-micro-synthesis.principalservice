@@ -1,4 +1,5 @@
 using FluentValidation;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Validators
@@ -26,6 +27,10 @@ namespace Synthesis.PrincipalService.Validators
             RuleFor(request => request.Username)
                 .SetValidator(new UserNameValidator()).When(u => u.Username != null && !u.Username.Contains("@"))
                 .SetValidator(new EmailValidator()).When(u => u.Username != null && u.Username.Contains("@"));
+
+            RuleFor(request => request.UserType)
+                .Must(x => x == UserType.Enterprise || x == UserType.Trial)
+                .WithMessage($"{nameof(CreateUserRequest.UserType)} must be {nameof(UserType.Enterprise)} or {nameof(UserType.Trial)}");
         }
     }
 }

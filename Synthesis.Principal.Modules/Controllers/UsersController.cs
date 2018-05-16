@@ -25,10 +25,10 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
-using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -51,7 +51,6 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantDomainApi _tenantDomainApi;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
-        private readonly IRepository<UserInvite> _userInviteRepository;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
 
@@ -88,7 +87,6 @@ namespace Synthesis.PrincipalService.Controllers
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
-            _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
             _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
@@ -103,63 +101,69 @@ namespace Synthesis.PrincipalService.Controllers
             _identityUserApi = identityUserApi;
         }
 
-        public async Task<User> CreateUserAsync(CreateUserRequest createUserRequest, Guid createdBy)
+        public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
         {
             //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
 
-            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(createUserRequest);
+            var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (IsBuiltInOnPremTenant(createUserRequest.TenantId))
+            // Convert to non-null Guid. If had been null or empty, would fail validation before this point.
+            var tenantId = model.TenantId.GetValueOrDefault();
+
+            if (IsBuiltInOnPremTenant(tenantId))
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(createUserRequest.TenantId), "Users cannot be created under provisioning tenant") });
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
             var newUser = new User
             {
                 CreatedBy = createdBy,
-                CreatedDate = DateTime.Now,
-                FirstName = createUserRequest.FirstName.Trim(),
-                LastName = createUserRequest.LastName.Trim(),
-                Email = createUserRequest.Email?.ToLower(),
-                Username = createUserRequest.Username?.ToLower(),
-                Groups = createUserRequest.Groups,
-                IdpMappedGroups = createUserRequest.IdpMappedGroups,
-                Id = createUserRequest.Id,
-                IsIdpUser = createUserRequest.IsIdpUser,
+                CreatedDate = DateTime.UtcNow,
+                FirstName = model.FirstName.Trim(),
+                LastName = model.LastName.Trim(),
+                Email = model.Email?.ToLower(),
+                EmailVerificationId = Guid.NewGuid(),
+                Username = model.Username?.ToLower(),
+                Groups = model.Groups,
+                IdpMappedGroups = model.IdpMappedGroups,
+                Id = model.Id,
+                IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.Now,
-                LdapId = createUserRequest.LdapId,
-                LicenseType = createUserRequest.LicenseType
+                LastAccessDate = DateTime.UtcNow,
+                LdapId = model.LdapId,
+                LicenseType = model.LicenseType
             };
 
-            // ReSharper disable once PossibleInvalidOperationException
-            var result = await CreateUserInDb(newUser, createUserRequest.TenantId.Value);
+            var result = await CreateUserInDb(newUser, tenantId);
 
             if (result.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            await AssignUserLicense(result, newUser.LicenseType, createUserRequest.TenantId.Value);
+            if (model.UserType == UserType.Enterprise)
+            {
+                await AssignUserLicense(result, newUser.LicenseType, tenantId);
+            }
 
-            var response = await _tenantApi.AddUserToTenantAsync(createUserRequest.TenantId.Value, (Guid)result.Id);
+            var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
             if (response.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
-                throw new TenantMappingException($"Adding the user to the tenant with Id {createUserRequest.TenantId.Value} failed. The user was removed from the database");
+                throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
             }
 
             var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser
             {
-                Password = createUserRequest.Password,
-                PasswordHash = createUserRequest.PasswordHash,
-                PasswordSalt = createUserRequest.PasswordSalt,
+                Password = model.Password,
+                PasswordHash = model.PasswordHash,
+                PasswordSalt = model.PasswordSalt,
                 UserId = (Guid)result.Id
             });
 
@@ -170,7 +174,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var removeUserResponse = await _tenantApi.RemoveUserFromTenantAsync((Guid)result.Id);
                 if (removeUserResponse.ResponseCode != HttpStatusCode.OK)
                 {
-                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {createUserRequest.TenantId} failed.");
+                    throw new IdentityPasswordException($"Setting the user's password failed. The user entry was removed from the database, but the attempt to remove the user with id {(Guid)result.Id} from their tenant with id {model.TenantId} failed.");
                 }
 
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
@@ -380,58 +384,58 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<User> CreateGuestAsync(CreateUserRequest request, Guid tenantId, Guid createdBy)
+        public async Task<User> CreateGuestUserAsync(CreateUserRequest model)
         {
             // Trim up the names
-            request.FirstName = request.FirstName?.Trim();
-            request.LastName = request.LastName?.Trim();
-            request.Email = request.Email?.ToLower();
-            request.Username = request.Username?.ToLower();
+            model.FirstName = model.FirstName?.Trim();
+            model.LastName = model.LastName?.Trim();
+            model.Email = model.Email?.ToLower();
+            model.Username = model.Username?.ToLower();
 
-            //TODO : Set guest password - to be fixed in guest service, CU-577 added to address this
-
-            // Validate incoming params
-            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
-            {
-                { typeof(GuestCreationRequestValidator), request },
-                { typeof(TenantIdValidator), tenantId },
-                { typeof(UserIdValidator), createdBy }
-            });
-
+            var validationResult = _validatorLocator.Validate<CreateGuestUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
             // Does a user already exist that uses email or has a username equal to the email?
-            var existingUser = await _userRepository.GetItemAsync(x => x.Email == request.Email || x.Username == request.Email);
+            var existingUser = await _userRepository.GetItemAsync(x => x.Email == model.Email || x.Username == model.Email);
             if (existingUser != null)
             {
-                throw new UserExistsException($"A user already exists for email = {request.Email}");
-            }
-
-            // Has an invite been sent to this user?
-            var invite = await _userInviteRepository.GetItemAsync(x => x.Email == request.Email);
-            if (invite != null)
-            {
-                throw new UserNotInvitedException("The user has not been invited yet");
+                throw new UserExistsException($"A user already exists for email = {model.Email}");
             }
 
             // Create a new user for the guest
             var user = new User
             {
-                CreatedBy = createdBy,
                 CreatedDate = DateTime.UtcNow,
-                Email = request.Email,
-                FirstName = request.FirstName,
-                Groups = new List<Guid>(),
-                IsIdpUser = request.IsIdpUser,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                Email = model.Email,
+                EmailVerificationId = Guid.NewGuid(),
+                Username = model.Username,
+                Id = model.Id,
+                IsEmailVerified = false,
+                IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
-                LastName = request.LastName,
-                Username = request.Email
+                LastAccessDate = DateTime.UtcNow
             };
+
             var result = await _userRepository.CreateItemAsync(user);
+
+            if (result.Id == null)
+            {
+                throw new ResourceException("User was incorrectly created with a null Id");
+            }
+
+            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
+            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            {
+                await _userRepository.DeleteItemAsync((Guid)result.Id);
+
+                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database.");
+            }
+
             _eventService.Publish(EventNames.UserCreated, result);
 
             return result;
@@ -559,8 +563,9 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
+                Password = model.Password,
                 TenantId = tenantId,
-                Password = model.Password
+                UserType = UserType.Enterprise
             };
 
             var result = await CreateUserAsync(createUserRequest, createddBy);
@@ -627,7 +632,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationException("Email/Username is either empty or invalid");
             }
 
-            username = username?.ToLower();
+            username = username.ToLower();
             var userList = await _userRepository.GetItemsAsync(u => u.Email == username || u.Username == username);
             var existingUser = userList.ToList().FirstOrDefault();
             if (existingUser == null)
@@ -810,17 +815,27 @@ namespace Synthesis.PrincipalService.Controllers
                 validationErrors.Add(new ValidationFailure(nameof(user.LdapId), "Unable to provision user. The LDAP User Account is already in use."));
             }
 
+            if (tenantId == Guid.Empty)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(tenantId), "The tenant Id cannot be an empty Guid."));
+            }
+
             if (validationErrors.Any())
             {
                 _logger.Error($"Validation failed creating user {user.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 
-            user.Groups = new List<Guid>
+            if (user.Groups == null)
+            {
+                user.Groups = new List<Guid>();
+            }
+
+            user.Groups.AddRange(new List<Guid>
             {
                 (await GetBuiltInGroupId(tenantId, GroupType.Default)).GetValueOrDefault(),
                 (await GetBuiltInGroupId(tenantId, GroupType.Basic)).GetValueOrDefault()
-            };
+            });
 
             var result = await _userRepository.CreateItemAsync(user);
             return result;
@@ -1033,7 +1048,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var userTenantIds = result.Payload;
 
-            if (userTenantIds.Count()==0 || !userTenantIds.Contains(tenantId))
+            if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
             }
@@ -1224,11 +1239,13 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userTenantIds = result.Payload;
-            if (userTenantIds.Count()==0)
+            // ReSharper disable once PossibleMultipleEnumeration
+            if (!userTenantIds.Any())
             {
                 throw new NotFoundException($"A User resource could not be found for id {userId}");
             }
 
+            // ReSharper disable once PossibleMultipleEnumeration
             if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();

@@ -1,7 +1,6 @@
 using FluentValidation;
 using Nancy;
 using Nancy.ModelBinding;
-using Nancy.Security;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Metadata;
@@ -19,7 +18,6 @@ using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
-using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Modules
@@ -37,12 +35,16 @@ namespace Synthesis.PrincipalService.Modules
         {
             _userController = userController;
 
-            this.RequiresAuthentication();
-
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
-                .Description("Create a new User resource")
+                .Description("Create a new EnterpriseUser or TrialUser resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.Example())
+                .ResponseFormat(User.Example());
+
+            CreateRoute("CreateGuest", HttpMethod.Post, Routing.Guests, CreateGuestUserAsync)
+                .Description("Create a new GuestUser resource")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(CreateUserRequest.GuestUserExample())
                 .ResponseFormat(User.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
@@ -206,33 +208,13 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                User userResponse;
-                if (createUserRequest.UserType == UserType.Enterprise || createUserRequest.UserType == UserType.Trial)
-                {
-                    if (createUserRequest.TenantId == null)
-                    {
-                        createUserRequest.TenantId = TenantId;
-                    }
-                    userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
-                }
-                else
-                {
-                    userResponse = await _userController.CreateGuestAsync(createUserRequest, TenantId, PrincipalId);
-                }
+                createUserRequest.ReplaceNullOrEmptyTenantId(TenantId);
+
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
 
                 return Negotiate
                     .WithModel(userResponse)
                     .WithStatusCode(HttpStatusCode.Created);
-            }
-            catch (UserExistsException ex)
-            {
-                Logger.Error("Failed to create user because a user already exists.", ex);
-                return Response.UserExists(ex.Message);
-            }
-            catch (UserNotInvitedException ex)
-            {
-                Logger.Error("Failed to create user because the user has not been invited yet.", ex);
-                return Response.UserNotInvited(ex.Message);
             }
             catch (TenantMappingException ex)
             {
@@ -246,6 +228,49 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to create user resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> CreateGuestUserAsync(dynamic input)
+        {
+            CreateUserRequest createUserRequest;
+            try
+            {
+                createUserRequest = this.Bind<CreateUserRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest);
+
+                return Negotiate
+                    .WithModel(userResponse)
+                    .WithStatusCode(HttpStatusCode.Created);
+            }
+            catch (UserExistsException ex)
+            {
+                Logger.Error("Failed to create user because a user already exists.", ex);
+                return Response.UserExists(ex.Message);
+            }
+            catch (IdentityPasswordException ex)
+            {
+                Logger.Error("Failed to create user, setting the user's password failed.", ex);
+                return Response.SetPasswordFailed(ex.Message);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)

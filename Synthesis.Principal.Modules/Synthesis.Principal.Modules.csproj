@@ -360,7 +360,7 @@
     <Compile Include="Exceptions\IdentityPasswordException.cs" />
     <Compile Include="Exceptions\TenantMappingException.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
-    <Compile Include="Exceptions\UserNotInvitedException.cs" />
+    <Compile Include="Extensions\CreateUserRequestExtension.cs" />
     <Compile Include="Extensions\GuidExtensions.cs" />
     <Compile Include="Extensions\ResponseExtensions.cs" />
     <Compile Include="HttpClientConfiguration.cs" />
@@ -389,13 +389,12 @@
     <Compile Include="Validators\GetUsersByIdValidator.cs" />
     <Compile Include="Validators\GeUserNamesByIdsValidator.cs" />
     <Compile Include="Validators\GroupIdValidator.cs" />
-    <Compile Include="Validators\GuestCreationRequestValidator.cs" />
+    <Compile Include="Validators\CreateGuestUserRequestValidator.cs" />
     <Compile Include="Validators\MachineIdValidator.cs" />
     <Compile Include="Validators\NameValidator.cs" />
     <Compile Include="Validators\PasswordResetEmailRequestValidator.cs" />
     <Compile Include="Validators\PasswordValidator.cs" />
     <Compile Include="Validators\PrincipalIdValidator.cs" />
-    <Compile Include="Validators\ProjectAccessCodeValidator.cs" />
     <Compile Include="Validators\TenantIdValidator.cs" />
     <Compile Include="Validators\UpdateGroupRequestValidator.cs" />
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />

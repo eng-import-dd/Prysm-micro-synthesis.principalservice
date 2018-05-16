@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
 
@@ -21,9 +22,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
     public class UsersModuleTests : BaseModuleTests<UsersModule>
     {
-        /// <inheritdoc />
-        protected override List<object> BrowserDependencies => new List<object> { _controllerMock.Object };
         private readonly Mock<IUsersController> _controllerMock = new Mock<IUsersController>();
+        protected override List<object> BrowserDependencies => new List<object> { _controllerMock.Object };
 
         private const string ValidTestEmail = "asd@hmm.com";
 
@@ -109,11 +109,48 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task CreateUserWithProjectAccessCodeCreatesGuestUserAsync()
+        public async Task CreateUserAsEnterpriseCallsCreateUserAsync()
         {
-            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
+            await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
+            _controllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()));
+        }
 
-            _controllerMock.Verify(x => x.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+        [Fact]
+        public async Task CreateUserAsTrialWithServiceTokenReturnsCreatedAsync()
+        {
+            var user = CreateUserRequest.Example();
+            user.UserType = UserType.Trial;
+
+            var response = await ServiceTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserAsTrialWithServiceTokenCallsCreateUserAsync()
+        {
+            var user = CreateUserRequest.Example();
+            user.UserType = UserType.Trial;
+
+            await ServiceTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
+            _controllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()));
+        }
+
+        [Fact]
+        public async Task CreateUserAsGuestWithoutAuthenticationReturnsCreatedAsync()
+        {
+            var user = CreateUserRequest.GuestUserExample();
+
+            var response = await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, user));
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CreateUserAsGuestCallsCreateGuestAsync()
+        {
+            var user = CreateUserRequest.GuestUserExample();
+
+            await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, user));
+            _controllerMock.Verify(x => x.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()));
         }
 
         [Fact]
@@ -137,23 +174,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task CreateUserReturnsConflictIfUserNotInvitedExceptionIsThrown()
+        public async Task CreateGuestUserReturnsConflictIfUserExistsExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Throws(new UserNotInvitedException());
-
-            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
-
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        }
-
-        [Fact]
-        public async Task CreateUserReturnsConflictIfUserExistsExceptionIsThrown()
-        {
-            _controllerMock.Setup(m => m.CreateGuestAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()))
                 .Throws(new UserExistsException());
 
-            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
+            var response = await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
 
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         }
@@ -168,6 +194,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestValidationFailed, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task CreateUserReturnsInternalServerErrorIfValidationExceptionIsThrown()
+        {
+            _controllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()))
+                           .Throws(new ValidationException(new List<ValidationFailure>()));
+
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
         [Fact]
@@ -915,7 +952,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
         #endregion
 
-        #region GetLicenseTypeForUse
+        #region GetLicenseTypeForUser
         [Trait("GetLicenseTypeForUser", "Get License Type For User")]
         [Fact]
         public async Task GetLicenseTypeForUserReturnsOk()
