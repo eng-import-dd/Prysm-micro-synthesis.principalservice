@@ -17,7 +17,6 @@ using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Xunit;
-using Synthesis.PrincipalService.Models;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
 {
