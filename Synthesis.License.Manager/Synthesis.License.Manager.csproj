@@ -100,7 +100,7 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta031\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta035\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>

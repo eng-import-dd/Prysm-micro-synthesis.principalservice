@@ -559,7 +559,8 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
-                TenantId = tenantId
+                TenantId = tenantId,
+                Password = model.Password
             };
 
             var result = await CreateUserAsync(createUserRequest, createddBy);
