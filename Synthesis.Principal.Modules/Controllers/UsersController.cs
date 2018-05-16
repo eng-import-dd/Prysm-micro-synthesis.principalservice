@@ -563,6 +563,7 @@ namespace Synthesis.PrincipalService.Controllers
                 LastName = model.LastName,
                 LicenseType = LicenseType.UserLicense,
                 IsIdpUser = true,
+                Password = model.Password,
                 TenantId = tenantId,
                 UserType = UserType.Enterprise
             };

@@ -669,7 +669,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, TenantId, PrincipalId);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, PrincipalId);
 
                 return Negotiate
                     .WithModel(result)
