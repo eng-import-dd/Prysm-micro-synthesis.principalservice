@@ -13,7 +13,7 @@ namespace Synthesis.PrincipalService.Email
             _emailApi = emailApi;
         }
 
-        public async Task SendGuestVerificationEmailAsync(string firstName, string email)
+        public async Task SendGuestVerificationEmailAsync(string firstName, string email, string redirect)
         {
             // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
 
@@ -27,7 +27,7 @@ namespace Synthesis.PrincipalService.Email
             var request = VerifyGuestEmail.BuildRequest(
                 firstName,
                 email,
-                "" /*ProjectAccessCode // TODO: Remove accessCode here or fix to consume it*/,
+                redirect,
                 emailVerificationId);
 
             await _emailApi.SendEmailAsync(request);

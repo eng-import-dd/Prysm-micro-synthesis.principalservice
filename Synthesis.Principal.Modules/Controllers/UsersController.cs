@@ -446,7 +446,7 @@ namespace Synthesis.PrincipalService.Controllers
                 }
 
                 // Send the verification email
-                await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email);
+                await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
 
                 _eventService.Publish(EventNames.UserCreated, guestUser);
 
@@ -468,7 +468,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email);
+            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect);
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
