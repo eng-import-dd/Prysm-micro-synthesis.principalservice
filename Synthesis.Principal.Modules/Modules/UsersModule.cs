@@ -49,10 +49,9 @@ namespace Synthesis.PrincipalService.Modules
                 .ResponseFormat(User.Example());
 
             CreateRoute("SendGuestVerificationEmailAsync", HttpMethod.Post, Routing.SendVerificationEmail, SendGuestVerificationEmailAsync)
-                .Description("Send an invite email to a user")
+                .Description("Send a verification email to a guest")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(CreateUserRequest.GuestUserExample())
-                .ResponseFormat(User.Example());
+                .RequestFormat(GuestVerificationEmailRequest.Example());
 
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
@@ -308,7 +307,6 @@ namespace Synthesis.PrincipalService.Modules
                 await _userController.SendGuestVerificationEmailAsync(sendEmailRequest);
 
                 return Negotiate
-                    .WithModel(true)
                     .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
