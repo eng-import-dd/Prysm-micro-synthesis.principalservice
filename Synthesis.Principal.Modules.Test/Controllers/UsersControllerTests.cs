@@ -32,7 +32,6 @@ using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
-using LockUserRequest = Synthesis.EmailService.InternalApi.Models.LockUserRequest;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
 {
