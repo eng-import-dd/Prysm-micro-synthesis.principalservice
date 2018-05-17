@@ -15,7 +15,7 @@ namespace Synthesis.PrincipalService.Email
 
         public async Task SendGuestVerificationEmailAsync(string firstName, string email, string redirect)
         {
-            // TODO: Get the user info that currently lives in the policy_db.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
+            // TODO: Get the user info that used to live in the policy_db and was moved to Cosmos DB in the User model.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
 
             // TODO: Grab the EmailVerificationId - this was previously gathered with _identityUserApi.GetTempTokenDataAsync()
             var emailVerificationId = Guid.NewGuid().ToString();   // NOTE: Added a temp ID for now until the EmailVerificationId TODO is handled
