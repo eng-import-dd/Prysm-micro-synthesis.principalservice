@@ -161,14 +161,6 @@ namespace Synthesis.PrincipalService
         {
             var builder = new ContainerBuilder();
 
-            // Service To Service Resolver
-            builder.RegisterType<ServiceToServiceMicroserviceHttpClientResolver>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceClient))))
-                .Keyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))
-                .InstancePerRequest();
-
             builder.RegisterType<DefaultAppSettingsReader>()
                 .Keyed<IAppSettingsReader>(nameof(DefaultAppSettingsReader));
 
@@ -359,12 +351,8 @@ namespace Synthesis.PrincipalService
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
 
             builder.RegisterType<EmailApi>()
-                .WithParameter(new ResolvedParameter(
-                    (p, c) => p.ParameterType == typeof(IMicroserviceHttpClientResolver),
-                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceMicroserviceHttpClientResolver))))
                 .WithParameter("serviceUrlSettingName", "Email.Url")
-                .As<IEmailApi>()
-                .InstancePerRequest();
+                .As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>().InstancePerRequest();
         }
 
