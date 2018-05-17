@@ -1018,7 +1018,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Returns(Task.FromResult(GuestVerificationEmailRequest.Example()));
 
-            var response = await UserTokenBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -1028,7 +1028,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -1038,7 +1038,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Returns(Task.FromResult(GuestVerificationEmailRequest.Example()));
 
-            var response = await UnauthenticatedBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UnauthenticatedBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -1049,7 +1049,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Throws(new EmailAlreadyVerifiedException());
 
-            var response = await UserTokenBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.FailedDependency, response.StatusCode);
         }
@@ -1060,7 +1060,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Throws(new EmailRecentlySentException());
 
-            var response = await UserTokenBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.FailedDependency, response.StatusCode);
         }
@@ -1071,7 +1071,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Post(/*Routing.SendVerificationEmail*/"/v1/users/verificationemail", ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            var response = await UserTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
