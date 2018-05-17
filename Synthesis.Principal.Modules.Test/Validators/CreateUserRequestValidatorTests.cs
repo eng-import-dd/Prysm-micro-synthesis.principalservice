@@ -48,7 +48,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             Assert.False(result.IsValid);
         }
 
-
         [Theory]
         [InlineData("")]
         [InlineData(null)]
