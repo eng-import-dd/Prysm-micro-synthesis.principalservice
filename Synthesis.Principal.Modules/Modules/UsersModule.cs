@@ -273,6 +273,11 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to create user, setting the user's password failed.", ex);
                 return Response.SetPasswordFailed(ex.Message);
             }
+            catch (SendEmailException ex)
+            {
+                Logger.Error("Failed to create user, sending a verification email failed.", ex);
+                return Response.SendEmailFailed(ex.Message);
+            }
             catch (ValidationFailedException ex)
             {
                 Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);

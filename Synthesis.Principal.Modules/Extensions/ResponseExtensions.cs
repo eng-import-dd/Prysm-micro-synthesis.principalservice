@@ -71,7 +71,7 @@ namespace Synthesis.PrincipalService.Extensions
         /// <returns>Nancy.Response</returns>
         public static Response EmailAlreadyVerified(this IResponseFormatter formatter, string reasonPhrase)
         {
-            var response = FormatResponse(formatter, /*ErrorCodes.EmailAlreadyVerified*/"EmailAlreadyVerified", ErrorMessages.EmailAlreadyVerified);
+            var response = FormatResponse(formatter, ErrorCodes.EmailAlreadyVerified, ErrorMessages.EmailAlreadyVerified);
             response.ReasonPhrase = reasonPhrase;
             response.StatusCode = HttpStatusCode.FailedDependency;
             return response;
@@ -85,9 +85,23 @@ namespace Synthesis.PrincipalService.Extensions
         /// <returns>Nancy.Response</returns>
         public static Response EmailRecentlySent(this IResponseFormatter formatter, string reasonPhrase)
         {
-            var response = FormatResponse(formatter, /*ErrorCodes.EmailRecentlySent*/"EmailRecentlySent", ErrorMessages.EmailRecentlySent);
+            var response = FormatResponse(formatter, ErrorCodes.EmailRecentlySent, ErrorMessages.EmailRecentlySent);
             response.ReasonPhrase = reasonPhrase;
             response.StatusCode = HttpStatusCode.FailedDependency;
+            return response;
+        }
+
+        /// <summary>
+        /// A static method that returns a Response object with a 500 internal server errorhttp status code. This method should be used when returning a custom reason phrase.
+        /// </summary>
+        /// <param name="formatter"></param>
+        /// <param name="reasonPhrase"></param>
+        /// <returns>Nancy.Response</returns>
+        public static Response SendEmailFailed(this IResponseFormatter formatter, string reasonPhrase)
+        {
+            var response = FormatResponse(formatter, /*ErrorCodes.SendEmailFailed*/"SendEmailFailed", ErrorMessages.SendEmailFailed);
+            response.ReasonPhrase = reasonPhrase;
+            response.StatusCode = HttpStatusCode.InternalServerError;
             return response;
         }
 

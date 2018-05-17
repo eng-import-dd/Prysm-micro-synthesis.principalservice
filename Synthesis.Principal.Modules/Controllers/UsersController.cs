@@ -445,16 +445,16 @@ namespace Synthesis.PrincipalService.Controllers
 
                 // Send the verification email
                 await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
-
-                _eventService.Publish(EventNames.UserCreated, guestUser);
-
-                return guestUser;
             }
             catch (Exception)
             {
                 await _userRepository.DeleteItemAsync((Guid)guestUser.Id);
                 throw;
             }
+
+            _eventService.Publish(EventNames.UserCreated, guestUser);
+
+            return guestUser;
         }
 
         public async Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request)

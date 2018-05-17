@@ -90,6 +90,5 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
         }
-
     }
 }
