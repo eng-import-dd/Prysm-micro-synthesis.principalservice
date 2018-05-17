@@ -51,6 +51,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantDomainApi _tenantDomainApi;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
+        private readonly IIdentityUserApi _identityUserApiWithServiceToken;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
 
@@ -70,6 +71,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="tenantApi">The tenant API.</param>
         /// <param name="searchBuilder"></param>
         /// <param name="identityUserApi"></param>
+        /// <param name="identityUserApiWithServiceToken"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
@@ -83,7 +85,8 @@ namespace Synthesis.PrincipalService.Controllers
             IUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
             ITenantApi tenantApi,
-            IIdentityUserApi identityUserApi)
+            IIdentityUserApi identityUserApi,
+            IIdentityUserApi identityUserApiWithServiceToken)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
             _groupRepository = repositoryFactory.CreateRepository<Group>();
@@ -99,6 +102,7 @@ namespace Synthesis.PrincipalService.Controllers
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
             _identityUserApi = identityUserApi;
+            _identityUserApiWithServiceToken = identityUserApiWithServiceToken;
         }
 
         public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
@@ -159,7 +163,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser
+            var setPasswordResponse = await _identityUserApiWithServiceToken.SetPasswordAsync(new IdentityUser
             {
                 Password = model.Password,
                 PasswordHash = model.PasswordHash,
@@ -428,7 +432,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
+            var setPasswordResponse = await _identityUserApiWithServiceToken.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
             if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);

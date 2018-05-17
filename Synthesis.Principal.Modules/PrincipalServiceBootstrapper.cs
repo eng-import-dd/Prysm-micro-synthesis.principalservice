@@ -69,6 +69,7 @@ namespace Synthesis.PrincipalService
         public static readonly LogTopic DefaultLogTopic = new LogTopic(ServiceInformation.ServiceName);
         public static readonly LogTopic EventServiceLogTopic = new LogTopic($"{ServiceInformation.ServiceName}.EventHub");
         private static readonly Lazy<ILifetimeScope> LazyRootContainer = new Lazy<ILifetimeScope>(BuildRootContainer);
+        private const string ServiceToServiceApiClient = "ServiceToServiceApiClient";
 
         public PrincipalServiceBootstrapper()
         {
@@ -313,11 +314,21 @@ namespace Synthesis.PrincipalService
             }).CreateMapper();
             builder.RegisterInstance(mapper).As<IMapper>();
 
+            builder.RegisterType<ServiceToServiceHttpClientResolver>()
+                .Keyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceHttpClientResolver))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "serviceToServiceKey",
+                    (p, c) => nameof(ServiceToServiceClient)));
+
             // Controllers
             builder.RegisterType<UsersController>().As<IUsersController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "deploymentType",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType")));
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType")))
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "identityUserApiWithServiceToken",
+                    (p, c) => c.ResolveKeyed<IIdentityUserApi>(ServiceToServiceApiClient)));
+
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
             builder.RegisterType<GroupsController>().As<IGroupsController>();
@@ -328,6 +339,10 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
+            builder.RegisterType<IdentityUserApi>().Keyed<IIdentityUserApi>(ServiceToServiceApiClient)
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "microserviceHttpClientResolver",
+                    (p, c) => c.ResolveKeyed<IMicroserviceHttpClientResolver>(nameof(ServiceToServiceHttpClientResolver)))); ;
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
             builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();

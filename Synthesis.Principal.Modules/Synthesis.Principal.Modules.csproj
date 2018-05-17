@@ -366,6 +366,7 @@
     <Compile Include="HttpClientConfiguration.cs" />
     <Compile Include="Mapper\UserInviteProfile.cs" />
     <Compile Include="Mapper\UserProfile.cs" />
+    <Compile Include="ServiceToServiceHttpClientResolver.cs" />
     <Compile Include="MicroserviceHttpClientResolver.cs" />
     <Compile Include="Modules\GroupsModule.cs" />
     <Compile Include="Modules\MachinesModule.cs" />

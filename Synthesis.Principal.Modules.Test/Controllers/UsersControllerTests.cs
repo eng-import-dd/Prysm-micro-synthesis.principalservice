@@ -53,6 +53,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
         private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
         private readonly Mock<IIdentityUserApi> _identityUserApiMock = new Mock<IIdentityUserApi>();
+        private readonly Mock<IIdentityUserApi> _identityUserApiServiceToServiceMock = new Mock<IIdentityUserApi>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
@@ -91,7 +92,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _identityUserApiServiceToServiceMock.Object);
         }
 
         private void SetupTestData()
@@ -171,7 +173,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _tenantApiMock.Setup(x => x.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
-            _identityUserApiMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+            _identityUserApiServiceToServiceMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
         }
 
         [Fact]
@@ -939,7 +941,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _identityUserApiServiceToServiceMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385")  };
             var createdBy = Guid.NewGuid();
@@ -964,7 +967,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _identityUserApiServiceToServiceMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3") };
             var createdBy = Guid.NewGuid();
