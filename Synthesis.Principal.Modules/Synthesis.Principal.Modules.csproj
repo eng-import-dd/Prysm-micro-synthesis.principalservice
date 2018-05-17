@@ -383,7 +383,6 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
     <Compile Include="Services\DocumentDbIndexRegistrar.cs" />
     <Compile Include="Services\IIndexRegistrar.cs" />

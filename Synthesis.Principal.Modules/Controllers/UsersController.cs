@@ -28,11 +28,9 @@ using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
-using LockUserRequest = Synthesis.EmailService.InternalApi.Models.LockUserRequest;
 
 namespace Synthesis.PrincipalService.Controllers
 {
