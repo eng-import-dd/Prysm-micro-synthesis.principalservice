@@ -1,4 +1,5 @@
-﻿using Synthesis.PrincipalService.InternalApi.Models;
+﻿using Synthesis.EmailService.InternalApi.TestData;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
@@ -35,8 +36,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData(null)]
+        [ClassData(typeof(EmailAddressSource))]
         public void ShouldFailIfEmailIsInvalid(string name)
         {
             var request = GuestVerificationEmailRequest.Example();
