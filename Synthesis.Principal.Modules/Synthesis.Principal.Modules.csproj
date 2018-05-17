@@ -420,7 +420,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Email\Templates\VerifyNewAccount.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="librdkafka\x64\librdkafka.dll" />
     <Content Include="librdkafka\x64\librdkafkacpp.dll" />
