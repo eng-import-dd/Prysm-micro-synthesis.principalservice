@@ -172,7 +172,7 @@ namespace Synthesis.PrincipalService.Controllers
                 UserId = (Guid)result.Id
             });
 
-            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            if (!setPasswordResponse.IsSuccess())
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
 
@@ -438,7 +438,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 // Set the password
                 var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)guestUser.Id });
-                if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+                if (!setPasswordResponse.IsSuccess())
                 {
                     throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
                 }
