@@ -99,7 +99,7 @@ namespace Synthesis.PrincipalService.Extensions
         /// <returns>Nancy.Response</returns>
         public static Response SendEmailFailed(this IResponseFormatter formatter, string reasonPhrase)
         {
-            var response = FormatResponse(formatter, /*ErrorCodes.SendEmailFailed*/"SendEmailFailed", ErrorMessages.SendEmailFailed);
+            var response = FormatResponse(formatter, ErrorCodes.SendEmailFailed, ErrorMessages.SendEmailFailed);
             response.ReasonPhrase = reasonPhrase;
             response.StatusCode = HttpStatusCode.InternalServerError;
             return response;
