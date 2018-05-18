@@ -1010,5 +1010,71 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
         #endregion
+
+        #region SendGuestVerificationEmailAsync
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsOk()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Returns(Task.FromResult(GuestVerificationEmailRequest.Example()));
+
+            var response = await ServiceTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsBadRequest()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await ServiceTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsUnauthorized()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Returns(Task.FromResult(GuestVerificationEmailRequest.Example()));
+
+            var response = await UnauthenticatedBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsAlreadyVerified()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Throws(new EmailAlreadyVerifiedException());
+
+            var response = await ServiceTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.FailedDependency, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsRecentlySent()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Throws(new EmailRecentlySentException());
+
+            var response = await ServiceTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.FailedDependency, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailAsyncReturnsInternalServerError()
+        {
+            _controllerMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<GuestVerificationEmailRequest>()))
+                .Throws(new Exception());
+
+            var response = await ServiceTokenBrowser.Post(Routing.SendVerificationEmail, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+        #endregion
     }
 }

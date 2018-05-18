@@ -47,6 +47,11 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(CreateUserRequest.GuestUserExample())
                 .ResponseFormat(User.Example());
 
+            CreateRoute("SendGuestVerificationEmailAsync", HttpMethod.Post, Routing.SendVerificationEmail, SendGuestVerificationEmailAsync)
+                .Description("Send a verification email to a guest")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(GuestVerificationEmailRequest.Example());
+
             CreateRoute("GetUsersForTenant", HttpMethod.Post, Routing.GetUsers, GetUsersForTenantAsync)
                 .Description("Retrieve all Users resource")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
@@ -268,10 +273,60 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to create user, setting the user's password failed.", ex);
                 return Response.SetPasswordFailed(ex.Message);
             }
+            catch (SendEmailException ex)
+            {
+                Logger.Error("Failed to create user, sending a verification email failed.", ex);
+                return Response.SendEmailFailed(ex.Message);
+            }
             catch (ValidationFailedException ex)
             {
                 Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to create user resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
+        private async Task<object> SendGuestVerificationEmailAsync(dynamic input)
+        {
+            GuestVerificationEmailRequest sendEmailRequest;
+            try
+            {
+                sendEmailRequest = this.Bind<GuestVerificationEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                await _userController.SendGuestVerificationEmailAsync(sendEmailRequest);
+
+                return Negotiate
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (EmailAlreadyVerifiedException ex)
+            {
+                Logger.Error("Email not sent because it is already been verified.", ex);
+                return Response.EmailAlreadyVerified(ex.Message);
+            }
+            catch (EmailRecentlySentException ex)
+            {
+                Logger.Error("Email not sent because it was sent too recently.", ex);
+                return Response.EmailRecentlySent(ex.Message);
             }
             catch (Exception ex)
             {

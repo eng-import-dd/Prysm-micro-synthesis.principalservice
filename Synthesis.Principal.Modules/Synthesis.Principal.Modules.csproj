@@ -198,7 +198,7 @@
       <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta019\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta010\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta011\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
@@ -252,7 +252,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta035\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta037\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta026\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -354,9 +354,16 @@
     <Compile Include="Controllers\UserQueryRunner.cs" />
     <Compile Include="Controllers\UsersController.cs" />
     <Compile Include="Controllers\UserSearchBuilder.cs" />
+    <Compile Include="Email\EmailSendingService.cs" />
+    <Compile Include="Email\IEmailSendingService.cs" />
+    <Compile Include="Email\VerifyGuestEmail.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="EventHandlers\TenantCreated.cs" />
     <Compile Include="Events\EventSubscriber.cs" />
+    <Compile Include="Exceptions\SendEmailException.cs" />
+    <Compile Include="Exceptions\EmailRecentlySentException.cs" />
+    <Compile Include="Exceptions\EmailAlreadyVerifiedException.cs" />
+    <Compile Include="Exceptions\BuildEmailException.cs" />
     <Compile Include="Exceptions\IdentityPasswordException.cs" />
     <Compile Include="Exceptions\TenantMappingException.cs" />
     <Compile Include="Exceptions\UserExistsException.cs" />
@@ -375,13 +382,13 @@
     <Compile Include="Owin\GlobalExceptionHandlerMiddleware.cs" />
     <Compile Include="PrincipalServiceBootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Requests\LockUserRequest.cs" />
     <Compile Include="Requests\PasswordResetEmailRequest.cs" />
     <Compile Include="Services\DocumentDbIndexRegistrar.cs" />
     <Compile Include="Services\IIndexRegistrar.cs" />
     <Compile Include="Utilities\CommonApiUtility.cs" />
     <Compile Include="Validators\BulkUploadEmailValidator.cs" />
     <Compile Include="Validators\CreateGroupRequestValidator.cs" />
+    <Compile Include="Validators\GuestVerificationEmailRequestValidator.cs" />
     <Compile Include="Validators\CreateMachineRequestValidator.cs" />
     <Compile Include="Validators\UserGroupValidator.cs" />
     <Compile Include="Validators\CreateUserRequestValidator.cs" />
@@ -410,6 +417,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Email\Templates\VerifyNewAccount.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="librdkafka\x64\librdkafka.dll" />
     <Content Include="librdkafka\x64\librdkafkacpp.dll" />
     <Content Include="librdkafka\x64\msvcr120.dll" />

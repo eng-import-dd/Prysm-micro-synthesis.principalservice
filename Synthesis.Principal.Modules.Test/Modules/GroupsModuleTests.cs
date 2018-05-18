@@ -11,8 +11,6 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Models;
-using Synthesis.PrincipalService.Modules;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules

@@ -46,5 +46,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task<LicenseType?> GetLicenseTypeForUserAsync(Guid userId, Guid tenantId);
 
         Task<User> GetUserByUserNameOrEmailAsync(string username);
+
+        Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request);
     }
 }

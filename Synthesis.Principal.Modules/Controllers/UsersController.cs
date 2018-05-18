@@ -22,6 +22,7 @@ using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
@@ -53,6 +54,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IIdentityUserApi _identityUserApi;
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
+        private readonly IEmailSendingService _emailSendingService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.
@@ -63,6 +65,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The logger factory.</param>
         /// <param name="licenseApi">The license API.</param>
         /// <param name="emailApi">The email API.</param>
+        /// <param name="emailSendingService">The email sending service.</param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
         /// <param name="tenantDomainApi">The tenant domain API.</param>
@@ -77,6 +80,7 @@ namespace Synthesis.PrincipalService.Controllers
             ILoggerFactory loggerFactory,
             ILicenseApi licenseApi,
             IEmailApi emailApi,
+            IEmailSendingService emailSendingService,
             IMapper mapper,
             string deploymentType,
             ITenantDomainApi tenantDomainApi,
@@ -99,6 +103,7 @@ namespace Synthesis.PrincipalService.Controllers
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
             _identityUserApi = identityUserApi;
+            _emailSendingService = emailSendingService;
         }
 
         public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
@@ -153,7 +158,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
-            if (response.ResponseCode != HttpStatusCode.OK)
+            if (!response.IsSuccess())
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
                 throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
@@ -167,7 +172,7 @@ namespace Synthesis.PrincipalService.Controllers
                 UserId = (Guid)result.Id
             });
 
-            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            if (!setPasswordResponse.IsSuccess())
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
 
@@ -392,6 +397,7 @@ namespace Synthesis.PrincipalService.Controllers
             model.Email = model.Email?.ToLower();
             model.Username = model.Username?.ToLower();
 
+            // Validate the input
             var validationResult = _validatorLocator.Validate<CreateGuestUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
@@ -421,24 +427,50 @@ namespace Synthesis.PrincipalService.Controllers
                 LastAccessDate = DateTime.UtcNow
             };
 
-            var result = await _userRepository.CreateItemAsync(user);
-
-            if (result.Id == null)
+            // Create the user in the DB
+            var guestUser = await _userRepository.CreateItemAsync(user);
+            if (guestUser.Id == null)
             {
                 throw new ResourceException("User was incorrectly created with a null Id");
             }
 
-            var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)result.Id });
-            if (setPasswordResponse.ResponseCode != HttpStatusCode.OK)
+            try
             {
-                await _userRepository.DeleteItemAsync((Guid)result.Id);
-
-                throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database.");
+                // Set the password
+                var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)guestUser.Id });
+                if (!setPasswordResponse.IsSuccess())
+                {
+                    throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
+                }
+            }
+            catch (Exception)
+            {
+                await _userRepository.DeleteItemAsync((Guid)guestUser.Id);
+                throw;
             }
 
-            _eventService.Publish(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, guestUser);
 
-            return result;
+            // Send the verification email
+            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
+            if (!emailResult.IsSuccess())
+            {
+                _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
+            }
+
+            return guestUser;
+        }
+
+        public async Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request)
+        {
+            // Validate the input
+            var validationResult = _validatorLocator.Validate<GuestVerificationEmailRequestValidator>(request);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect);
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
@@ -681,7 +713,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
 
-                if (result.ResponseCode != HttpStatusCode.OK)
+                if (!result.IsSuccess())
                 {
                     return CanPromoteUserResultCode.PromotionNotPossible;
                 }
@@ -711,7 +743,7 @@ namespace Synthesis.PrincipalService.Controllers
             Expression<Func<User, string>> orderBy;
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (userIdsInTenant.ResponseCode == HttpStatusCode.OK)
+            if (userIdsInTenant.IsSuccess())
             {
                 var userids = userIdsInTenant.Payload.ToList();
                 criteria.Add(u => !userids.Contains(u.Id.Value));
@@ -939,7 +971,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (adminGroupId != null)
             {
                 var userIds = await _tenantApi.GetUserIdsByTenantIdAsync(userTenantId);
-                if (userIds.ResponseCode != HttpStatusCode.OK)
+                if (!userIds.IsSuccess())
                 {
                     _logger.Error($"Error fetching user ids for the tenant id: {userTenantId}");
                     throw new NotFoundException($"Error fetching user ids for the tenant id: {userTenantId}");
@@ -1040,7 +1072,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id??Guid.Empty);
-            if (result.ResponseCode!=HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 _logger.Error($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
@@ -1108,7 +1140,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (tenantIds.ResponseCode!=HttpStatusCode.OK)
+            if (!tenantIds.IsSuccess())
             {
                 _logger.Error("Unable to fetch tenant ids");
                 throw new NotFoundException("Unable to fetch tenant ids from tenant service");
@@ -1232,7 +1264,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (result.ResponseCode != HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 _logger.Error($"Error fetching tenant Ids for the user Id: {userId} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {userId} .");
