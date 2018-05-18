@@ -152,6 +152,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorFailsMock.Setup(m => m.Validate(It.IsAny<object>()))
                 .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
+            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+
             // validator mock
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
                 .Returns(_validatorMock.Object);
@@ -1411,19 +1414,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
             _identityUserApiMock.Setup(m => m.SetPasswordAsync(It.IsAny<IdentityUser>()))
-                .Throws<Exception>();
-
-            await Assert.ThrowsAsync<Exception>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
-
-            _userRepositoryMock.Verify(x => x.DeleteItemAsync(It.IsAny<Guid>()));
-        }
-
-        [Fact]
-        public async Task CreateGuestSendsSendEmailErrorDeletesUser()
-        {
-            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .ReturnsAsync(User.GuestUserExample());
-            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
                 .Throws<Exception>();
 
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
