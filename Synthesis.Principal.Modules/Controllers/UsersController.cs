@@ -442,9 +442,6 @@ namespace Synthesis.PrincipalService.Controllers
                 {
                     throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
                 }
-
-                // Send the verification email
-                await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
             }
             catch (Exception)
             {
@@ -453,6 +450,13 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             _eventService.Publish(EventNames.UserCreated, guestUser);
+
+            // Send the verification email
+            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
+            if (!emailResult.IsSuccess())
+            {
+                _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
+            }
 
             return guestUser;
         }

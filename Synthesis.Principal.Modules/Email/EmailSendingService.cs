@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.Http.Microservice;
-using Synthesis.PrincipalService.Exceptions;
 
 namespace Synthesis.PrincipalService.Email
 {
@@ -16,7 +14,7 @@ namespace Synthesis.PrincipalService.Email
             _emailApi = emailApi;
         }
 
-        public async Task SendGuestVerificationEmailAsync(string firstName, string email, string redirect)
+        public async Task<MicroserviceResponse> SendGuestVerificationEmailAsync(string firstName, string email, string redirect)
         {
             // TODO: Get the user info that used to live in the policy_db and was moved to Cosmos DB in the User model.  That includes if the email is verified yet, when the last verification email was sent, and the verification token.
 
@@ -33,11 +31,7 @@ namespace Synthesis.PrincipalService.Email
                 redirect,
                 emailVerificationId);
 
-            var result = await _emailApi.SendEmailAsync(request);
-            if (!result.IsSuccess())
-            {
-                throw new SendEmailException($"Email did not send due to an error. ReasonPhrase={result.ReasonPhrase} ErrorResponse={result.ErrorResponse}");
-            }
+            return await _emailApi.SendEmailAsync(request);
         }
     }
 }
