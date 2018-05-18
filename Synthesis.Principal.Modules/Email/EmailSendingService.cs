@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.Http.Microservice;
 using Synthesis.PrincipalService.Exceptions;
 
 namespace Synthesis.PrincipalService.Email
@@ -33,7 +34,7 @@ namespace Synthesis.PrincipalService.Email
                 emailVerificationId);
 
             var result = await _emailApi.SendEmailAsync(request);
-            if (result.ResponseCode != HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 throw new SendEmailException($"Email did not send due to an error. ReasonPhrase={result.ReasonPhrase} ErrorResponse={result.ErrorResponse}");
             }

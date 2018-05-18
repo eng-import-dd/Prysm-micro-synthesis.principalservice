@@ -158,7 +158,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
-            if (response.ResponseCode != HttpStatusCode.OK)
+            if (!response.IsSuccess())
             {
                 await _userRepository.DeleteItemAsync((Guid)result.Id);
                 throw new TenantMappingException($"Adding the user to the tenant with Id {tenantId} failed. The user was removed from the database");
@@ -709,7 +709,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
 
-                if (result.ResponseCode != HttpStatusCode.OK)
+                if (!result.IsSuccess())
                 {
                     return CanPromoteUserResultCode.PromotionNotPossible;
                 }
@@ -739,7 +739,7 @@ namespace Synthesis.PrincipalService.Controllers
             Expression<Func<User, string>> orderBy;
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (userIdsInTenant.ResponseCode == HttpStatusCode.OK)
+            if (userIdsInTenant.IsSuccess())
             {
                 var userids = userIdsInTenant.Payload.ToList();
                 criteria.Add(u => !userids.Contains(u.Id.Value));
@@ -967,7 +967,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (adminGroupId != null)
             {
                 var userIds = await _tenantApi.GetUserIdsByTenantIdAsync(userTenantId);
-                if (userIds.ResponseCode != HttpStatusCode.OK)
+                if (!userIds.IsSuccess())
                 {
                     _logger.Error($"Error fetching user ids for the tenant id: {userTenantId}");
                     throw new NotFoundException($"Error fetching user ids for the tenant id: {userTenantId}");
@@ -1068,7 +1068,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id??Guid.Empty);
-            if (result.ResponseCode!=HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 _logger.Error($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
@@ -1136,7 +1136,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (tenantIds.ResponseCode!=HttpStatusCode.OK)
+            if (!tenantIds.IsSuccess())
             {
                 _logger.Error("Unable to fetch tenant ids");
                 throw new NotFoundException("Unable to fetch tenant ids from tenant service");
@@ -1260,7 +1260,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (result.ResponseCode != HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 _logger.Error($"Error fetching tenant Ids for the user Id: {userId} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {userId} .");
