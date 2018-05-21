@@ -639,17 +639,16 @@ namespace Synthesis.PrincipalService.Controllers
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
-
                     currentGroupsResult.Groups.Add(tenantGroup.Id.GetValueOrDefault());
-                    await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                 }
                 else
                 {
                     //remove the user from the group
                     currentGroupsResult.Groups.Remove(tenantGroup.Id.GetValueOrDefault());
-                    await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
                 }
             }
+
+            await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
 
             return currentGroupsResult;
         }
