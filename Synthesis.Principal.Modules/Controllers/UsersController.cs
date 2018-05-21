@@ -1074,7 +1074,6 @@ namespace Synthesis.PrincipalService.Controllers
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
             if (!result.IsSuccess())
             {
-                _logger.Error($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
             }
 
