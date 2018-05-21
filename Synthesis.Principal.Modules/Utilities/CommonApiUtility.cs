@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Synthesis.Http.Microservice;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.TenantService.InternalApi.Api;
 
@@ -19,7 +20,7 @@ namespace Synthesis.PrincipalService.Utilities
                 return new List<string>();
             }
 
-            if (result.ResponseCode != HttpStatusCode.OK)
+            if (!result.IsSuccess())
             {
                 throw new Exception(result.ReasonPhrase);
             }
@@ -29,7 +30,7 @@ namespace Synthesis.PrincipalService.Utilities
                 foreach (var domainId in result.Payload)
                 {
                     var tenantDomain = await tenantDomainApi.GetTenantDomainByIdAsync(domainId);
-                    if (tenantDomain.ResponseCode != HttpStatusCode.OK || tenantDomain.Payload == null)
+                    if (!tenantDomain.IsSuccess() || tenantDomain.Payload == null)
                     {
                         throw new Exception(tenantDomain.ReasonPhrase);
                     }

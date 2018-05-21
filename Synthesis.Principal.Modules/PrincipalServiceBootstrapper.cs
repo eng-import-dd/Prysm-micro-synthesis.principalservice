@@ -44,6 +44,7 @@ using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
 using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Events;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
@@ -325,7 +326,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
             builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
-            builder.RegisterType<EmailApi>().As<IEmailApi>();
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
@@ -349,6 +349,11 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+
+            builder.RegisterType<EmailApi>()
+                .WithParameter("serviceUrlSettingName", "Email.Url")
+                .As<IEmailApi>();
+            builder.RegisterType<EmailSendingService>().As<IEmailSendingService>().InstancePerRequest();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

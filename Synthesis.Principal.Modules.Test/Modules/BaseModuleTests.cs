@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Castle.Core.Internal;
 using Moq;
 using Nancy.Testing;
 using Synthesis.Authentication;
@@ -51,7 +52,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             return new Browser(with =>
             {
-                if (authenticatedAs != AuthenticatedAs.None)
+                if (authenticatedAs == AuthenticatedAs.User)
                 {
                     with.RequestStartup((container, pipelines, context) =>
                     {
@@ -60,6 +61,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                             new Claim(JwtRegisteredClaimNames.Aud, authenticatedAs == AuthenticatedAs.Service ? Audiences.SynthesisMicroservice : Audiences.Synthesis),
                             new Claim(JwtRegisteredClaimNames.Sub, PrincipalId.ToString()),
                             new Claim(ClaimTypes.Tenant, TenantId.ToString()),
+                            new Claim(ClaimTypes.Group, string.Join(",", Guid.NewGuid().ToString(), Guid.NewGuid().ToString()))
+                        };
+                        var identity = new ClaimsIdentity(
+                            claims,
+                            AuthenticationTypes.Basic);
+                        context.CurrentUser = new ClaimsPrincipal(identity);
+                    });
+                }
+
+                if (authenticatedAs == AuthenticatedAs.Service)
+                {
+                    with.RequestStartup((container, pipelines, context) =>
+                    {
+                        var claims = new[]
+                        {
+                            new Claim(JwtRegisteredClaimNames.Aud, authenticatedAs == AuthenticatedAs.Service ? Audiences.SynthesisMicroservice : Audiences.Synthesis),
+                            new Claim(JwtRegisteredClaimNames.Sub, PrincipalId.ToString()),
                             new Claim(ClaimTypes.Group, string.Join(",", Guid.NewGuid().ToString(), Guid.NewGuid().ToString()))
                         };
                         var identity = new ClaimsIdentity(

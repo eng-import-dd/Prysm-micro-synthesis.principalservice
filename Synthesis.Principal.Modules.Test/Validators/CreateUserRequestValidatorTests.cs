@@ -1,4 +1,6 @@
-﻿using Synthesis.PrincipalService.InternalApi.Models;
+﻿using Synthesis.EmailService.InternalApi.TestData;
+using Synthesis.PrincipalService.InternalApi.Enums;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
@@ -35,8 +37,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         }
 
         [Theory]
-        [InlineData("")]
-        [InlineData(null)]
+        [ClassData(typeof(EmailAddressSource))]
         public void ShouldFailIfEmailIsInvalid(string name)
         {
             var request = CreateUserRequest.Example();
@@ -46,7 +47,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
 
             Assert.False(result.IsValid);
         }
-
 
         [Theory]
         [InlineData("")]
@@ -71,5 +71,24 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
             Assert.True(result.IsValid);
         }
 
+        [Fact]
+        public void ShouldFailOnUndefinedUserType()
+        {
+            var request = CreateUserRequest.GuestUserExample();
+            request.UserType = UserType.Undefined;
+
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailOnGuestUserType()
+        {
+            var request = CreateUserRequest.GuestUserExample();
+            request.UserType = UserType.Guest;
+
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
     }
 }

@@ -1,12 +1,13 @@
-﻿using Synthesis.PrincipalService.InternalApi.Models;
+﻿using Synthesis.PrincipalService.InternalApi.Enums;
+using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Validators
 {
-    public class GuestCreationRequestValidatorTests
+    public class CreateGuestUserRequestValidatorTests
     {
-        private readonly GuestCreationRequestValidator _validator = new GuestCreationRequestValidator();
+        private readonly CreateGuestUserRequestValidator _validator = new CreateGuestUserRequestValidator();
 
         [Fact]
         public void ShouldPassWithExample()
@@ -40,6 +41,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Validators
         {
             var request = CreateUserRequest.GuestUserExample();
             request.LastName = "";
+
+            var result = _validator.Validate(request);
+            Assert.False(result.IsValid);
+        }
+
+        [Fact]
+        public void ShouldFailOnInvalidUserType()
+        {
+            var request = CreateUserRequest.GuestUserExample();
+            request.UserType = UserType.Enterprise;
 
             var result = _validator.Validate(request);
             Assert.False(result.IsValid);
