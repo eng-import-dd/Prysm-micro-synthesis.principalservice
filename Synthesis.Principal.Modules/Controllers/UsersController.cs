@@ -224,7 +224,9 @@ namespace Synthesis.PrincipalService.Controllers
 
             return result.Select(x => new UserNames()
             {
-                FirstName = x.FirstName, LastName = x.LastName, Id = x.Id.ToGuid()
+                FirstName = x.FirstName,
+                LastName = x.LastName,
+                Id = x.Id.ToGuid()
             });
         }
 
@@ -630,30 +632,27 @@ namespace Synthesis.PrincipalService.Controllers
                     continue;
                 }
 
-                if (model.Groups.Contains(tenantGroup.Name))
+                if (model.Groups.Contains(tenantGroup.Id.ToString()))
                 {
                     //Add the user to the group
                     if (currentGroupsResult.Groups.Contains(tenantGroup.Id.GetValueOrDefault()))
                     {
                         continue; //Nothing to do if the user is already a member of the group
                     }
-
                     currentGroupsResult.Groups.Add(tenantGroup.Id.GetValueOrDefault());
-                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
-                    return result;
                 }
                 else
                 {
                     //remove the user from the group
                     currentGroupsResult.Groups.Remove(tenantGroup.Id.GetValueOrDefault());
-                    var result = await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
-                    return result;
                 }
             }
 
+            await _userRepository.UpdateItemAsync(userId, currentGroupsResult);
+
             return currentGroupsResult;
         }
-        
+
         public async Task<User> GetUserByUserNameOrEmailAsync(string username)
         {
             var unameValidationResult = username.Contains("@") ? _validatorLocator.Validate<EmailValidator>(username) : _validatorLocator.Validate<UserNameValidator>(username);
@@ -819,7 +818,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private bool IsBuiltInOnPremTenant(Guid? tenantId)
         {
-            if (tenantId == null ||  string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
+            if (tenantId == null || string.IsNullOrEmpty(_deploymentType) || !_deploymentType.StartsWith("OnPrem"))
             {
                 return false;
             }
@@ -949,7 +948,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (orgAdmins.Count > 0)
             {
                 var orgAdminReq = _mapper.Map<List<User>, List<UserEmailRequest>>(orgAdmins);
-                await _emailApi.SendUserLockedMail(new LockUserRequest{OrgAdmins = orgAdminReq,UserEmail = user.Email,UserFullName = $"{user.FirstName} {user.LastName}" });
+                await _emailApi.SendUserLockedMail(new LockUserRequest { OrgAdmins = orgAdminReq, UserEmail = user.Email, UserFullName = $"{user.FirstName} {user.LastName}" });
             }
         }
 
@@ -1071,10 +1070,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id??Guid.Empty);
+            var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
             if (!result.IsSuccess())
             {
-                _logger.Error($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
                 throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
             }
 
@@ -1310,19 +1308,19 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
         {
             var validationErrors = new List<ValidationFailure>();
-                var existingUser = await _userRepository.GetItemAsync(id);
-                if (existingUser == null)
+            var existingUser = await _userRepository.GetItemAsync(id);
+            if (existingUser == null)
+            {
+                validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));
+            }
+            else
+            {
+                var licenseRequestDto = new UserLicenseDto
                 {
-                    validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));
-                }
-                else
-                {
-                    var licenseRequestDto = new UserLicenseDto
-                    {
-                        UserId = id.ToString(),
-                        //AccountId = existingUser.TenantId.ToString()
-                        //Todo: check how the the accounts should be updated-CHARAN, CU-577 added to address this
-                    };
+                    UserId = id.ToString(),
+                    //AccountId = existingUser.TenantId.ToString()
+                    //Todo: check how the the accounts should be updated-CHARAN, CU-577 added to address this
+                };
 
                 if (isLocked)
                 {
@@ -1406,7 +1404,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (!userFilteringOptions.GroupingType.Equals(UserGroupingType.None) && userFilteringOptions.UserGroupingId.Equals(Guid.Empty))
             {
-                throw new ValidationFailedException(new[] 
+                throw new ValidationFailedException(new[]
                 { new ValidationFailure(nameof(UserFilteringOptions), "If a GroupingType is specified then a valid GroupingId must also be provided") });
             }
 
