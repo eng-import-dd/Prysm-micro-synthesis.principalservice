@@ -135,7 +135,7 @@ namespace Synthesis.PrincipalService.Controllers
                 Email = model.Email?.ToLower(),
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
-                Groups = model.Groups,
+                Groups = model.Groups ?? new List<Guid>(),
                 IdpMappedGroups = model.IdpMappedGroups,
                 Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
@@ -144,6 +144,12 @@ namespace Synthesis.PrincipalService.Controllers
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType
             };
+
+            newUser.Groups.AddRange(new List<Guid>
+            {
+                (await GetBuiltInGroupId(tenantId, GroupType.Default)).GetValueOrDefault(),
+                (await GetBuiltInGroupId(tenantId, GroupType.Basic)).GetValueOrDefault()
+            });
 
             var result = await CreateUserInDb(newUser, tenantId);
 
@@ -424,8 +430,14 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow
+                LastAccessDate = DateTime.UtcNow,
+                Groups = new List<Guid>()
             };
+
+            user.Groups.AddRange(new List<Guid>
+            {
+                (await GetBuiltInGroupId(null, GroupType.Default)).GetValueOrDefault()
+            });
 
             // Create the user in the DB
             var guestUser = await _userRepository.CreateItemAsync(user);
@@ -858,17 +870,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            if (user.Groups == null)
-            {
-                user.Groups = new List<Guid>();
-            }
-
-            user.Groups.AddRange(new List<Guid>
-            {
-                (await GetBuiltInGroupId(tenantId, GroupType.Default)).GetValueOrDefault(),
-                (await GetBuiltInGroupId(tenantId, GroupType.Basic)).GetValueOrDefault()
-            });
-
             var result = await _userRepository.CreateItemAsync(user);
             return result;
         }
@@ -983,12 +984,12 @@ namespace Synthesis.PrincipalService.Controllers
             return new List<User>();
         }
 
-        private async Task<Guid?> GetBuiltInGroupId(Guid tenantId, GroupType groupType)
+        private async Task<Guid?> GetBuiltInGroupId(Guid? tenantId, GroupType groupType)
         {
             try
             {
                 var group = (await _groupRepository
-                    .GetItemsAsync(g => g.Type == groupType && g.TenantId == tenantId))
+                    .GetItemsAsync(g => g.Type == groupType && (g.TenantId == null || g.TenantId == tenantId)))
                     .SingleOrDefault();
 
                 if (group == null)

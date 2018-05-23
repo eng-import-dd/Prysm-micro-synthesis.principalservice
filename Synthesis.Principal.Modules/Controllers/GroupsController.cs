@@ -51,7 +51,6 @@ namespace Synthesis.PrincipalService.Controllers
         public async Task CreateBuiltInGroupsAsync(Guid tenantId)
         {
             await Task.WhenAll(
-                CreateBuiltInGroupAsync(tenantId, GroupType.Default, GroupNames.Default),
                 CreateBuiltInGroupAsync(tenantId, GroupType.Basic, GroupNames.Basic),
                 CreateBuiltInGroupAsync(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin));
 
@@ -62,7 +61,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             try
             {
-                await CreateGroupAsync(new Group()
+                await CreateGroupAsync(new Group
                 {
                     TenantId = tenantId,
                     Name = groupName,
@@ -274,7 +273,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="groupName">Name of the group.</param>
         /// <param name="tenantId"></param>
         /// <returns>Task object of true or false.</returns>
-        private async Task<bool> IsUniqueGroup(Guid? groupId, string groupName, Guid tenantId)
+        private async Task<bool> IsUniqueGroup(Guid? groupId, string groupName, Guid? tenantId)
         {
             var groups = await _groupRepository.GetItemsAsync(g => g.Name == groupName && g.TenantId == tenantId && (groupId == null || groupId.Value == Guid.Empty || g.Id != groupId));
             return !groups.Any();
