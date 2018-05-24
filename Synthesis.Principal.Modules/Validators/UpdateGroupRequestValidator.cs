@@ -13,7 +13,6 @@ namespace Synthesis.PrincipalService.Validators
                 .NotEqual(Guid.Empty).WithMessage("The Group Id property must not be empty");
 
             RuleFor(request => request.TenantId)
-                .NotNull().WithMessage("The Tenant Id property must not be null")
                 .NotEqual(Guid.Empty).WithMessage("The Tenant Id property must not be empty");
 
             RuleFor(request => request.Name)
