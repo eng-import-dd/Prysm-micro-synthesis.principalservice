@@ -189,7 +189,7 @@
       <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta004\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.CopyProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta001\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta014\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
