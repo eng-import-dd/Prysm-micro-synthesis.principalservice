@@ -67,7 +67,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
         [Theory]
         [InlineData(GroupType.Basic, GroupNames.Basic)]
-        [InlineData(GroupType.Default, GroupNames.Default)]
         [InlineData(GroupType.TenantAdmin, GroupNames.TenantAdmin)]
         public async Task DefaultGroupsAreCreated(GroupType type, string groupName)
         {
