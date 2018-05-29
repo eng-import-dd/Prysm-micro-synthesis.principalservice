@@ -460,6 +460,10 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
             }
+            else
+            {
+                user.VerificationEmailSentAt = DateTime.UtcNow;
+            }
 
             return guestUser;
         }
