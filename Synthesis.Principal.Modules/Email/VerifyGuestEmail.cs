@@ -16,7 +16,7 @@ namespace Synthesis.PrincipalService.Email
             {
                 const string subject = "Almost there! Please verify your Prysm account.";
 
-                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/login?" +
+                var link = $"{ConfigurationManager.AppSettings.Get("WebClient.Url")}/#/login?" +
                     $"{(string.IsNullOrWhiteSpace(redirect) ? string.Empty : "r=" + redirect + "&")}" +
                     $"email={HttpUtility.UrlEncode(email)}&token={emailVerificationId}";
 
