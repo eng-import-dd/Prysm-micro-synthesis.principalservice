@@ -466,7 +466,7 @@ namespace Synthesis.PrincipalService.Controllers
             var createGuestUserResponse = new CreateGuestUserResponse
             {
                 User = guestUser,
-                IsEmailVerificationRequired = !model.IsIdpUser.GetValueOrDefault()
+                IsEmailVerificationRequired = model.EmailVerificationRequired
             };
 
             _eventService.Publish(EventNames.UserCreated, guestUser);
