@@ -397,7 +397,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<User> CreateGuestUserAsync(CreateUserRequest model)
+        public async Task<CreateGuestUserResponse> CreateGuestUserAsync(CreateUserRequest model)
         {
             // Trim up the names
             model.FirstName = model.FirstName?.Trim();
@@ -463,6 +463,12 @@ namespace Synthesis.PrincipalService.Controllers
                 throw;
             }
 
+            var createGuestUserResponse = new CreateGuestUserResponse
+            {
+                User = guestUser,
+                IsEmailVerificationRequired = !model.IsIdpUser.GetValueOrDefault()
+            };
+
             _eventService.Publish(EventNames.UserCreated, guestUser);
 
             // Send the verification email
@@ -472,7 +478,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
             }
 
-            return guestUser;
+            return createGuestUserResponse;
         }
 
         public async Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request)

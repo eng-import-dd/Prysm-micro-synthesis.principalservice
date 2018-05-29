@@ -1465,15 +1465,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             request.LastName = lastName;
 
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .Returns<User>(u =>
-                {
-                    return Task.FromResult(u);
-                });
+                .Returns<User>(Task.FromResult);
 
             var result = await _controller.CreateGuestUserAsync(request);
 
-            Assert.Equal(firstName.Trim(), result.FirstName);
-            Assert.Equal(lastName.Trim(), result.LastName);
+            Assert.Equal(firstName.Trim(), result.User.FirstName);
+            Assert.Equal(lastName.Trim(), result.User.LastName);
         }
 
         [Fact]
