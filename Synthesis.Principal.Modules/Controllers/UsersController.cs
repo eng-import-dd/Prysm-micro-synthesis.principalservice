@@ -452,7 +452,10 @@ namespace Synthesis.PrincipalService.Controllers
             _eventService.Publish(EventNames.UserCreated, guestUser);
 
             // Send the verification email
-            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
+            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName,
+                                                                                         model.Email,
+                                                                                         model.Redirect,
+                                                                                         guestUser.EmailVerificationId);
             if (!emailResult.IsSuccess())
             {
                 _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
@@ -470,7 +473,38 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect);
+            var user = await _userRepository.GetItemAsync(x => x.Email == request.Email);
+
+            if (user == null)
+            {
+                throw new NotFoundException($"No user found with the email: {request.Email}");
+            }
+
+            if (user.Id == null)
+            {
+                throw new Exception($"User with email {request.Email} has a null Id");
+            }
+
+            if (user.IsEmailVerified != null && (bool)user.IsEmailVerified)
+            {
+                throw new EmailAlreadyVerifiedException($"User with email: {request.Email} has already been verified");
+            }
+
+            if (user.VerificationEmailSentAt > DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)))
+            {
+                throw new EmailRecentlySentException($"Verification email has been sent to {request.Email} within the last minute");
+            }
+
+            var response = await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName,
+                                                                                      request.Email,
+                                                                                      request.Redirect,
+                                                                                      user.EmailVerificationId);
+            if (response.IsSuccess())
+            {
+                user.VerificationEmailSentAt = DateTime.UtcNow;
+
+                await _userRepository.UpdateItemAsync((Guid)user.Id, user);
+            }
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)

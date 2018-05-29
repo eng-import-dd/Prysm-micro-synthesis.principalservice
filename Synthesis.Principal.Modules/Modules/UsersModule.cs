@@ -366,6 +366,11 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Email not sent because it was sent too recently.", ex);
                 return Response.EmailRecentlySent(ex.Message);
             }
+            catch (NotFoundException ex)
+            {
+                Logger.Error("Email was not sent because the user could not be found.", ex);
+                return Response.NotFound(ex.Message);
+            }
             catch (Exception ex)
             {
                 Logger.Error("Failed to create user resource due to an error", ex);
