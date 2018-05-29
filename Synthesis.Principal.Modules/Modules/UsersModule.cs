@@ -45,7 +45,7 @@ namespace Synthesis.PrincipalService.Modules
                 .Description("Create a new GuestUser resource")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(CreateUserRequest.GuestUserExample())
-                .ResponseFormat(User.Example());
+                .ResponseFormat(CreateGuestUserResponse.Example());
 
             CreateRoute("SendGuestVerificationEmailAsync", HttpMethod.Post, Routing.SendVerificationEmail, SendGuestVerificationEmailAsync)
                 .Description("Send a verification email to a guest")
