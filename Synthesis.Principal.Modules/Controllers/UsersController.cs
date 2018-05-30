@@ -1517,7 +1517,7 @@ namespace Synthesis.PrincipalService.Controllers
                 return new VerifyUserEmailResponse { Result = true };
             }
 
-            if (user.EmailVerificationId == verifyRequest.VerificationId)
+            if (user.EmailVerificationId == verifyRequest.EmailVerificationId)
             {
                 user.IsEmailVerified = true;
                 user.EmailVerifiedAt = DateTime.UtcNow;

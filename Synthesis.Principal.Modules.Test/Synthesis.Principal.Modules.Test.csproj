@@ -183,7 +183,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta016\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta017\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
@@ -216,7 +216,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta037\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta042\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta026\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -320,10 +320,6 @@
     <Compile Include="Validators\UserNameValidatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\synthesis-principal-internalapi\Synthesis.Principal.InternalApi\Synthesis.Principal.InternalApi.csproj">
-      <Project>{D1219F07-AF2C-4F8A-9B6B-9BBCAA192415}</Project>
-      <Name>Synthesis.Principal.InternalApi</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj">
       <Project>{9b91b286-6a67-4f27-bcd0-206d74aa5efa}</Project>
       <Name>Synthesis.License.Manager</Name>
