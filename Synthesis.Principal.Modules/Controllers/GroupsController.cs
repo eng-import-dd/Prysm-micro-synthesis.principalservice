@@ -51,7 +51,6 @@ namespace Synthesis.PrincipalService.Controllers
         public async Task CreateBuiltInGroupsAsync(Guid tenantId)
         {
             await Task.WhenAll(
-                CreateBuiltInGroupAsync(tenantId, GroupType.Default, GroupNames.Default),
                 CreateBuiltInGroupAsync(tenantId, GroupType.Basic, GroupNames.Basic),
                 CreateBuiltInGroupAsync(tenantId, GroupType.TenantAdmin, GroupNames.TenantAdmin));
 
@@ -62,7 +61,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             try
             {
-                await CreateGroupAsync(new Group()
+                await CreateGroupAsync(new Group
                 {
                     TenantId = tenantId,
                     Name = groupName,
