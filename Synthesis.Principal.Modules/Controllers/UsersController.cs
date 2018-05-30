@@ -429,10 +429,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             // Create the user in the DB
             var guestUser = await _userRepository.CreateItemAsync(user);
-            if (guestUser.Id == null)
-            {
-                throw new ResourceException("User was incorrectly created with a null Id");
-            }
 
             try
             {
@@ -445,6 +441,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
             catch (Exception)
             {
+                // ReSharper disable once PossibleInvalidOperationException
                 await _userRepository.DeleteItemAsync((Guid)guestUser.Id);
                 throw;
             }
@@ -462,7 +459,9 @@ namespace Synthesis.PrincipalService.Controllers
             }
             else
             {
-                user.VerificationEmailSentAt = DateTime.UtcNow;
+                guestUser.VerificationEmailSentAt = DateTime.UtcNow;
+                // ReSharper disable once PossibleInvalidOperationException
+                await _userRepository.UpdateItemAsync((Guid)guestUser.Id, guestUser);
             }
 
             return guestUser;
@@ -484,11 +483,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"No user found with the email: {request.Email}");
             }
 
-            if (user.Id == null)
-            {
-                throw new Exception($"User with email {request.Email} has a null Id");
-            }
-
             if (user.IsEmailVerified != null && (bool)user.IsEmailVerified)
             {
                 throw new EmailAlreadyVerifiedException($"User with email: {request.Email} has already been verified");
@@ -507,6 +501,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 user.VerificationEmailSentAt = DateTime.UtcNow;
 
+                // ReSharper disable once PossibleInvalidOperationException
                 await _userRepository.UpdateItemAsync((Guid)user.Id, user);
             }
         }
