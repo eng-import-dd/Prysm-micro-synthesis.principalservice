@@ -22,6 +22,7 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Email;
+using Synthesis.PrincipalService.Enums;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
@@ -1386,9 +1387,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestCreatesUser()
         {
-            // TODO CU-597: This needs a fix. The repository function return shouldn't be necessary to mock.
-            // However, without the mock, the line _userRepository.CreateItemAsync(user) in CreateGuestUserAsync returned a null user.
-            // I don't understand why that behavior changed. Mocking function return so work can continue on CU-597.
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .Returns(Task.FromResult(User.GuestUserExample()));
 
@@ -1397,8 +1395,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.IsAny<User>()));
         }
 
-        [Fact]
-        public async Task CreateGuestSendsSetsPassword()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CreateGuestReturnsExpectedIsEmailVerificationRequired(bool emailVerificationRequired)
+        {
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .Returns(Task.FromResult(User.GuestUserExample()));
+
+            var requestModel = CreateUserRequest.GuestUserExample();
+            requestModel.EmailVerificationRequired = emailVerificationRequired;
+
+            var response = await _controller.CreateGuestUserAsync(requestModel);
+
+            Assert.Equal(response.IsEmailVerificationRequired, emailVerificationRequired);
+        }
+
+        [Fact] public async Task CreateGuestCallsSetPassword()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
