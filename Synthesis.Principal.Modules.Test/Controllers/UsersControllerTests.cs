@@ -1675,7 +1675,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     new User
                     {
                         Email = request.Email,
-                        EmailVerificationId = request.EmailVerificationId,
+                        EmailVerificationId = request.VerificationId,
                         Id = new Guid(),
                         IsEmailVerified = null
                     }
@@ -1689,7 +1689,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task VerifyEmailReturnsTrueVerifyUserEmailResponseIfRequestEmailVerificationIdMatches()
         {
             var request = VerifyUserEmailRequest.Example();
-            request.EmailVerificationId = new Guid();
+            request.VerificationId = new Guid();
 
             _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User>
@@ -1697,7 +1697,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     new User
                     {
                         Email = request.Email,
-                        EmailVerificationId = request.EmailVerificationId,
+                        EmailVerificationId = request.VerificationId,
                         Id = new Guid(),
                         IsEmailVerified = false
                     }
@@ -1711,12 +1711,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task VerifyEmailUpdatesIsEmailVerifiedAndEmailVerifiedAtProperties()
         {
             var request = VerifyUserEmailRequest.Example();
-            request.EmailVerificationId = new Guid();
+            request.VerificationId = new Guid();
 
             var user = new User
             {
                 Email = request.Email,
-                EmailVerificationId = request.EmailVerificationId,
+                EmailVerificationId = request.VerificationId,
                 Id = new Guid(),
                 IsEmailVerified = false
             };
@@ -1738,7 +1738,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task VerifyEmailReturnsFalseVerifyUserEmailResponseIfRequestEmailVerificationIdDoesNotMatch()
         {
             var request = VerifyUserEmailRequest.Example();
-            request.EmailVerificationId = new Guid();
+            request.VerificationId = new Guid();
 
             _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .ReturnsAsync(new List<User>
