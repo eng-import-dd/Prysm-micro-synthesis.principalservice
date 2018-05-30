@@ -1411,7 +1411,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.Equal(response.IsEmailVerificationRequired, emailVerificationRequired);
         }
 
-        [Fact] public async Task CreateGuestCallsSetPassword()
+        [Fact]
+        public async Task CreateGuestCallsSetPassword()
         {
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(User.GuestUserExample());
