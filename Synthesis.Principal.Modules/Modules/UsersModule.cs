@@ -153,6 +153,44 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(IdpUserRequest.Example())
                 .ResponseFormat(User.Example());
+
+            CreateRoute("VerifyEmail", HttpMethod.Post, Routing.VerifyEmail, VerifyEmailAsync)
+                .Description("Verifies the email of a newly created user")
+                .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
+                .RequestFormat(VerifyUserEmailRequest.Example())
+                .ResponseFormat(VerifyUserEmailResponse.Example());
+        }
+
+        private async Task<object> VerifyEmailAsync(dynamic args)
+        {
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            VerifyUserEmailRequest verifyRequest;
+
+            try
+            {
+                verifyRequest = this.Bind<VerifyUserEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to verify an email", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            try
+            {
+                return await _userController.VerifyEmailAsync(verifyRequest);
+            }
+            catch (NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.NotFoundUser);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("An error occured while attempting to verify the email.", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorVerifyEmail);
+            }
         }
 
         private async Task<object> LockUserAsync(dynamic input)
@@ -327,6 +365,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Email not sent because it was sent too recently.", ex);
                 return Response.EmailRecentlySent(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                Logger.Error("Email was not sent because the user could not be found.", ex);
+                return Response.NotFound(ex.Message);
             }
             catch (Exception ex)
             {

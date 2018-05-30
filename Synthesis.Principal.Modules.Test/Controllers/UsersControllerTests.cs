@@ -152,7 +152,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorFailsMock.Setup(m => m.Validate(It.IsAny<object>()))
                 .Returns(new ValidationResult { Errors = { new ValidationFailure(string.Empty, string.Empty) } });
 
-            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            _emailSendingMock.Setup(m => m.SendGuestVerificationEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Guid?>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             // validator mock
@@ -1430,7 +1430,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
 
-            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(example.FirstName, example.Email, example.Redirect));
+            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(example.FirstName, example.Email, example.Redirect, It.IsAny<Guid?>()));
         }
 
         [Fact]
@@ -1538,6 +1538,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         #region SendVerificationEmail
+
         [Fact]
         public async Task SendGuestVerificationEmailAsyncWithInvalidRequestThrowsValidationFailedException()
         {
@@ -1554,10 +1555,207 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             var request = GuestVerificationEmailRequest.Example();
 
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = request.FirstName,
+                        Email = request.Email,
+                        EmailVerificationId = Guid.NewGuid()
+                    }
+                });
+
             await _controller.SendGuestVerificationEmailAsync(request);
 
-            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect));
+            _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect, It.IsAny<Guid?>()));
         }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailThrowsEmailAlreadyVerifiedExceptionIfEmailAlreadyVerified()
+        {
+            var request = GuestVerificationEmailRequest.Example();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = request.FirstName,
+                        Email = request.Email,
+                        EmailVerificationId = Guid.NewGuid(),
+                        IsEmailVerified = true
+                    }
+                });
+
+            await Assert.ThrowsAsync<EmailAlreadyVerifiedException>(() => _controller.SendGuestVerificationEmailAsync(request));
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailThrowsEmailRecentlySentExceptionIfEmailRecentlySent()
+        {
+            var request = GuestVerificationEmailRequest.Example();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Id = Guid.NewGuid(),
+                        FirstName = request.FirstName,
+                        Email = request.Email,
+                        EmailVerificationId = Guid.NewGuid(),
+                        VerificationEmailSentAt = DateTime.UtcNow
+                    }
+                });
+
+            await Assert.ThrowsAsync<EmailRecentlySentException>(() => _controller.SendGuestVerificationEmailAsync(request));
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailThrowsNotFoundExceptionIfUserNotFound()
+        {
+            var request = GuestVerificationEmailRequest.Example();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>());
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.SendGuestVerificationEmailAsync(request));
+        }
+
+        [Fact]
+        public async Task SendGuestVerificationEmailUpdatesUserIfEmailIsSent()
+        {
+            var request = GuestVerificationEmailRequest.Example();
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = request.FirstName,
+                Email = request.Email,
+                EmailVerificationId = Guid.NewGuid()
+            };
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    user
+                });
+
+            var previousTime = DateTime.UtcNow;
+
+            await _controller.SendGuestVerificationEmailAsync(request);
+
+            _userRepositoryMock.Verify(x => x.UpdateItemAsync(It.Is<Guid>(y => y == user.Id), It.Is<User>(z => z.VerificationEmailSentAt > previousTime)));
+        }
+
+        #endregion
+
+        #region VerifyEmail
+
+        [Fact]
+        public async Task VerifyEmailThrowsNotFoundExceptionIfUserIsNotFound()
+        {
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>());
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.VerifyEmailAsync(VerifyUserEmailRequest.Example()));
+        }
+
+        [Fact]
+        public async Task VerifyEmailReturnsTrueVerifyUserEmailResponseIfIsEmailVerifiedIsNull()
+        {
+            var request = VerifyUserEmailRequest.Example();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Email = request.Email,
+                        EmailVerificationId = request.VerificationId,
+                        Id = new Guid(),
+                        IsEmailVerified = null
+                    }
+                });
+
+            var response = await _controller.VerifyEmailAsync(request);
+            Assert.True(response.Result);
+        }
+
+        [Fact]
+        public async Task VerifyEmailReturnsTrueVerifyUserEmailResponseIfRequestEmailVerificationIdMatches()
+        {
+            var request = VerifyUserEmailRequest.Example();
+            request.VerificationId = new Guid();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Email = request.Email,
+                        EmailVerificationId = request.VerificationId,
+                        Id = new Guid(),
+                        IsEmailVerified = false
+                    }
+                });
+
+            var response = await _controller.VerifyEmailAsync(request);
+            Assert.True(response.Result);
+        }
+
+        [Fact]
+        public async Task VerifyEmailUpdatesIsEmailVerifiedAndEmailVerifiedAtProperties()
+        {
+            var request = VerifyUserEmailRequest.Example();
+            request.VerificationId = new Guid();
+
+            var user = new User
+            {
+                Email = request.Email,
+                EmailVerificationId = request.VerificationId,
+                Id = new Guid(),
+                IsEmailVerified = false
+            };
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    user
+                });
+
+            await _controller.VerifyEmailAsync(request);
+
+            _userRepositoryMock.Verify(x => x.UpdateItemAsync(
+                It.Is<Guid>(y => y == user.Id),
+                It.Is<User>(z => z.IsEmailVerified == true && z.EmailVerifiedAt != null)));
+        }
+
+        [Fact]
+        public async Task VerifyEmailReturnsFalseVerifyUserEmailResponseIfRequestEmailVerificationIdDoesNotMatch()
+        {
+            var request = VerifyUserEmailRequest.Example();
+            request.VerificationId = new Guid();
+
+            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>
+                {
+                    new User
+                    {
+                        Email = request.Email,
+                        EmailVerificationId = Guid.NewGuid(),
+                        Id = new Guid(),
+                        IsEmailVerified = false
+                    }
+                });
+
+            var response = await _controller.VerifyEmailAsync(request);
+            Assert.False(response.Result);
+        }
+
 
         #endregion
     }
