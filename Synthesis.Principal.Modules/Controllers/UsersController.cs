@@ -443,10 +443,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             // Create the user in the DB
             var guestUser = await _userRepository.CreateItemAsync(user);
-            if (guestUser.Id == null)
-            {
-                throw new ResourceException("User was incorrectly created with a null Id");
-            }
 
             try
             {
@@ -459,6 +455,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
             catch (Exception)
             {
+                // ReSharper disable once PossibleInvalidOperationException
                 await _userRepository.DeleteItemAsync((Guid)guestUser.Id);
                 throw;
             }
@@ -472,10 +469,19 @@ namespace Synthesis.PrincipalService.Controllers
             _eventService.Publish(EventNames.UserCreated, guestUser);
 
             // Send the verification email
-            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName, model.Email, model.Redirect);
+            var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName,
+                                                                                         model.Email,
+                                                                                         model.Redirect,
+                                                                                         guestUser.EmailVerificationId);
             if (!emailResult.IsSuccess())
             {
                 _logger.Error($"Sending guest verification email failed. ReasonPhrase={emailResult.ReasonPhrase} ErrorResponse={emailResult.ErrorResponse}");
+            }
+            else
+            {
+                guestUser.VerificationEmailSentAt = DateTime.UtcNow;
+                // ReSharper disable once PossibleInvalidOperationException
+                await _userRepository.UpdateItemAsync((Guid)guestUser.Id, guestUser);
             }
 
             return createGuestUserResponse;
@@ -490,7 +496,34 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName, request.Email, request.Redirect);
+            var user = await _userRepository.GetItemAsync(x => x.Email == request.Email);
+
+            if (user == null)
+            {
+                throw new NotFoundException($"No user found with the email: {request.Email}");
+            }
+
+            if (user.IsEmailVerified != null && (bool)user.IsEmailVerified)
+            {
+                throw new EmailAlreadyVerifiedException($"User with email: {request.Email} has already been verified");
+            }
+
+            if (user.VerificationEmailSentAt > DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)))
+            {
+                throw new EmailRecentlySentException($"Verification email has been sent to {request.Email} within the last minute");
+            }
+
+            var response = await _emailSendingService.SendGuestVerificationEmailAsync(request.FirstName,
+                                                                                      request.Email,
+                                                                                      request.Redirect,
+                                                                                      user.EmailVerificationId);
+            if (response.IsSuccess())
+            {
+                user.VerificationEmailSentAt = DateTime.UtcNow;
+
+                // ReSharper disable once PossibleInvalidOperationException
+                await _userRepository.UpdateItemAsync((Guid)user.Id, user);
+            }
         }
 
         public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
@@ -1467,6 +1500,39 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 user.LastName = user.LastName.Trim();
             }
+        }
+
+        public async Task<VerifyUserEmailResponse> VerifyEmailAsync(VerifyUserEmailRequest verifyRequest)
+        {
+            var user = await _userRepository.GetItemAsync(x => x.Email == verifyRequest.Email);
+            if (user == null)
+            {
+                _logger.Error($"A User resource could not be found with email {verifyRequest.Email}");
+                throw new NotFoundException($"A User resource could not be found with email {verifyRequest.Email}");
+            }
+
+            if (user.Id == null)
+            {
+                _logger.Error($"User resource with email {verifyRequest.Email} has a null Id");
+                throw new Exception($"User resource with email {verifyRequest.Email} has a null Id");
+            }
+
+            if (user.IsEmailVerified == null)
+            {
+                return new VerifyUserEmailResponse { Result = true };
+            }
+
+            if (user.EmailVerificationId == verifyRequest.VerificationId)
+            {
+                user.IsEmailVerified = true;
+                user.EmailVerifiedAt = DateTime.UtcNow;
+
+                await _userRepository.UpdateItemAsync((Guid)user.Id, user);
+
+                return new VerifyUserEmailResponse{Result = true};
+            }
+
+            return new VerifyUserEmailResponse{Result = false};
         }
     }
 }
