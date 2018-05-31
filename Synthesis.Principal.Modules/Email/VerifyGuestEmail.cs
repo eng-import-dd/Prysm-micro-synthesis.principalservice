@@ -10,13 +10,13 @@ namespace Synthesis.PrincipalService.Email
 {
     public class VerifyGuestEmail
     {
-        public static SendEmailRequest BuildRequest(string firstName, string email, string redirect, string emailVerificationId)
+        public static SendEmailRequest BuildRequest(string firstName, string email, string redirect, string emailVerificationId, string webClientUrl)
         {
             try
             {
                 const string subject = "Almost there! Please verify your Prysm account.";
 
-                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/login?" +
+                var link = $"{webClientUrl}/#/login?" +
                     $"{(string.IsNullOrWhiteSpace(redirect) ? string.Empty : "r=" + redirect + "&")}" +
                     $"email={HttpUtility.UrlEncode(email)}&token={emailVerificationId}";
 
