@@ -257,6 +257,24 @@ namespace Synthesis.PrincipalService.Controllers
             return basicUserResponse;
         }
 
+        public async Task<int> GetUserCountAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions)
+        {
+            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the resource id while attempting to retrieve a User resource.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var userListResult = await GetTenantUsersFromDb(tenantId, userId, userFilteringOptions);
+            if (userListResult == null)
+            {
+                return 0;
+            }
+
+            return userListResult.TotalRecords;
+        }
+
         public async Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId)
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(currentUserId);
