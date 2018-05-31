@@ -356,6 +356,7 @@
     <Compile Include="Controllers\UserSearchBuilder.cs" />
     <Compile Include="Email\EmailSendingService.cs" />
     <Compile Include="Email\IEmailSendingService.cs" />
+    <Compile Include="Email\InviteGuestEmail.cs" />
     <Compile Include="Email\VerifyGuestEmail.cs" />
     <Compile Include="Enums\CreateGuestResponseCode.cs" />
     <Compile Include="EventHandlers\TenantCreated.cs" />
@@ -417,6 +418,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Email\Templates\GuestInvite.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Email\Templates\VerifyNewAccount.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

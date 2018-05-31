@@ -335,6 +335,51 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
+        private async Task<object> InviteGuestAsync(dynamic input)
+        {
+            GuestVerificationEmailRequest sendEmailRequest;
+            try
+            {
+                sendEmailRequest = this.Bind<GuestVerificationEmailRequest>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                await _userController.SendGuestVerificationEmailAsync(sendEmailRequest);
+
+                return Negotiate
+                    .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (EmailAlreadyVerifiedException ex)
+            {
+                Logger.Error("Email not sent because it is already been verified.", ex);
+                return Response.EmailAlreadyVerified(ex.Message);
+            }
+            catch (EmailRecentlySentException ex)
+            {
+                Logger.Error("Email not sent because it was sent too recently.", ex);
+                return Response.EmailRecentlySent(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to create user resource due to an error", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
+            }
+        }
+
         private async Task<object> GetUserByIdAsync(dynamic input)
         {
             await RequiresAccess()

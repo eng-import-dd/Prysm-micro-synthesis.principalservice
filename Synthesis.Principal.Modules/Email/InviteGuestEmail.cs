@@ -8,27 +8,27 @@ using Synthesis.PrincipalService.Exceptions;
 
 namespace Synthesis.PrincipalService.Email
 {
-    public class VerifyGuestEmail
+    public class InviteGuestEmail
     {
-        public static SendEmailRequest BuildRequest(string firstName, string email, string redirect, string emailVerificationId)
+        public static SendEmailRequest BuildRequest(string projectName, string projectCode, string guestEmail, string from)
         {
             try
             {
-                const string subject = "Almost there! Please verify your Prysm account.";
+                var subject = "Prysm Guest Invite: " + projectName;
+                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/guest?accesscode={projectCode}&email={HttpUtility.UrlEncode(guestEmail)}";
 
-                var link = $"{ConfigurationManager.AppSettings.Get("BaseWebClientUrl")}/#/login?" +
-                    $"{(string.IsNullOrWhiteSpace(redirect) ? string.Empty : "r=" + redirect + "&")}" +
-                    $"email={HttpUtility.UrlEncode(email)}&token={emailVerificationId}";
-
-                var verifyGuestTemplate = GetContent("Email/Templates/VerifyNewAccount.html");
-                verifyGuestTemplate = verifyGuestTemplate.Replace("{Link}", link);
-                verifyGuestTemplate = verifyGuestTemplate.Replace("{FirstName}", firstName);
+                var inviteGuestTemplate = GetContent("Email/Templates/GuestInvite.html");
+                inviteGuestTemplate = inviteGuestTemplate.Replace("{Link}", link);
+                inviteGuestTemplate = inviteGuestTemplate.Replace("{Name}", link);
+                inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectName}", projectName);
+                inviteGuestTemplate = inviteGuestTemplate.Replace("{ProjectCode}", projectCode.Insert(7, " ").Insert(3, " "));
 
                 return new SendEmailRequest
                 {
-                    To = new List<string> { email },
+                    To = new List<string> { guestEmail },
+                  //  From = from,
                     Subject = subject,
-                    Content = verifyGuestTemplate
+                    Content = inviteGuestTemplate
                 };
             }
             catch (Exception ex)
