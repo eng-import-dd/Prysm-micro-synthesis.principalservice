@@ -21,6 +21,8 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
 
+        Task<int> GetUserCountAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
+
         Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId);
 
         Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds);
