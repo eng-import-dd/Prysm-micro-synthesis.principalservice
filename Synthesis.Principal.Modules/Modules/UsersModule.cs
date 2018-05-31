@@ -67,8 +67,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUserNames", HttpMethod.Post, Routing.GetUserNames, GetUserNamesAsync)
                 .Description("Gets the first and last name for each of the supplied userids")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new List<Guid>() {Guid.Empty})
-                .ResponseFormat(new List<UserNames>() {UserNames.Example()});
+                .RequestFormat(new List<Guid>() { Guid.Empty })
+                .ResponseFormat(new List<UserNames>() { UserNames.Example() });
 
             CreateRoute("LockUser", HttpMethod.Post, Routing.LockUser, LockUserAsync)
                 .Description("Locks the respective user")
@@ -118,6 +118,11 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(UserFilteringOptions.Example())
                 .ResponseFormat(new PagingMetadata<BasicUser> { List = new List<BasicUser> { BasicUser.Example() } });
 
+            CreateRoute("GetUserCount", HttpMethod.Post, Routing.UserCount, GetUserCountAsync)
+                .Description("Retrieves a users basic details")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .RequestFormat(UserFilteringOptions.Example());
+
             CreateRoute("GetUserByIdBasic", HttpMethod.Get, Routing.UserByIdBasic, GetUserByIdBasicAsync)
                 .Description("Get a Principal resource by it's identifier.")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
@@ -138,11 +143,11 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .RequestFormat(UserFilteringOptions.Example())
                 .ResponseFormat(new PagingMetadata<User> { List = new List<User> { User.Example() } });
-            
+
             CreateRoute("DeleteUser", HttpMethod.Delete, Routing.UsersWithId, DeleteUserAsync)
                 .Description("Deletes a User resource.")
                 .StatusCodes(HttpStatusCode.NoContent, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError);
-            
+
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
@@ -450,6 +455,24 @@ namespace Synthesis.PrincipalService.Modules
             catch (Exception ex)
             {
                 Logger.Error("GetUsersBasic threw an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetUserCountAsync(dynamic input)
+        {
+            await RequiresAccess()
+                .ExecuteAsync(CancellationToken.None);
+
+            try
+            {
+                var userFilteringOptions = this.Bind<UserFilteringOptions>();
+                var count = await _userController.GetUserCountAsync(TenantId, PrincipalId, userFilteringOptions);
+                return count.ToString();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("GetUserCount threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
