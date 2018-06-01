@@ -272,7 +272,7 @@ namespace Synthesis.PrincipalService.Controllers
                 return 0;
             }
 
-            return userListResult.TotalRecords;
+            return userListResult.FilteredRecords;
         }
 
         public async Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId)
