@@ -350,10 +350,8 @@ namespace Synthesis.PrincipalService
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
 
-            builder.RegisterType<EmailApi>()
-                .WithParameter("serviceUrlSettingName", "Email.Url")
-                .As<IEmailApi>();
-            builder.RegisterType<EmailSendingService>().As<IEmailSendingService>().InstancePerRequest();
+            builder.RegisterType<EmailApi>().As<IEmailApi>();
+            builder.RegisterType<EmailSendingService>().As<IEmailSendingService>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)
