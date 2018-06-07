@@ -252,7 +252,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta007\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta045\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta046\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta033\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
