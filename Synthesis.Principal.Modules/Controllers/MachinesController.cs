@@ -70,6 +70,8 @@ namespace Synthesis.PrincipalService.Controllers
             machine.DateCreated = DateTime.UtcNow;
             machine.DateModified = DateTime.UtcNow;
             machine.Id = Guid.NewGuid();
+            machine.NormalizedLocation = machine.Location.ToUpperInvariant();
+            machine.MachineKey = machine.MachineKey.ToUpperInvariant();
 
             var result = await CreateMachineInDb(machine);
 
@@ -107,7 +109,8 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<Machine> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
         {
-            var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(machineKey));
+            var normalizedMachineKey = machineKey.ToUpperInvariant();
+            var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(normalizedMachineKey));
             var machine = result.FirstOrDefault();
             if (machine == null)
             {
@@ -137,6 +140,8 @@ namespace Synthesis.PrincipalService.Controllers
             try
             {
                 var machine = model;
+                machine.MachineKey = machine.MachineKey.ToUpperInvariant();
+                machine.NormalizedLocation = machine.Location.ToUpperInvariant();
                 return await UpdateMachineInDb(machine, tenantId, isServiceCall);
             }
             catch (DocumentNotFoundException ex)
@@ -222,6 +227,7 @@ namespace Synthesis.PrincipalService.Controllers
             existingMachine.SettingProfileId = machine.SettingProfileId;
             existingMachine.SynthesisVersion = machine.SynthesisVersion;
             existingMachine.LastOnline = machine.LastOnline;
+            existingMachine.NormalizedLocation = machine.NormalizedLocation;
 
             try
             {
@@ -322,7 +328,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> IsUniqueLocation(Machine machine)
         {
-            var tenantMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.Location == machine.Location && m.Id != machine.Id));
+            var tenantMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.NormalizedLocation == machine.NormalizedLocation && m.Id != machine.Id));
             return tenantMachines.Any() == false;
         }
 
