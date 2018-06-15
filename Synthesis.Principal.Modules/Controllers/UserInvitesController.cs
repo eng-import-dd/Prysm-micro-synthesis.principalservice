@@ -117,6 +117,10 @@ namespace Synthesis.PrincipalService.Controllers
         {
             //Filter any duplicate users
             List<UserInvite> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
+            if (!validUsers.Any())
+            {
+                return validUsers;
+            }
             var emailRequest = _mapper.Map<List<UserInvite>, List<UserEmailRequest>>(validUsers);
 
             //Mail newly created users
@@ -129,7 +133,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInvite>>(userEmailResponses);
             await UpdateUserInviteAsync(emailResponse);
-
             return validUsers;
         }
 
