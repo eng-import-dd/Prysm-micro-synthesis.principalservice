@@ -1,0 +1,61 @@
+﻿{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    {
+      "path": "/FirstName/?",
+      "indexes": [
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/LastName/?",
+      "indexes": [
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/Username/?",
+      "indexes": [
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        },
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/Email/?",
+      "indexes": [
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        },
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    }
+  ],
+  "excludedPaths": [
+    {
+      "path": "/"
+    }
+  ]
+}
