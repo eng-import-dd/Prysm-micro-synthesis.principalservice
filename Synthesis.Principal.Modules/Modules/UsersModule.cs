@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Permissions;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
@@ -25,6 +26,7 @@ namespace Synthesis.PrincipalService.Modules
     public sealed class UsersModule : SynthesisModule
     {
         private readonly IUsersController _userController;
+        private readonly IPolicyEvaluator _policyEvaluator;
 
         public UsersModule(
             IUsersController userController,
@@ -34,6 +36,7 @@ namespace Synthesis.PrincipalService.Modules
             : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _userController = userController;
+            _policyEvaluator = policyEvaluator;
 
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
                 .Description("Create a new EnterpriseUser or TrialUser resource")
@@ -217,7 +220,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.LockOrUnlockUserAsync(id, newUser.IsLocked);
+                var result = await _userController.LockOrUnlockUserAsync(id, TenantId, newUser.IsLocked);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -258,7 +261,7 @@ namespace Synthesis.PrincipalService.Modules
             {
                 createUserRequest.ReplaceNullOrEmptyTenantId(TenantId);
 
-                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId);
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(userResponse)
@@ -621,7 +624,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.UpdateUserAsync(userId, userModel);
+                return await _userController.UpdateUserAsync(userId, userModel, Context.CurrentUser);
             }
             catch (ValidationFailedException ex)
             {
@@ -713,7 +716,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType);
+                await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType, Context.CurrentUser);
 
                 return Negotiate
                     .WithStatusCode(HttpStatusCode.OK);
@@ -790,7 +793,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, PrincipalId);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, PrincipalId, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(result)

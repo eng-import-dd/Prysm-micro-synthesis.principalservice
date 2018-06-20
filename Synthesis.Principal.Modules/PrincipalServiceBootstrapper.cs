@@ -322,6 +322,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
             builder.RegisterType<GroupsController>().As<IGroupsController>();
+            builder.RegisterType<SuperAdminService>().As<ISuperAdminService>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
@@ -349,7 +350,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
-
+            
             builder.RegisterType<EmailApi>()
                 .WithParameter("serviceUrlSettingName", "Email.Url")
                 .As<IEmailApi>();
