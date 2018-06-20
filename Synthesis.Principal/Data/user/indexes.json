@@ -29,11 +29,6 @@
           "kind": "Range",
           "dataType": "String",
           "precision": -1
-        },
-        {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": -1
         }
       ]
     },
@@ -44,18 +39,24 @@
           "kind": "Range",
           "dataType": "String",
           "precision": -1
-        },
+        }
+      ]
+    },
+    {
+      "path": "/*",
+      "indexes": [
         {
           "kind": "Hash",
           "dataType": "String",
+          "precision": 3
+        },
+        {
+          "kind": "Range",
+          "dataType": "Number",
           "precision": -1
         }
       ]
     }
   ],
-  "excludedPaths": [
-    {
-      "path": "/"
-    }
-  ]
+  "excludedPaths": []
 }
