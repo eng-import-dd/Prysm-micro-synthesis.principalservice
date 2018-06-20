@@ -1,0 +1,41 @@
+﻿{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    {
+      "path": "/TenantId/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        }
+      ]
+    },
+    {
+      "path": "/MachineKey/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        }
+      ]
+    },
+    {
+      "path": "/NormalizedLocation/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        }
+      ]
+    }
+  ],
+  "excludedPaths": [
+    {
+      "path": "/"
+    }
+  ]
+}

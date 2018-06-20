@@ -1,0 +1,46 @@
+﻿{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    {
+      "path": "/Groups/[]/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        },
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/Email/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        }
+      ]
+    },
+    {
+      "path": "/Username/?",
+      "indexes": [
+        {
+          "kind": "Hash",
+          "dataType": "String",
+          "precision": 3
+        }
+      ]
+    }
+  ],
+  "excludedPaths": [
+    {
+      "path": "/"
+    }
+  ]
+}
