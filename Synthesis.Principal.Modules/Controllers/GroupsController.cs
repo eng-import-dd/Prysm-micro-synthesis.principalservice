@@ -107,7 +107,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Do not allow creation of a group with IsLocked set to true unless you are a superadmin
-            if (model.IsLocked && (currentUserId != Guid.Empty || !await _superAdminService.IsSuperAdminAsync(currentUserId)))
+            if (model.IsLocked && !isBuiltInGroup && (currentUserId != Guid.Empty || !await _superAdminService.IsSuperAdminAsync(currentUserId)))
             {
                 model.IsLocked = false;
             }

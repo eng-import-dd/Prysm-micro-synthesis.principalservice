@@ -72,13 +72,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [InlineData(GroupType.TenantAdmin, GroupNames.TenantAdmin)]
         public async Task DefaultGroupsAreCreated(GroupType type, string groupName)
         {
-            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
-                .Returns(Task.FromResult(new Group()));
+            _groupRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .ReturnsAsync(new Group());
 
             var tenantId = Guid.NewGuid();
             await _controller.CreateBuiltInGroupsAsync(tenantId);
 
-            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x => x.TenantId == tenantId && x.Name == groupName && x.IsLocked && x.Type == type)));
+            _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x =>
+                x.TenantId == tenantId && x.Name == groupName &&
+                x.IsLocked && x.Type == type)));
         }
 
         [Fact]
