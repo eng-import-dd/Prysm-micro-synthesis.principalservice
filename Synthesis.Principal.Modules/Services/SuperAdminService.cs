@@ -18,15 +18,14 @@ namespace Synthesis.PrincipalService.Services
 
         public async Task<bool> IsSuperAdminAsync(Guid userId)
         {
-            try
-            {
-                var user = await _userRepository.GetItemAsync(userId);
-                return user.Groups != null && user.Groups.Contains(GroupIds.SuperAdminGroupId);
-            }
-            catch (DocumentNotFoundException)
+            var user = await _userRepository.GetItemAsync(userId);
+
+            if (user?.Groups == null)
             {
                 return false;
             }
+
+            return user.Groups != null && user.Groups.Contains(GroupIds.SuperAdminGroupId);
         }
 
         public async Task<bool> UserIsLastSuperAdminAsync(Guid userId)

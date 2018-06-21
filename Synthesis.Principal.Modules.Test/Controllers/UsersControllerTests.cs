@@ -221,7 +221,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _userRepositoryMock
                 .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", Groups = new List<Guid>() });
 
             _licenseApiMock
                 .Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
@@ -243,10 +243,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
-            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+            _userRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<User>()))
                 .ReturnsAsync(new User());
 
-            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+            _userRepositoryMock
+                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
                 .ReturnsAsync(new User());
         }
 
@@ -1387,25 +1389,45 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             var userId = Guid.NewGuid();
             var groupId = Guid.NewGuid();
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .Returns(() =>
-                {
-                    var userList = new List<User>();
-                    for (var i = 0; i < 3; i++)
-                    {
-                        userList.Add(new User());
-                    }
 
-                    var items = userList;
-                    return Task.FromResult(items.AsEnumerable());
-                });
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new User { Groups = new List<Guid> { groupId } }));
-            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
-                .Returns(Task.FromResult(new User()));
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new User { Groups = new List<Guid> { groupId } });
+
+            _userRepositoryMock
+                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                .ReturnsAsync(new User());
 
             var result = await _controller.RemoveUserFromPermissionGroupAsync(userId, groupId, userId);
             Assert.True(result);
+        }
+
+        [Fact]
+        public async Task UserIsNotRemovedFromSuperAdminGroupIfCurrentUserIsNotASuperAdmin()
+        {
+                var userId = Guid.NewGuid();
+
+                await _controller.RemoveUserFromPermissionGroupAsync(userId, GroupIds.SuperAdminGroupId, userId);
+
+                _userRepositoryMock
+                    .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task InvalidOperationIsThrownIfFinalSuperAdminGroupIsRemoved()
+        {
+            var userId = Guid.NewGuid();
+
+            _superadminServiceMock
+                .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(true);
+
+            _userRepositoryMock
+                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>().AsEnumerable);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.RemoveUserFromPermissionGroupAsync(userId, GroupIds.SuperAdminGroupId, userId));
         }
 
         [Fact]
@@ -1425,10 +1447,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     var items = userList;
                     return Task.FromResult(items.AsEnumerable());
                 });
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ThrowsAsync(new DocumentNotFoundException());
-            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
-                .Returns(Task.FromResult(new User()));
 
             await Assert.ThrowsAsync<DocumentNotFoundException>(() => _controller.RemoveUserFromPermissionGroupAsync(userId, groupId, userId));
         }
