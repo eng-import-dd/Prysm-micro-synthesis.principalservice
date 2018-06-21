@@ -3,18 +3,13 @@
   "automatic": true,
   "includedPaths": [
     {
-      "path": "/TenantId/?",
+      "path": "/*",
       "indexes": [
         {
-          "kind": "Hash",
-          "dataType": "String",
-          "precision": 3
-        }
-      ]
-    },
-    {
-      "path": "/Email/?",
-      "indexes": [
+          "kind": "Range",
+          "dataType": "Number",
+          "precision": -1
+        },
         {
           "kind": "Hash",
           "dataType": "String",
@@ -23,9 +18,5 @@
       ]
     }
   ],
-  "excludedPaths": [
-    {
-      "path": "/"
-    }
-  ]
+  "excludedPaths": []
 }

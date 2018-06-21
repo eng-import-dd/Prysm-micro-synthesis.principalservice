@@ -3,13 +3,28 @@
   "automatic": true,
   "includedPaths": [
     {
-      "path": "/Groups/[]/?",
+      "path": "/FirstName/?",
       "indexes": [
         {
-          "kind": "Hash",
+          "kind": "Range",
           "dataType": "String",
-          "precision": 3
-        },
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/LastName/?",
+      "indexes": [
+        {
+          "kind": "Range",
+          "dataType": "String",
+          "precision": -1
+        }
+      ]
+    },
+    {
+      "path": "/Username/?",
+      "indexes": [
         {
           "kind": "Range",
           "dataType": "String",
@@ -21,26 +36,27 @@
       "path": "/Email/?",
       "indexes": [
         {
-          "kind": "Hash",
+          "kind": "Range",
           "dataType": "String",
-          "precision": 3
+          "precision": -1
         }
       ]
     },
     {
-      "path": "/Username/?",
+      "path": "/*",
       "indexes": [
         {
           "kind": "Hash",
           "dataType": "String",
           "precision": 3
+        },
+        {
+          "kind": "Range",
+          "dataType": "Number",
+          "precision": -1
         }
       ]
     }
   ],
-  "excludedPaths": [
-    {
-      "path": "/"
-    }
-  ]
+  "excludedPaths": []
 }
