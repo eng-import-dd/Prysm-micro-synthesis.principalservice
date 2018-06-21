@@ -1121,6 +1121,12 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
+            if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
+            {
+                _logger.Warning($"SuperAdmin group failed to create because the current user  {userId} is not a superadmin");
+                throw new InvalidOperationException($"User group {model.GroupId} does not exist");
+            }
+
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
             if (!result.IsSuccess())
             {
@@ -1132,12 +1138,6 @@ namespace Synthesis.PrincipalService.Controllers
             if (!userTenantIds.Contains(tenantId))
             {
                 throw new InvalidOperationException();
-            }
-
-            if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
-            {
-                _logger.Warning($"SuperAdmin group failed to create because the current user  {userId} is not a superadmin");
-                throw new ValidationFailedException(new List<ValidationFailure>() { new ValidationFailure(nameof(UserGroup.GroupId), $"User group {model.GroupId} does not exist") });
             }
 
             if (existingUser.Groups.Contains(model.GroupId))
@@ -1158,6 +1158,12 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            if (groupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
+            {
+                _logger.Error($"The list of superadmins was requested by a non superadmin {userId}");
+                throw new NotFoundException($"A User group resource could not be found for id {groupId}");
+            }
+
             var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
             if (!tenantIds.IsSuccess())
             {
@@ -1169,12 +1175,6 @@ namespace Synthesis.PrincipalService.Controllers
             if (result == null)
             {
                 _logger.Error($"A User group resource could not be found for id {groupId}");
-                throw new NotFoundException($"A User group resource could not be found for id {groupId}");
-            }
-
-            if (groupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
-            {
-                _logger.Error($"The list of superadmins was requested by a non superadmin {userId}");
                 throw new NotFoundException($"A User group resource could not be found for id {groupId}");
             }
 

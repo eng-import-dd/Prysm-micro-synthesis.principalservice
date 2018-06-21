@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using FluentValidation;
@@ -21,7 +22,10 @@ using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.Policy.Models;
 using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Permissions;
+using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Exceptions;
@@ -69,6 +73,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
         private readonly Guid _defaultGroupId = Guid.NewGuid();
         private readonly Guid _defaultTenantId = Guid.NewGuid();
+        private readonly User _defaultUser = new User
+        {
+            FirstName = "FirstName",
+            LastName = "LastName",
+            Email = "cmalyala@prysm.com",
+            IsLocked = false,
+            IsIdpUser = false,
+            LicenseType = LicenseType.UserLicense
+        };
+
         private readonly ClaimsPrincipal _defaultClaimsPrincipal = new ClaimsPrincipal();
 
         private List<User> _usersInSameProject;
@@ -185,6 +199,55 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(x => x.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
             _identityUserApiMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
+
+            _policyManagerMock
+                .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<PolicyDocument>
+                {
+                    new PolicyDocument
+                    {
+                        Permissions = new List<Permission>
+                        {
+                            new Permission
+                            {
+                                Expression = SynthesisPermission.CanManageLicenses.ToString(),
+                                Scope = PermissionScope.Allow,
+                                Type = PermissionType.Explicit
+                            }
+                        }
+                    }
+                }.AsEnumerable());
+
+
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock
+                .Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+
+            _tenantDomainApiMock
+                .Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
+
+            _tenantDomainApiMock
+                .Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "test.com" }));
+
+            _tenantApiMock
+                .Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+
+            _tenantApiMock
+                .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .ReturnsAsync(new User());
+
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+                .ReturnsAsync(new User());
         }
 
         [Fact]
@@ -300,22 +363,20 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             var email = "ch@asd.com";
             var tenantId = Guid.NewGuid();
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .Returns(() =>
-                {
-                    var userList = new List<User> { new User { Email = email, Id = Guid.NewGuid()} };
+            _userRepositoryMock
+                .Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(() => new List<User> { new User { Email = email, Id = Guid.NewGuid() } }.AsEnumerable());
 
-                    var items = userList;
-                    return Task.FromResult(items.AsEnumerable());
-                });
-
-            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+            _tenantDomainApiMock
+                .Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
 
-            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
+            _tenantDomainApiMock
+                .Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain { Domain = "asd.com" }));
 
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+            _tenantApiMock
+                .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid(), tenantId }.AsEnumerable()));
 
             var result = await _controller.CanPromoteUserAsync(email, tenantId);
@@ -376,7 +437,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     //TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
                     Groups = new List<Guid> { Guid.Parse("12bf0424-bd5e-4af0-affb-d48485ae7115") }
                 }));
-           
+
             var newUserGroupRequest = new UserGroup
             {
                 UserId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30"),
@@ -412,18 +473,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserGroupAsyncReturnsUserGroupIfSuccessful()
         {
-            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-                .Returns(Task.FromResult(new User()));
-
-            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
-                .Returns(Task.FromResult(new User()));
-
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new User
+                .ReturnsAsync(new User
                 {
-                    //TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
                     Groups = new List<Guid> { Guid.NewGuid() }
-                }));
+                });
 
             var newUserGroupRequest = new UserGroup
             {
@@ -442,12 +496,47 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.IsType<UserGroup>(result);
         }
 
+        [Fact]
+        public async Task CreateUserGroupThrowsInvalidOperationExceptionIfNonSuperAdminCreatesSuperAdminGroup()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new User
+                {
+                    Groups = new List<Guid> { Guid.NewGuid() }
+                });
+
+            _superadminServiceMock
+                .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(false);
+
+            var newUserGroupRequest = new UserGroup
+            {
+                UserId = Guid.NewGuid(),
+                GroupId = GroupIds.SuperAdminGroupId
+            };
+
+            _tenantApiMock
+                .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { _defaultTenantId }.AsEnumerable()));
+
+            _mockUserController
+                .Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()))
+                .Returns(Task.FromResult(new UserGroup()));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()));
+        }
+
         [Trait("User Group", "User Group Tests")]
         [Fact]
         public async Task CreateUserGroupAsyncReturnsValidationException()
         {
-            _mockUserController.Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _mockUserController
+                .Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new UserGroup()));
+
+            _userRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(default(User));
 
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()));
             Assert.Single(ex.Errors.ToList());
@@ -474,6 +563,76 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.NotNull(user);
             Assert.Equal(user.CreatedBy, createdBy);
             Assert.False(user.IsLocked);
+        }
+
+        [Fact]
+        public async Task NewUserIsAssignedDefaultLicenseTypeIfCurrentUserDoesNotHaveCanManageLicensePermissionAsync()
+        {
+            _policyManagerMock
+                .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<PolicyDocument>
+                {
+                    new PolicyDocument
+                    {
+                        Permissions = new List<Permission>()
+                    }
+                }.AsEnumerable());
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+                .ReturnsAsync((User u) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            var createUserRequest = CreateUserRequest.Example();
+            createUserRequest.LicenseType = LicenseType.UserLicense;
+            await _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal);
+
+            _userRepositoryMock.Verify(m => m.CreateItemAsync(It.Is<User>(u => u.LicenseType == LicenseType.Default)));
+        }
+
+        [Fact]
+        public async Task PromotedUserIsAssignedDefaultLicenseTypeIfCurrentUserDoesNotHaveCanManageLicensePermissionAsync()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
+
+            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "test.com"}));
+            _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
+            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+
+
+            _policyManagerMock
+                .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<PolicyDocument>
+                {
+                    new PolicyDocument
+                    {
+                        Permissions = new List<Permission>()
+                    }
+                }.AsEnumerable());
+
+            //_userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
+            //    .ReturnsAsync((User u) =>
+            //    {
+            //        u.Id = userId;
+            //        return u;
+            //    });
+
+            await _controller.PromoteGuestUserAsync(Guid.NewGuid(), _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
+
+            _licenseApiMock
+                .Verify(x => x.AssignUserLicenseAsync(It.Is<UserLicenseDto>(l => l.LicenseType == LicenseType.Default.ToString())));
         }
 
         [Fact]
@@ -920,6 +1079,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
+        public async Task GetUsersForGroupThrowsNotFoundExceptionIfNonSuperAdminTriesToGetSuperAdminUsers()
+        {
+            _superadminServiceMock
+                .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(false);
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserIdsByGroupIdAsync(GroupIds.SuperAdminGroupId, It.IsAny<Guid>(), It.IsAny<Guid>()));
+        }
+
+        [Trait("User Group", "User Group Tests")]
+        [Fact]
         public async Task GetUsersForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
         {
             var validGroupId = Guid.NewGuid();
@@ -1014,7 +1184,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task LockUserAsyncIfUserExist()
+        public async Task UserIsLockedIfUserExist()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new User());
@@ -1027,7 +1197,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task LockUserAsyncIfUserNotFound()
+        public async Task InvalidOperationIsThrownIfTheUserIsTheLastSuperAdmin()
+        {
+            _superadminServiceMock
+                .Setup(x => x.UserIsLastSuperAdminAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(true);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.LockOrUnlockUserAsync(Guid.NewGuid(), _defaultTenantId, true));
+        }
+
+        [Fact]
+        public async Task LockUserThrowsNotFoundIfUserNotFound()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(default(User));
@@ -1193,22 +1373,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestSuccssTestAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
-
-            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
-                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
-
-            _tenantDomainApiMock.Setup(m => m.GetTenantDomainIdsAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
-
-            _tenantDomainApiMock.Setup(m => m.GetTenantDomainByIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new TenantDomain{Domain = "test.com"}));
-            _tenantApiMock.Setup(m => m.AddUserToTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, true));
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
-
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
@@ -1322,6 +1486,49 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var result = await _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal);
             Assert.IsType<User>(result);
+        }
+
+        [Fact]
+        public async Task UpdateToUserUpdatesLicenseIfCurrentUserHasCanManageLicensePermission()
+        {
+            var newUser = new User { LicenseType = LicenseType.UserLicense };
+            var oldUser = new User { LicenseType = LicenseType.LegacyLicense };
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(oldUser);
+
+            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
+
+            _userRepositoryMock
+                .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => u.LicenseType == LicenseType.UserLicense)));
+        }
+
+        [Fact]
+        public async Task UpdateToUserUpdatesLicenseIsNotUpdatedIfCurrentUserDoesNotHaveCanManageLicensePermission()
+        {
+            var newUser = new User { LicenseType = LicenseType.UserLicense };
+            var oldUser = new User { LicenseType = LicenseType.LegacyLicense };
+
+            _policyManagerMock
+                .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<PolicyDocument>
+                {
+                    new PolicyDocument
+                    {
+                        Permissions = new List<Permission>
+                        {
+                            new Permission()
+                        }
+                    }
+                });
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(oldUser);
+
+            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
+
+            _userRepositoryMock
+                .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => u.LicenseType == LicenseType.LegacyLicense)));
         }
 
         [Fact]
