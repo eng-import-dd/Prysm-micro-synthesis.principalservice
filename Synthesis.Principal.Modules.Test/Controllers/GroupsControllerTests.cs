@@ -15,7 +15,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Validators;
+using Synthesis.PrincipalService.Services;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Controllers
@@ -52,6 +52,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _controller = new GroupsController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
                 _eventServiceMock.Object,
+                _superadminServiceMock.Object,
                 loggerFactoryMock.Object);
         }
 
@@ -59,6 +60,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IEventService> _eventServiceMock = new Mock<IEventService>();
         private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
         private readonly Mock<IValidatorLocator> _validatorLocatorMock = new Mock<IValidatorLocator>();
+        private readonly Mock<ISuperAdminService> _superadminServiceMock = new Mock<ISuperAdminService>();
         private readonly Mock<IRepository<Group>> _groupRepositoryMock = new Mock<IRepository<Group>>();
         private readonly Mock<IRepository<User>> _userRepositoryMock = new Mock<IRepository<User>>();
         private readonly Mock<IValidator> _validatorMock = new Mock<IValidator>();
