@@ -613,7 +613,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
-
             _policyManagerMock
                 .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PolicyDocument>
@@ -623,13 +622,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                         Permissions = new List<Permission>()
                     }
                 }.AsEnumerable());
-
-            //_userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>()))
-            //    .ReturnsAsync((User u) =>
-            //    {
-            //        u.Id = userId;
-            //        return u;
-            //    });
 
             await _controller.PromoteGuestUserAsync(Guid.NewGuid(), _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
 
