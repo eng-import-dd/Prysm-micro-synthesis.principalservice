@@ -350,7 +350,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
                 .SingleInstance()
                 .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
-            
+
             builder.RegisterType<EmailApi>()
                 .WithParameter("serviceUrlSettingName", "Email.Url")
                 .As<IEmailApi>();
