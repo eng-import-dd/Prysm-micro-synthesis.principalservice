@@ -28,13 +28,8 @@ namespace Synthesis.PrincipalService.Services
             return user.Groups != null && user.Groups.Contains(GroupIds.SuperAdminGroupId);
         }
 
-        public async Task<bool> UserIsLastSuperAdminAsync(Guid userId)
+        public async Task<bool> IsLastRemainingSuperAdminAsync(Guid userId)
         {
-            if (!await IsSuperAdminAsync(userId))
-            {
-                return false;
-            }
-
             var items = await _userRepository.GetItemsAsync(u =>
                 u.Id != userId &&
                 u.Groups != null && u.Groups.Contains(GroupIds.SuperAdminGroupId));

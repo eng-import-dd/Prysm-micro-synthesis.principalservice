@@ -1090,7 +1090,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (locked && await _superAdminService.UserIsLastSuperAdminAsync(userId))
+            if (locked && await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
             {
                 throw new InvalidOperationException("The final superadmin user cannot be locked");
             }

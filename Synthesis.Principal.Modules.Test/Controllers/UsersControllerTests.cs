@@ -1194,7 +1194,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task InvalidOperationIsThrownIfTheUserIsTheLastSuperAdmin()
         {
             _superadminServiceMock
-                .Setup(x => x.UserIsLastSuperAdminAsync(It.IsAny<Guid>()))
+                .Setup(x => x.IsLastRemainingSuperAdminAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(true);
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.LockOrUnlockUserAsync(Guid.NewGuid(), _defaultTenantId, true));
