@@ -1237,30 +1237,16 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             var groupIdValidationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
-            var countOfSuperAdmins = 0;
             if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id while attempting to remove the User from group.");
                 throw new ValidationFailedException(userIdValidationResult.Errors);
             }
 
-            if (!IsSuperAdmin(currentUserId))
-            {
-                return false;
-            }
-
             var user = await _userRepository.GetItemAsync(userId);
             if (user == null)
             {
                 throw new DocumentNotFoundException("User doesn't exist with userId: " + userId);
-            }
-
-            var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
-            countOfSuperAdmins += groupUsers.Count(u => IsSuperAdmin(u.Id ?? Guid.Empty) && !u.IsLocked);
-            if (countOfSuperAdmins <= 1)
-            {
-                _logger.Error("Cannot delete the last non locked super admin of this group.");
-                return false;
             }
 
             user.Groups.Remove(groupId);
@@ -1280,15 +1266,6 @@ namespace Synthesis.PrincipalService.Controllers
             var userIdList = userIds.ToList();
 
             return await _userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty));
-        }
-
-        // ReSharper disable once UnusedParameter.Local
-        private bool IsSuperAdmin(Guid userId)
-        {
-            //var userGroups = GetUserGroupsForUser(userId).Payload;
-            //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
-            //TODO: Put code here to check User Group - Charan, CU-577 added to address this
-            return true;
         }
 
         private async Task<UserGroup> CreateUserGroupInDb(UserGroup userGroup, User existingUser)
