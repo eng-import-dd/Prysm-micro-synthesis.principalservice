@@ -50,6 +50,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
+using Synthesis.PrincipalService.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.Serialization.Json;
 using Synthesis.TenantService.InternalApi.Api;
