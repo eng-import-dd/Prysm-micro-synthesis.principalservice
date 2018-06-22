@@ -42,7 +42,6 @@ using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
 using Synthesis.PolicyEvaluator.Autofac;
-using Synthesis.Serialization.Json;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Events;
@@ -51,8 +50,8 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
-using Synthesis.PrincipalService.Services;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.Serialization.Json;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.Tracking;
 using Synthesis.Tracking.ApplicationInsights;
@@ -192,23 +191,20 @@ namespace Synthesis.PrincipalService
                 .InstancePerRequest();
 
             // DocumentDB registration.
-            builder.RegisterType<DocumentDbIndexRegistrar>().As<IIndexRegistrar<DocumentDbContext>>().SingleInstance();
             builder.Register(c =>
             {
                 var settings = c.Resolve<IAppSettingsReader>();
-                var context = new DocumentDbContext
+                return new DocumentDbContext
                 {
                     AuthKey = settings.GetValue<string>("Principal.DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("Principal.DocumentDB.Endpoint"),
                     DatabaseName = settings.GetValue<string>("Principal.DocumentDB.DatabaseName")
                 };
-
-                var indexRegistrar = c.Resolve<IIndexRegistrar<DocumentDbContext>>();
-                indexRegistrar.RegisterDatabaseIndexes(context);
-
-                return context;
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
+            builder.RegisterType<DocumentFileReader>().As<IDocumentFileReader>();
+            builder.RegisterType<DefaultDocumentDbConfigurationProvider>().As<IDocumentDbConfigurationProvider>();
+            builder.RegisterInstance(Assembly.GetExecutingAssembly());
 
             builder.Register(c =>
             {
