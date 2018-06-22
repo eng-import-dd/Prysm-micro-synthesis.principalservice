@@ -30,11 +30,12 @@ namespace Synthesis.PrincipalService.Services
 
         public async Task<bool> IsLastRemainingSuperAdminAsync(Guid userId)
         {
-            var items = await _userRepository.GetItemsAsync(u =>
+            var result = !await _userRepository.CreateItemQuery().AnyAsync(u =>
                 u.Id != userId &&
-                u.Groups != null && u.Groups.Contains(GroupIds.SuperAdminGroupId));
+                u.Groups != null &&
+                u.Groups.Contains(GroupIds.SuperAdminGroupId));
 
-            return !items.Any();
+            return result;
         }
     }
 }

@@ -52,49 +52,5 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
 
             Assert.False(result);
         }
-
-        [Fact]
-        public async Task IsLastRemainingSuperAdminReturnsTrueIfThereAreNoOtherSuperAdmins()
-        {
-            _userRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User
-                {
-                    Groups = new List<Guid>()
-                    {
-                        GroupIds.SuperAdminGroupId
-                    }
-                });
-
-            _userRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .ReturnsAsync(new List<User>());
-
-            var result = await _target.IsLastRemainingSuperAdminAsync(Guid.NewGuid());
-
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task IsLastRemainingSuperAdminReturnsFalseIfThereIsAnotherSuperAdmin()
-        {
-            _userRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User
-                {
-                    Groups = new List<Guid>()
-                    {
-                        GroupIds.SuperAdminGroupId
-                    }
-                });
-
-            _userRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .ReturnsAsync(new List<User> { new User() });
-
-            var result = await _target.IsLastRemainingSuperAdminAsync(Guid.NewGuid());
-
-            Assert.False(result);
-        }
     }
 }
