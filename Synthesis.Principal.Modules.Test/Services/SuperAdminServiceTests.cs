@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
         }
 
         [Fact]
-        public async Task UserIsLastSuperAdminReturnsTrueIfThereAreNoOtherSuperAdmins()
+        public async Task IsLastRemainingSuperAdminReturnsTrueIfThereAreNoOtherSuperAdmins()
         {
             _userRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
@@ -76,7 +76,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
         }
 
         [Fact]
-        public async Task UserIsLastSuperAdminReturnsFalseIfThereIsAnotherSuperAdmin()
+        public async Task IsLastRemainingSuperAdminReturnsFalseIfThereIsAnotherSuperAdmin()
         {
             _userRepositoryMock
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
