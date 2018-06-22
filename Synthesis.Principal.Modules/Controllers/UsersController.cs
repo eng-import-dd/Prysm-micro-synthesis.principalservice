@@ -1224,10 +1224,7 @@ namespace Synthesis.PrincipalService.Controllers
                     return true;
                 }
 
-                var groupUsers = await _userRepository.GetItemsAsync(u => u.Groups.Contains(groupId));
-                var otherSuperAdminsExist = groupUsers.Any(u => !u.IsLocked && u.Id != userId);
-
-                if (!otherSuperAdminsExist)
+                if (!await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
                 {
                     throw new InvalidOperationException("The final unlocked user cannot be removed from the superadmin group");
                 }

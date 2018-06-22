@@ -32,6 +32,7 @@ namespace Synthesis.PrincipalService.Services
         {
             var result = !await _userRepository.CreateItemQuery().AnyAsync(u =>
                 u.Id != userId &&
+                u.IsLocked == false &&
                 u.Groups != null &&
                 u.Groups.Contains(GroupIds.SuperAdminGroupId));
 
