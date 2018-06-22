@@ -130,6 +130,36 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task OnlySuperAdminsCanCreateLockedGroups()
+        {
+            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .ReturnsAsync(new Group());
+
+            await _controller.CreateGroupAsync(new Group { IsLocked = true }, Guid.NewGuid(), Guid.NewGuid(), false);
+
+            _groupRepositoryMock
+                .Verify(x => x.CreateItemAsync(It.Is<Group>(g => g.IsLocked == false)));
+        }
+
+        [Fact]
+        public async Task LockedGroupIsNotDeletedIfUserIsNotSuperAdmin()
+        {
+            _superadminServiceMock
+                .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(false);
+
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new Group() { IsLocked = true });
+
+            var result = await _controller.DeleteGroupAsync(Guid.NewGuid(), Guid.NewGuid());
+
+            _groupRepositoryMock
+                .Verify(x => x.DeleteItemAsync(It.IsAny<Guid>()), Times.Never);
+
+            Assert.False(result);
+        }
+
+        [Fact]
         public async Task GetGroupByIdReturnsGroupIfExists()
         {
             _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))

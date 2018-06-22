@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, Guid tenantId, bool isLocked);
 
-        Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId);
+        Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid currentUserId);
 
         Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId);
 

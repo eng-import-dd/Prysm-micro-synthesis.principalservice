@@ -1100,7 +1100,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         #region User Group Methods
 
-        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
+        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid currentUserId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -1121,9 +1121,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
-            if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
+            if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(currentUserId))
             {
-                _logger.Warning($"SuperAdmin group failed to create because the current user  {userId} is not a superadmin");
+                _logger.Warning($"SuperAdmin group failed to create because the current user {currentUserId} is not a superadmin");
                 throw new InvalidOperationException($"User group {model.GroupId} does not exist");
             }
 
@@ -1149,7 +1149,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid currentUserId)
         {
             var validationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             if (!validationResult.IsValid)
@@ -1158,13 +1158,13 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            if (groupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(userId))
+            if (groupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(currentUserId))
             {
-                _logger.Error($"The list of superadmins was requested by a non superadmin {userId}");
+                _logger.Error($"The list of superadmins was requested by a non superadmin {currentUserId}");
                 throw new NotFoundException($"A User group resource could not be found for id {groupId}");
             }
 
-            var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(currentUserId);
             if (!tenantIds.IsSuccess())
             {
                 _logger.Error("Unable to fetch tenant ids");
