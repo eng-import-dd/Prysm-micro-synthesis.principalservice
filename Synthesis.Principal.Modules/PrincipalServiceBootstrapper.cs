@@ -314,10 +314,10 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UsersController>().As<IUsersController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "deploymentType",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType")));
-            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
-            builder.RegisterType<MachinesController>().As<IMachineController>();
-            builder.RegisterType<GroupsController>().As<IGroupsController>();
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType"))).SingleInstance();
+            builder.RegisterType<UserInvitesController>().As<IUserInvitesController>().SingleInstance();
+            builder.RegisterType<MachinesController>().As<IMachineController>().SingleInstance();
+            builder.RegisterType<GroupsController>().As<IGroupsController>().SingleInstance();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
