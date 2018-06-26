@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Castle.Core.Internal;
@@ -21,6 +22,8 @@ using Synthesis.License.Manager.Models;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PolicyEvaluator;
+using Synthesis.PolicyEvaluator.Permissions;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Exceptions;
@@ -28,6 +31,7 @@ using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
@@ -55,6 +59,8 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
         private readonly IEmailSendingService _emailSendingService;
+        private readonly IPolicyEvaluator _policyEvaluator;
+        private readonly ISuperAdminService _superAdminService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.
@@ -72,6 +78,8 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="queryRunner"></param>
         /// <param name="tenantApi">The tenant API.</param>
         /// <param name="searchBuilder"></param>
+        /// <param name="policyEvaluator"></param>
+        /// <param name="superAdminService"></param>
         /// <param name="identityUserApi"></param>
         public UsersController(
             IRepositoryFactory repositoryFactory,
@@ -87,6 +95,8 @@ namespace Synthesis.PrincipalService.Controllers
             IUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
             ITenantApi tenantApi,
+            IPolicyEvaluator policyEvaluator,
+            ISuperAdminService superAdminService,
             IIdentityUserApi identityUserApi)
         {
             _userRepository = repositoryFactory.CreateRepository<User>();
@@ -103,18 +113,23 @@ namespace Synthesis.PrincipalService.Controllers
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
             _identityUserApi = identityUserApi;
+            _policyEvaluator = policyEvaluator;
             _emailSendingService = emailSendingService;
+            _superAdminService = superAdminService;
         }
 
-        public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy)
+        public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy, ClaimsPrincipal principal)
         {
-            //TODO Check for CanManageUserLicenses permission if user.LicenseType != null, CU-577 added to address this
-
             var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            if (!await CanManageUserLicensesAsync(principal))
+            {
+                model.LicenseType = LicenseType.Default;
             }
 
             // Convert to non-null Guid. If had been null or empty, would fail validation before this point.
@@ -325,7 +340,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await GetTenantUsersFromDb(tenantId, currentUserId, userFilteringOptions);
         }
 
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel)
+        public async Task<User> UpdateUserAsync(Guid userId, User userModel, ClaimsPrincipal claimsPrincipal)
         {
             TrimNameOfUser(userModel);
             var errors = new List<ValidationFailure>();
@@ -350,9 +365,8 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
-            /* Only allow the user to modify the license type if they have permission.  If they do not have permission, ensure the license type has not changed. */
-            //TODO: For this GetGroupPermissionsForUser method should be implemented which is in collaboration service, CU-577 added to address this
-            return await UpdateUserInDb(userModel, userId);
+  
+            return await UpdateUserInDb(userModel, userId, claimsPrincipal);
         }
 
         public async Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId)
@@ -465,7 +479,7 @@ namespace Synthesis.PrincipalService.Controllers
             try
             {
                 // Set the password
-                var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = (Guid)guestUser.Id });
+                var setPasswordResponse = await _identityUserApi.SetPasswordAsync(new IdentityUser { Password = model.Password, UserId = guestUser.Id.GetValueOrDefault() });
                 if (!setPasswordResponse.IsSuccess())
                 {
                     throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
@@ -544,7 +558,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, bool autoPromote = false)
+        public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
 
@@ -586,15 +600,9 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new PromotionFailedException($"Failed to assign Guest User {userId} to tenant {tenantId}");
             }
 
-            if (!autoPromote && licenseType != LicenseType.Default)
+            if (!autoPromote && licenseType != LicenseType.Default && !await CanManageUserLicensesAsync(claimsPrincipal))
             {
-                //Todo Check if the user has CanManageUserLicenses permission, CU-577 added to address this
-                //var permissions = CollaborationService.GetGroupPermissionsForUser(UserId).Payload;
-                //if (permissions == null || !permissions.Contains(PermissionEnum.CanManageUserLicenses))
-                //{
-                //    // Don't allow user to pick the license type without the CanManageUserLicenses permission
-                //    licenseType = LicenseType.Default;
-                //}
+                licenseType = LicenseType.Default;
             }
 
             var assignLicenseResult = await _licenseApi.AssignUserLicenseAsync(new UserLicenseDto
@@ -619,7 +627,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
-        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy)
+        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy, ClaimsPrincipal claimsPrincipal)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -630,7 +638,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (model.UserId == null || model.UserId == Guid.Empty)
             {
-                return await AutoProvisionUserAsync(model, tenantId, createdBy);
+                return await AutoProvisionUserAsync(model, tenantId, createdBy, claimsPrincipal);
             }
 
             var userId = model.UserId.Value;
@@ -638,7 +646,7 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 try
                 {
-                    await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, true);
+                    await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, claimsPrincipal, true);
                     await SendWelcomeEmailAsync(model.EmailId, model.FirstName);
                 }
                 catch (Exception ex)
@@ -656,7 +664,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy)
+        private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy, ClaimsPrincipal claimsPrincipal)
         {
             var createUserRequest = new CreateUserRequest
             {
@@ -671,7 +679,7 @@ namespace Synthesis.PrincipalService.Controllers
                 UserType = UserType.Enterprise
             };
 
-            var result = await CreateUserAsync(createUserRequest, createddBy);
+            var result = await CreateUserAsync(createUserRequest, createddBy, claimsPrincipal);
             if (result != null && model.Groups != null)
             {
                 var groupResult = await UpdateIdpUserGroupsAsync(result.Id.GetValueOrDefault(), model);
@@ -688,8 +696,6 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<User> UpdateIdpUserGroupsAsync(Guid userId, IdpUserRequest model)
         {
             var currentGroupsResult = await _userRepository.GetItemAsync(userId);
-
-            //TODO: GetGroupsForAccount(Guid accountId) has some logic related "PermissionsForGroup" and "protectedPermissions" in DatabaseServices class, CU-577 added to address this
             var tenantGroupsResult = await _groupRepository.GetItemsAsync(g => g.TenantId == model.TenantId);
 
             var tenantGroups = tenantGroupsResult as IList<Group> ?? tenantGroupsResult.ToList();
@@ -930,7 +936,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<User> UpdateUserInDb(User user, Guid id)
+        private async Task<User> UpdateUserInDb(User user, Guid id, ClaimsPrincipal claimsPrincipal)
         {
             var existingUser = await _userRepository.GetItemAsync(id);
             if (existingUser == null)
@@ -948,6 +954,11 @@ namespace Synthesis.PrincipalService.Controllers
             existingUser.Email = user.Email?.ToLower();
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
+
+            if (user.LicenseType != existingUser.LicenseType && await CanManageUserLicensesAsync(claimsPrincipal))
+            {
+                existingUser.LicenseType = user.LicenseType;
+            }
 
             try
             {
@@ -1070,7 +1081,7 @@ namespace Synthesis.PrincipalService.Controllers
             return user;
         }
 
-        public async Task<bool> LockOrUnlockUserAsync(Guid userId, bool locked)
+        public async Task<bool> LockOrUnlockUserAsync(Guid userId, Guid tenantId, bool locked)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
@@ -1078,36 +1089,18 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Failed to validate the resource id while attempting to delete a User resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
-            //TODO: dependency on group implementation to get all the groupIds, CU-577 added to address this
-            #region  Get superadmin group ids
 
-            // if trying to lock a user we need to check if it is a superAdmin user
-            //if (isLocked && _collaborationService.IsSuperAdmin(userId))
-            //{
-            //    // Determine the number of non locked superAdmin users
-            //    var superAdminUserIds = _collaborationService.GetUserGroupsForGroup(_collaborationService.SuperAdminGroupId).Payload.Select(x => x.UserId);
-            //    var countOfNonLockedSuperAdmins = superAdminUserIds.Count(id => !_collaborationService.GetUserById(id).Payload.IsLocked ?? false);
+            if (locked && await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
+            {
+                throw new InvalidOperationException("The final superadmin user cannot be locked");
+            }
 
-            //    // reject locking the last non-locked superAdmin user
-            //    if (countOfNonLockedSuperAdmins <= 1)
-            //    {
-            //        return new ServiceResult<bool>
-            //        {
-            //            Payload = false,
-            //            Message = "LockUser: Failed to lock user", // Do not disclose that this user is in the superadmin group
-            //            ResultCode = ResultCode.Failed
-            //        };
-            //    }
-            //}
-
-
-            #endregion
-            return await UpdateLockUserDetailsInDb(userId, locked);
+            return await UpdateLockUserDetailsInDb(userId, tenantId, locked);
         }
 
         #region User Group Methods
 
-        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid userId)
+        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid currentUserId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -1128,6 +1121,12 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationErrors);
             }
 
+            if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(currentUserId))
+            {
+                _logger.Warning($"SuperAdmin group failed to create because the current user {currentUserId} is not a superadmin");
+                throw new InvalidOperationException($"User group {model.GroupId} does not exist");
+            }
+
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
             if (!result.IsSuccess())
             {
@@ -1141,42 +1140,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new InvalidOperationException();
             }
 
-            //TODO: User Permission check here - Yusuf, CU-577 added to address this
-            #region Legacy code - Will be removed after implementation
-            /*
-            * if (UserId == accessedUserId)
-                return ResultCode.Success;
-
-            if (accessedUserId == Guid.Empty || CollaborationService.GetUserById(accessedUserId).Payload == null)
-                return ResultCode.RecordNotFound;
-
-            * var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-
-               if (userPermissions.Value.Contains(requiredPermission) && AccountId == CollaborationService.GetAccountIdForUserId(accessedUserId).Payload)
-                return ResultCode.Success;
-
-               return ResultCode.Unauthorized;
-            */
-
-
-            #endregion
-
-            //TODO: Reject adds to the SuperAdmin group if requesting user isn't a SuperAdmin - Yusuf, CU-577 added to address this
-            #region Legacy code - Will be removed after implementation
-            /*
-             *
-             *  if (userGroupDto.GroupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
-                {
-                    return new ServiceResult<UserGroupDTO>
-                    {
-                        Payload = null,
-                        Message = "CreateUserGroup",
-                        ResultCode = ResultCode.RecordNotFound // Don't send unauth because we don't want to expose that the superadmin group exists, send NotFound instead
-                    };
-                }
-             */
-            #endregion
-
             if (existingUser.Groups.Contains(model.GroupId))
             {
                 validationErrors.Add(new ValidationFailure(nameof(existingUser), $"User group {model.GroupId} already exists for User id {model.UserId}"));
@@ -1186,7 +1149,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await CreateUserGroupInDb(model, existingUser);
         }
 
-        public async Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId)
+        public async Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid currentUserId)
         {
             var validationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
             if (!validationResult.IsValid)
@@ -1195,7 +1158,13 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            if (groupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(currentUserId))
+            {
+                _logger.Error($"The list of superadmins was requested by a non superadmin {currentUserId}");
+                throw new NotFoundException($"A User group resource could not be found for id {groupId}");
+            }
+
+            var tenantIds = await _tenantApi.GetTenantIdsForUserIdAsync(currentUserId);
             if (!tenantIds.IsSuccess())
             {
                 _logger.Error("Unable to fetch tenant ids");
@@ -1208,9 +1177,6 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error($"A User group resource could not be found for id {groupId}");
                 throw new NotFoundException($"A User group resource could not be found for id {groupId}");
             }
-
-            //TODO: Access Checks - Yusuf, CU-577 added to address this
-            //if (groupId == CollaborationService.SuperAdminGroupId && !CollaborationService.IsSuperAdmin(UserId))
 
             return result.Select(user => user.Id.GetValueOrDefault()).ToList();
         }
@@ -1237,6 +1203,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var userIdValidationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             var groupIdValidationResult = _validatorLocator.Validate<GroupIdValidator>(groupId);
+
             if (!userIdValidationResult.IsValid || !groupIdValidationResult.IsValid)
             {
                 _logger.Error("Failed to validate the resource id while attempting to remove the User from group.");
@@ -1246,7 +1213,21 @@ namespace Synthesis.PrincipalService.Controllers
             var user = await _userRepository.GetItemAsync(userId);
             if (user == null)
             {
-                throw new DocumentNotFoundException("User doesn't exist with userId: " + userId);
+                throw new DocumentNotFoundException($"User {userId} doesn't exist");
+            }
+
+            if (groupId == GroupIds.SuperAdminGroupId)
+            {
+                if (!await _superAdminService.IsSuperAdminAsync(currentUserId))
+                {
+                    _logger.Warning($"Non superadmin {currentUserId} attempted to remove user {userId} from the superadmin group");
+                    return true;
+                }
+
+                if (!await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
+                {
+                    throw new InvalidOperationException("The final unlocked user cannot be removed from the superadmin group");
+                }
             }
 
             user.Groups.Remove(groupId);
@@ -1316,11 +1297,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new InvalidOperationException();
             }
 
-            //TODO: Check valid access for user here - Yusuf, CU-577 added to address this
-            //Code required to check permission to make the API call IF the requesting user is not the requested user
-            // var userPermissions = new Lazy<List<PermissionEnum>>(InitUserPermissionsList);
-            //if (userPermissions.Value.Contains(requiredPermission)
-
             return await GetUserLicenseType(userId, tenantId);
         }
 
@@ -1328,9 +1304,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid tenantId)
         {
-            List<UserLicenseDto> userLicenses;
-
-            userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId)).LicenseAssignments;
+            var userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId)).LicenseAssignments;
 
             if (userLicenses == null || userLicenses.Count == 0)
             {
@@ -1340,7 +1314,7 @@ namespace Synthesis.PrincipalService.Controllers
             return (LicenseType)Enum.Parse(typeof(LicenseType), userLicenses[0].LicenseType);
         }
 
-        private async Task<bool> UpdateLockUserDetailsInDb(Guid id, bool isLocked)
+        private async Task<bool> UpdateLockUserDetailsInDb(Guid id, Guid tenantId, bool isLocked)
         {
             var validationErrors = new List<ValidationFailure>();
             var existingUser = await _userRepository.GetItemAsync(id);
@@ -1353,8 +1327,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var licenseRequestDto = new UserLicenseDto
                 {
                     UserId = id.ToString(),
-                    //AccountId = existingUser.TenantId.ToString()
-                    //Todo: check how the the accounts should be updated-CHARAN, CU-577 added to address this
+                    AccountId = tenantId.ToString()
                 };
 
                 if (isLocked)
@@ -1528,6 +1501,11 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             return new VerifyUserEmailResponse{Result = false};
+        }
+
+        private async Task<bool> CanManageUserLicensesAsync(ClaimsPrincipal principal)
+        {
+            return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageLicenses);
         }
     }
 }

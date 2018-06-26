@@ -50,6 +50,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Modules;
 using Synthesis.PrincipalService.Owin;
+using Synthesis.PrincipalService.Services;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.Serialization.Json;
 using Synthesis.TenantService.InternalApi.Api;
@@ -318,6 +319,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
             builder.RegisterType<GroupsController>().As<IGroupsController>();
+            builder.RegisterType<SuperAdminService>().As<ISuperAdminService>();
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
