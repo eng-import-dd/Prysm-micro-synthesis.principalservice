@@ -213,7 +213,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta019\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta020\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta007\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
@@ -240,7 +240,7 @@
       <HintPath>..\packages\Synthesis.Owin.Host.2.0.0\lib\net452\Synthesis.Owin.Host.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Owin.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta009\lib\net452\Synthesis.Owin.Security.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta010\lib\net452\Synthesis.Owin.Security.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
