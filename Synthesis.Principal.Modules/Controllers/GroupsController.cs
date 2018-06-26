@@ -12,6 +12,7 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -28,6 +29,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly IValidatorLocator _validatorLocator;
+        private readonly ISuperAdminService _superAdminService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GroupsController" /> class.
@@ -35,16 +37,19 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="repositoryFactory">The repository factory.</param>
         /// <param name="validatorLocator">The validator locator.</param>
         /// <param name="eventService">The event service.</param>
+        /// <param name="superAdminService"></param>
         /// <param name="loggerFactory">The logger factory.</param>
         public GroupsController(IRepositoryFactory repositoryFactory,
                                 IValidatorLocator validatorLocator,
                                 IEventService eventService,
+                                ISuperAdminService superAdminService,
                                 ILoggerFactory loggerFactory)
         {
             _groupRepository = repositoryFactory.CreateRepository<Group>();
             _userRepository = repositoryFactory.CreateRepository<User>();
             _validatorLocator = validatorLocator;
             _eventService = eventService;
+            _superAdminService = superAdminService;
             _logger = loggerFactory.GetLogger(this);
         }
 
@@ -102,7 +107,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             // Do not allow creation of a group with IsLocked set to true unless you are a superadmin
-            if (model.IsLocked && (currentUserId != Guid.Empty || !IsSuperAdmin(currentUserId)))
+            if (model.IsLocked && !isBuiltInGroup && (currentUserId != Guid.Empty || !await _superAdminService.IsSuperAdminAsync(currentUserId)))
             {
                 model.IsLocked = false;
             }
@@ -151,7 +156,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var groupToBeDeleted = await _groupRepository.GetItemAsync(groupId);
-            if (groupToBeDeleted.IsLocked && !IsSuperAdmin(userId))
+            if (groupToBeDeleted.IsLocked && ! await _superAdminService.IsSuperAdminAsync(userId))
             {
                 _logger.Error("Cannot delete a locked group since user is not SuperAdmin.");
                 return false;
@@ -186,7 +191,7 @@ namespace Synthesis.PrincipalService.Controllers
             var existingGroupInDb = await _groupRepository.GetItemAsync(model.Id.ToGuid());
             if (existingGroupInDb != null)
             {
-                if ((existingGroupInDb.IsLocked || model.IsLocked) && !IsSuperAdmin(userId))
+                if ((existingGroupInDb.IsLocked || model.IsLocked) && !await _superAdminService.IsSuperAdminAsync(userId))
                 {
                     _logger.Error("Invalid operation. Locked groups cannot be edited.");
                     throw new InvalidOperationException("You can not edit a locked group");
@@ -277,21 +282,6 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var groups = await _groupRepository.GetItemsAsync(g => g.Name == groupName && g.TenantId == tenantId && (groupId == null || groupId.Value == Guid.Empty || g.Id != groupId));
             return !groups.Any();
-        }
-
-        /// <summary>
-        /// Determines whether [is super admin] [the specified user identifier].
-        /// </summary>
-        /// <param name="userId">The user identifier.</param>
-        /// <returns>
-        ///   <c>true</c> if [is super admin] [the specified user identifier]; otherwise, <c>false</c>.
-        /// </returns>
-        private bool IsSuperAdmin(Guid userId)
-        {
-            //var userGroups = GetUserGroupsForUser(userId).Payload;
-            //return userGroups.Any(x => x.GroupId.Equals(SuperAdminGroupId));
-            //TODO: Put code here to check User Group here - Yusuf, CU-577 added to address this
-            return true;
         }
     }
 }

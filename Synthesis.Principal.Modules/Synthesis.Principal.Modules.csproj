@@ -342,6 +342,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants\ErrorMessages.cs" />
+    <Compile Include="Constants\GroupIds.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Controllers\CloudShim.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
@@ -354,8 +355,10 @@
     <Compile Include="Controllers\Interfaces\IUserInvitesController.cs" />
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
     <Compile Include="Controllers\IQueryRunner.cs" />
+    <Compile Include="Services\ISuperAdminService.cs" />
     <Compile Include="Controllers\IUserSearchBuilder.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
+    <Compile Include="Services\SuperAdminService.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
     <Compile Include="Controllers\UserQueryRunner.cs" />
     <Compile Include="Controllers\UsersController.cs" />
