@@ -314,7 +314,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UsersController>().As<IUsersController>()
                 .WithParameter(new ResolvedParameter(
                     (p, c) => p.Name == "deploymentType",
-                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType")));
+                    (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType"))).SingleInstance();
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
             builder.RegisterType<MachinesController>().As<IMachineController>();
             builder.RegisterType<GroupsController>().As<IGroupsController>();
