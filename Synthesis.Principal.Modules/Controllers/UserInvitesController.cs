@@ -8,10 +8,10 @@ using FluentValidation;
 using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Models;
-using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
 
@@ -27,7 +27,6 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly ITenantApi _tenantApi;
         private readonly IEmailApi _emailApi;
         private readonly IValidatorLocator _validatorLocator;
-        private readonly ITenantDomainApi _tenantDomainApi;
 
         public UserInvitesController(
             IRepositoryFactory repositoryFactory,
@@ -35,7 +34,6 @@ namespace Synthesis.PrincipalService.Controllers
             IMapper mapper,
             IValidatorLocator validatorLocator,
             ITenantApi tenantApi,
-            ITenantDomainApi tenantDomainApi,
             IEmailApi emailApi)
         {
             _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
@@ -44,7 +42,6 @@ namespace Synthesis.PrincipalService.Controllers
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
             _tenantApi = tenantApi;
-            _tenantDomainApi = tenantDomainApi;
             _emailApi = emailApi;
             _validatorLocator = validatorLocator;
         }
@@ -55,10 +52,17 @@ namespace Synthesis.PrincipalService.Controllers
             var validUsers = new List<UserInvite>();
             var inValidDomainUsers = new List<UserInvite>();
             var inValidEmailFormatUsers = new List<UserInvite>();
-            var validTenantDomains = await CommonApiUtility.GetTenantDomains(_tenantDomainApi, tenantId);
+
+            var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
+            if (!tenantDomainsResponse.IsSuccess())
+            {
+                throw new Exception($"Unable to retrieve tenant domains: {tenantDomainsResponse.ReasonPhrase}");
+            }
+
+            var validTenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
             if (!validTenantDomains.Any())
             {
-                throw new Exception("Couldn't fetch tenant domains");
+                throw new Exception("No tenant domains exist");
             }
 
             var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();

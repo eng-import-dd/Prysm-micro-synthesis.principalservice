@@ -32,7 +32,6 @@ using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Services;
-using Synthesis.PrincipalService.Utilities;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
 
@@ -53,7 +52,6 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IEmailApi _emailApi;
         private readonly IMapper _mapper;
         private readonly string _deploymentType;
-        private readonly ITenantDomainApi _tenantDomainApi;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
         private readonly IUserSearchBuilder _searchBuilder;
@@ -74,7 +72,6 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="emailSendingService">The email sending service.</param>
         /// <param name="mapper">The mapper.</param>
         /// <param name="deploymentType">Type of the deployment.</param>
-        /// <param name="tenantDomainApi">The tenant domain API.</param>
         /// <param name="queryRunner"></param>
         /// <param name="tenantApi">The tenant API.</param>
         /// <param name="searchBuilder"></param>
@@ -91,7 +88,6 @@ namespace Synthesis.PrincipalService.Controllers
             IEmailSendingService emailSendingService,
             IMapper mapper,
             string deploymentType,
-            ITenantDomainApi tenantDomainApi,
             IUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
             ITenantApi tenantApi,
@@ -108,7 +104,6 @@ namespace Synthesis.PrincipalService.Controllers
             _emailApi = emailApi;
             _mapper = mapper;
             _deploymentType = deploymentType;
-            _tenantDomainApi = tenantDomainApi;
             _searchBuilder = searchBuilder;
             _queryRunner = queryRunner;
             _tenantApi = tenantApi;
@@ -776,9 +771,15 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var domain = user.Email.Substring(user.Email.IndexOf('@') + 1);
-            var tenantEmailDomains = await CommonApiUtility.GetTenantDomains(_tenantDomainApi, tenantId);
+            var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
+            if (!tenantDomainsResponse.IsSuccess())
+            {
+                return CanPromoteUserResultCode.PromotionNotPossible;
+            }
 
-            return tenantEmailDomains.Contains(domain) ? CanPromoteUserResultCode.UserCanBePromoted : CanPromoteUserResultCode.PromotionNotPossible;
+            return tenantDomainsResponse.Payload.Any(d => d.Domain.Equals(domain, StringComparison.OrdinalIgnoreCase))
+                ? CanPromoteUserResultCode.UserCanBePromoted
+                : CanPromoteUserResultCode.PromotionNotPossible;
         }
 
         private async Task<CanPromoteUserResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
@@ -823,10 +824,12 @@ namespace Synthesis.PrincipalService.Controllers
                 criteria.Add(u => !userids.Contains(u.Id.Value));
             }
 
-            var tenantemailDomain = await CommonApiUtility.GetTenantDomains(_tenantDomainApi, tenantId);
-
-
-            criteria.Add(u => tenantemailDomain.Contains(u.EmailDomain));
+            var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
+            if (tenantDomainsResponse.IsSuccess() && tenantDomainsResponse.Payload.Any())
+            {
+                var tenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
+                criteria.Add(u => tenantDomains.Contains(u.EmailDomain));
+            }
 
             if (!string.IsNullOrEmpty(userFilteringOptions.SearchValue))
             {
@@ -837,6 +840,7 @@ namespace Synthesis.PrincipalService.Controllers
                     x != null && x.Email.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()) ||
                     x != null && x.Username.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()));
             }
+
             if (string.IsNullOrWhiteSpace(userFilteringOptions.SortColumn))
             {
                 orderBy = u => u.FirstName;
@@ -867,7 +871,7 @@ namespace Synthesis.PrincipalService.Controllers
                 }
             }
 
-            var queryparams = new OrderedQueryParameters<User, string>()
+            var queryparams = new OrderedQueryParameters<User, string>
             {
                 Criteria = criteria,
                 OrderBy = orderBy,

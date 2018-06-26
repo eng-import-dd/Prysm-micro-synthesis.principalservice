@@ -323,7 +323,6 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
-            builder.RegisterType<TenantDomainApi>().As<ITenantDomainApi>();
             builder.RegisterType<ProjectApi>().As<IProjectApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
