@@ -481,7 +481,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateUserGroupThrowsInvalidOperationExceptionIfNonSuperAdminCreatesSuperAdminGroup()
+        public async Task CreateUserGroupThrowsValidationErrorIfNonSuperAdminCreatesSuperAdminGroup()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new User
@@ -507,7 +507,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()))
                 .Returns(Task.FromResult(new UserGroup()));
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()));
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -1174,7 +1174,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.IsLastRemainingSuperAdminAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(true);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.LockOrUnlockUserAsync(Guid.NewGuid(), _defaultTenantId, true));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.LockOrUnlockUserAsync(Guid.NewGuid(), _defaultTenantId, true));
         }
 
         [Fact]
@@ -1389,11 +1389,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(true);
 
-            _userRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
-                .ReturnsAsync(new List<User>().AsEnumerable);
+            _superadminServiceMock.Setup(x => x.IsLastRemainingSuperAdminAsync(It.IsAny<Guid>())).ReturnsAsync(true);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.RemoveUserFromPermissionGroupAsync(userId, GroupIds.SuperAdminGroupId, userId));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.RemoveUserFromPermissionGroupAsync(userId, GroupIds.SuperAdminGroupId, userId));
         }
 
         [Fact]

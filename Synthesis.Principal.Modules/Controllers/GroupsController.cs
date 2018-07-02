@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -194,7 +195,7 @@ namespace Synthesis.PrincipalService.Controllers
                 if ((existingGroupInDb.IsLocked || model.IsLocked) && !await _superAdminService.IsSuperAdminAsync(userId))
                 {
                     _logger.Error("Invalid operation. Locked groups cannot be edited.");
-                    throw new InvalidOperationException("You can not edit a locked group");
+                    throw new ValidationFailedException(new[] { new ValidationFailure("IsLocked", "You can not edit a locked group") });
                 }
             }
             else
