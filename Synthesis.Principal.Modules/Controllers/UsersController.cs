@@ -1096,7 +1096,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (locked && await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
             {
-                throw new InvalidOperationException("The final superadmin user cannot be locked");
+                throw new ValidationFailedException(new[] { new ValidationFailure("IsLocked", "The final superadmin user cannot be locked") });
             }
 
             return await UpdateLockUserDetailsInDb(userId, tenantId, locked);
@@ -1128,7 +1128,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (model.GroupId == GroupIds.SuperAdminGroupId && !await _superAdminService.IsSuperAdminAsync(currentUserId))
             {
                 _logger.Warning($"SuperAdmin group failed to create because the current user {currentUserId} is not a superadmin");
-                throw new InvalidOperationException($"User group {model.GroupId} does not exist");
+                throw new ValidationFailedException(new[] { new ValidationFailure("GroupId", $"User group {model.GroupId} does not exist") });
             }
 
             var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
@@ -1228,9 +1228,9 @@ namespace Synthesis.PrincipalService.Controllers
                     return true;
                 }
 
-                if (!await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
+                if (await _superAdminService.IsLastRemainingSuperAdminAsync(userId))
                 {
-                    throw new InvalidOperationException("The final unlocked user cannot be removed from the superadmin group");
+                    throw new ValidationFailedException(new[] { new ValidationFailure("UserId", "The final unlocked user cannot be removed from the superadmin group") });
                 }
             }
 
