@@ -11,7 +11,7 @@ namespace Synthesis.PrincipalService.Events
         public EventSubscriber(IEventHandlerLocator eventHandlerLocator)
         {
             eventHandlerLocator
-                .SubscribeEventHandler<TenantCreatedHandler, Tenant>(ServiceInformation.ServiceName, EventNames.TenantCreated);
+                .SubscribeAsyncEventHandler<TenantCreatedHandler, Tenant>(ServiceInformation.ServiceName, EventNames.TenantCreated);
         }
     }
 }
