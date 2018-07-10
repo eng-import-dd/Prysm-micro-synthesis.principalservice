@@ -204,7 +204,7 @@
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta015\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta021\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta034\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta005\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
