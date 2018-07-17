@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Synthesis.EventBus;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.Controllers;
@@ -7,7 +8,7 @@ using Synthesis.TenantService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.EventHandlers
 {
-    public class TenantCreatedHandler : IEventHandler<Tenant>
+    public class TenantCreatedHandler : IAsyncEventHandler<Tenant>
     {
         private readonly ILogger _logger;
         private readonly IGroupsController _policyChangesController;
@@ -18,16 +19,9 @@ namespace Synthesis.PrincipalService.EventHandlers
             _policyChangesController = policyChangesController;
         }
 
-        public async void HandleEvent(Tenant tenant)
+        public async Task HandleEventAsync(Tenant tenant)
         {
-            try
-            {
-                await _policyChangesController.CreateBuiltInGroupsAsync(tenant.Id.GetValueOrDefault());
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"BuiltIn groups were not created for tenant {tenant.Id}", ex);
-            }
+           await _policyChangesController.CreateBuiltInGroupsAsync(tenant.Id.GetValueOrDefault());
         }
     }
 }

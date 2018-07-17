@@ -67,6 +67,13 @@ namespace Synthesis.PrincipalService.Controllers
         {
             try
             {
+                var existingGroups = await _groupRepository.GetItemsAsync(g => g.TenantId == tenantId && g.Type == type);
+                if (existingGroups.Any())
+                {
+                    //The group already exists
+                    return;
+                }
+
                 await CreateGroupAsync(new Group
                 {
                     TenantId = tenantId,
