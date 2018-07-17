@@ -204,10 +204,10 @@
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta016\lib\net452\Synthesis.EventBus.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus.Kafka, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta023\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.1.0.1-beta035\lib\net452\Synthesis.EventBus.Kafka.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta006\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
+      <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta007\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
@@ -255,7 +255,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta048\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta040\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta041\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.5\lib\net452\Synthesis.Serialization.dll</HintPath>
