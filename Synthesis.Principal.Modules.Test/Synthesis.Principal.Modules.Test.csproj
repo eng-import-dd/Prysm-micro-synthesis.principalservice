@@ -157,8 +157,8 @@
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta013\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Cache, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Cache.2.0.0\lib\net452\Synthesis.Cache.dll</HintPath>
+    <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Cache.2.1.0-beta002\lib\net452\Synthesis.Cache.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
