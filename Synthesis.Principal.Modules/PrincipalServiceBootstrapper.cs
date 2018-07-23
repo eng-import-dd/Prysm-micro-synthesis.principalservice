@@ -314,23 +314,6 @@ namespace Synthesis.PrincipalService
             .As<IRequestHeaders>()
             .InstancePerLifetimeScope();
 
-            // IRequestHeaders for ProjectGuestContext
-            builder.Register(c =>
-            {
-                var owinContext = c.ResolveOptional<IOwinContext>();
-                if (owinContext == null)
-                {
-                    return new RequestHeaders(Enumerable.Empty<KeyValuePair<string, IEnumerable<string>>>());
-                }
-
-                var headers = owinContext.Request.Headers
-                    .Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Key, h.Value.AsEnumerable()));
-
-                return new RequestHeaders(headers);
-            })
-            .As<IRequestHeaders>()
-            .InstancePerLifetimeScope();
-
             return builder.Build();
         }
 
