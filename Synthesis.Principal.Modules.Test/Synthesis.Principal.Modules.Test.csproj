@@ -219,7 +219,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta048\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta041\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta042\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.6\lib\net452\Synthesis.Serialization.dll</HintPath>
