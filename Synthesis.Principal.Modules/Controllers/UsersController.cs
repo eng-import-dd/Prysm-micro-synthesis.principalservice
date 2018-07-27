@@ -170,7 +170,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (model.UserType == UserType.Enterprise)
             {
-                await AssignUserLicense(result, newUser.LicenseType, tenantId);
+                await AssignUserLicense(result, newUser.LicenseType, tenantId, true);
             }
 
             var response = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)result.Id);
@@ -959,9 +959,12 @@ namespace Synthesis.PrincipalService.Controllers
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
-            if (user.LicenseType != existingUser.LicenseType && await CanManageUserLicensesAsync(claimsPrincipal))
+            var tenantId = claimsPrincipal.GetTenantId();
+            var userLicense = await GetLicenseTypeForUserAsync(id, claimsPrincipal.GetTenantId());
+
+            if (user.LicenseType != userLicense && await CanManageUserLicensesAsync(claimsPrincipal))
             {
-                existingUser.LicenseType = user.LicenseType;
+                await AssignUserLicense(user, user.LicenseType, tenantId);
             }
 
             try
@@ -977,7 +980,7 @@ namespace Synthesis.PrincipalService.Controllers
             return existingUser;
         }
 
-        private async Task AssignUserLicense(User user, LicenseType? licenseType, Guid tenantId)
+        private async Task AssignUserLicense(User user, LicenseType? licenseType, Guid tenantId, bool sendWelcomeEmail = false)
         {
             if (user.Id == null || user.Id == Guid.Empty)
             {
@@ -999,9 +1002,8 @@ namespace Synthesis.PrincipalService.Controllers
                 /* If the user is successfully created assign the license. */
                 var assignedLicenseServiceResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
 
-                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
+                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success && sendWelcomeEmail)
                 {
-
                     await SendWelcomeEmailAsync(user.Email, user.FirstName);
                     return;
                 }
@@ -1308,7 +1310,8 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid tenantId)
         {
-            var userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId)).LicenseAssignments;
+            var response = await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId);
+            var userLicenses = response.LicenseAssignments;
 
             if (userLicenses == null || userLicenses.Count == 0)
             {
