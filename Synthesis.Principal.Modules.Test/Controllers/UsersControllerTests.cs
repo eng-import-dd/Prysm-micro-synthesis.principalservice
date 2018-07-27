@@ -222,6 +222,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", Groups = new List<Guid>() });
 
             _licenseApiMock
+                .Setup(m => m.GetUserLicenseDetailsAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new UserLicenseResponse {
+                    ResultCode = UserLicenseResponseResultCode.Success,
+                    LicenseAssignments = new List<UserLicenseDto>() { new UserLicenseDto { UserId = Guid.Empty.ToString(), LicenseType = "UserLicense" } }
+                });
+
+            _licenseApiMock
                 .Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
 
@@ -231,7 +238,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _tenantApiMock
                 .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>(){ Guid.Empty }).AsEnumerable()));
+            _tenantApiMock
+                .Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid>() { Guid.Empty }).AsEnumerable()));
 
             _userRepositoryMock
                 .Setup(m => m.CreateItemAsync(It.IsAny<User>()))
@@ -1458,11 +1468,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task UpdateUserSuccess()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User());
+                .ReturnsAsync(new User() { Username = "dummy1" });
+            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(new List<User>());
 
             var userId = Guid.NewGuid();
             var user = new User
             {
+                Id = userId,
+                Username = "testname",
                 FirstName = "FirstName",
                 LastName = "LastName",
                 Email = "cmalyala@prysm.com",
@@ -1477,16 +1491,22 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateToUserUpdatesLicenseIfCurrentUserHasCanManageLicensePermission()
         {
-            var newUser = new User { LicenseType = LicenseType.UserLicense };
-            var oldUser = new User { LicenseType = LicenseType.LegacyLicense };
+            var newUser = new User { Id = Guid.NewGuid(), LicenseType = LicenseType.UserLicense };
+            var oldUser = new User { Id = Guid.NewGuid(), LicenseType = LicenseType.LegacyLicense };
 
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(oldUser);
+            _licenseApiMock
+                .Setup(m => m.GetUserLicenseDetailsAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ReturnsAsync(new UserLicenseResponse
+                {
+                    ResultCode = UserLicenseResponseResultCode.Success,
+                    LicenseAssignments = new List<UserLicenseDto>() { new UserLicenseDto { UserId = Guid.Empty.ToString(), LicenseType = "LegacyLicense" } }
+                });
 
             await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
 
-            _userRepositoryMock
-                .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => u.LicenseType == LicenseType.UserLicense)));
+            _licenseApiMock.Verify(x => x.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()));
         }
 
         [Fact]

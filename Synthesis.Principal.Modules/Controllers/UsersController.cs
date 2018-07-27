@@ -1310,8 +1310,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid tenantId)
         {
-            var response = await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId);
-            var userLicenses = response.LicenseAssignments;
+            var userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId)).LicenseAssignments;
 
             if (userLicenses == null || userLicenses.Count == 0)
             {
