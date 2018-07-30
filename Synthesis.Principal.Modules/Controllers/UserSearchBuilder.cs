@@ -5,15 +5,16 @@ using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Enumerations;
 
 namespace Synthesis.PrincipalService.Controllers
 {
     public class UserSearchBuilder : IUserSearchBuilder
     {
         private readonly IRepository<User> _userRepository;
-        private readonly IProjectApi _projectApi;
+        private readonly IProjectAccessApi _projectApi;
 
-        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectApi projectApi)
+        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi)
         {
             _userRepository = repositoryFactor.CreateRepository<User>();
             _projectApi = projectApi;
@@ -82,13 +83,13 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<IQueryable<User>> AddFilterByProjectToQuery(IQueryable<User> query, UserFilteringOptions userFilteringOptions)
         {
-            var project = await _projectApi.GetProjectByIdAsync(userFilteringOptions.UserGroupingId);
-            if (project.Payload == null)
+            var projectUserIdsResponse = await _projectApi.GetProjectMemberUserIdsAsync(userFilteringOptions.UserGroupingId, MemberRoleFilter.FullUser);
+            if (projectUserIdsResponse.Payload == null)
             {
                 return query;
             }
 
-            var usersInProject = project.Payload.UserIds.ToList();
+            var usersInProject = projectUserIdsResponse.Payload.ToList();
 
             query = userFilteringOptions.ExcludeUsersInGroup ?
                 query.Where(user => !usersInProject.Contains(user.Id ?? Guid.Empty)) :

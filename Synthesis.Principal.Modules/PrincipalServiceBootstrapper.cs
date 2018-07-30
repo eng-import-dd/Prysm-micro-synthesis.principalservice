@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using Microsoft.Owin;
 using Microsoft.Owin;
 using Autofac;
 using Autofac.Core;
@@ -344,7 +342,7 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
-            builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();

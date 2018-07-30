@@ -35,6 +35,7 @@ using Synthesis.PrincipalService.Mapper;
 using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
+using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
@@ -56,7 +57,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<ILicenseApi> _licenseApiMock = new Mock<ILicenseApi>();
         private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
-        private readonly Mock<IProjectApi> _projectApiMock = new Mock<IProjectApi>();
+        private readonly Mock<IProjectAccessApi> _projectAccessApiMock = new Mock<IProjectAccessApi>();
         private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
         private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
         private readonly Mock<IIdentityUserApi> _identityUserApiMock = new Mock<IIdentityUserApi>();
@@ -83,6 +84,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         };
 
         private readonly ClaimsPrincipal _defaultClaimsPrincipal = new ClaimsPrincipal();
+        private readonly IEnumerable<Guid> _fullMemberUserIds = new List<Guid>();
 
         private List<User> _usersInSameProject;
         private List<User> _usersInSameGroup;
@@ -98,6 +100,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             SetupMocks();
 
+            _fullMemberUserIds = _usersInSameProject.Select(item => item.Id.GetValueOrDefault());
             const string deploymentType = "";
 
             _controller = new UsersController(_repositoryFactoryMock.Object,
@@ -184,8 +187,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(_loggerMock.Object);
 
             // project internal api mock
-            _projectApiMock.Setup(x => x.GetProjectByIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _testProject));
+            _projectAccessApiMock.Setup(x => x.GetProjectMemberUserIdsAsync(It.IsAny<Guid>(), MemberRoleFilter.All))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _fullMemberUserIds));
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
