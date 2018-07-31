@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Synthesis.PrincipalService.Controllers
 {
-    public interface IUserSearchBuilder
+    public interface ITenantUserSearchBuilder
     {
         Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions);
     }

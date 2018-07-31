@@ -11,13 +11,13 @@ using Synthesis.ProjectService.InternalApi.Enumerations;
 
 namespace Synthesis.PrincipalService.Controllers
 {
-    public class UserSearchBuilder : IUserSearchBuilder
+    public class TenantUserSearchBuilder : ITenantUserSearchBuilder
     {
         private readonly IRepository<User> _userRepository;
         private readonly IProjectAccessApi _projectApi;
         private readonly ILogger _logger;
 
-        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi, ILogger logger)
+        public TenantUserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi, ILogger logger)
         {
             _userRepository = repositoryFactor.CreateRepository<User>();
             _projectApi = projectApi;

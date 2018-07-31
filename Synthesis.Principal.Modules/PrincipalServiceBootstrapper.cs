@@ -345,7 +345,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
-            builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
+            builder.RegisterType<TenantUserSearchBuilder>().As<ITenantUserSearchBuilder>();
             builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();
 
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();

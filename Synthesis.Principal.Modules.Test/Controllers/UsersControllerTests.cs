@@ -58,7 +58,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IEmailApi> _emailApiMock = new Mock<IEmailApi>();
         private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
         private readonly Mock<IProjectAccessApi> _projectAccessApiMock = new Mock<IProjectAccessApi>();
-        private readonly Mock<IUserSearchBuilder> _searchBuilderMock = new Mock<IUserSearchBuilder>();
+        private readonly Mock<ITenantUserSearchBuilder> _searchBuilderMock = new Mock<ITenantUserSearchBuilder>();
         private readonly Mock<IQueryRunner<User>> _queryRunnerMock = new Mock<IQueryRunner<User>>();
         private readonly Mock<IIdentityUserApi> _identityUserApiMock = new Mock<IIdentityUserApi>();
         private readonly Mock<IEmailSendingService> _emailSendingMock = new Mock<IEmailSendingService>();

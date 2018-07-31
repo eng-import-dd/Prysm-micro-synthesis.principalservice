@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly string _deploymentType;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
-        private readonly IUserSearchBuilder _searchBuilder;
+        private readonly ITenantUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
         private readonly IEmailSendingService _emailSendingService;
         private readonly IPolicyEvaluator _policyEvaluator;
@@ -88,7 +88,7 @@ namespace Synthesis.PrincipalService.Controllers
             IEmailSendingService emailSendingService,
             IMapper mapper,
             string deploymentType,
-            IUserSearchBuilder searchBuilder,
+            ITenantUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
             ITenantApi tenantApi,
             IPolicyEvaluator policyEvaluator,
