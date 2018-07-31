@@ -1002,9 +1002,12 @@ namespace Synthesis.PrincipalService.Controllers
                 /* If the user is successfully created assign the license. */
                 var assignedLicenseServiceResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
 
-                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success && sendWelcomeEmail)
+                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
-                    await SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    if(sendWelcomeEmail)
+                    {
+                        await SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    }
                     return;
                 }
             }
