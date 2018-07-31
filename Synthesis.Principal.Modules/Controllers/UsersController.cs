@@ -146,11 +146,9 @@ namespace Synthesis.PrincipalService.Controllers
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
                 Groups = model.Groups ?? new List<Guid>(),
-                IdpMappedGroups = model.IdpMappedGroups,
                 Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType
             };
@@ -459,7 +457,6 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 Groups = new List<Guid>()
             };
 
