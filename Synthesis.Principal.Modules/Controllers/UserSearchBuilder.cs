@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
+using Synthesis.Http.Microservice;
+using Synthesis.Logging;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
@@ -13,11 +15,13 @@ namespace Synthesis.PrincipalService.Controllers
     {
         private readonly IRepository<User> _userRepository;
         private readonly IProjectAccessApi _projectApi;
+        private readonly ILogger _logger;
 
-        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi)
+        public UserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi, ILogger logger)
         {
             _userRepository = repositoryFactor.CreateRepository<User>();
             _projectApi = projectApi;
+            _logger = logger;
         }
 
         public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
@@ -84,8 +88,9 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<IQueryable<User>> AddFilterByProjectToQuery(IQueryable<User> query, UserFilteringOptions userFilteringOptions)
         {
             var projectUserIdsResponse = await _projectApi.GetProjectMemberUserIdsAsync(userFilteringOptions.UserGroupingId, MemberRoleFilter.FullUser);
-            if (projectUserIdsResponse.Payload == null)
+            if (!projectUserIdsResponse.IsSuccess() || projectUserIdsResponse.Payload == null)
             {
+                _logger.Error($"Could not find members for user grouping id: {userFilteringOptions.UserGroupingId}");
                 return query;
             }
 
