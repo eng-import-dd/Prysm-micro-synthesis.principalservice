@@ -65,7 +65,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new Exception("No tenant domains exist");
             }
 
-            var validator = _validatorLocator.GetValidator<BulkUploadEmailValidator>();
+            var validator = _validatorLocator.GetValidator<EmailValidator>();
             foreach (var newUserInvite in userInviteList)
             {
                 if (newUserInvite.Email == null)

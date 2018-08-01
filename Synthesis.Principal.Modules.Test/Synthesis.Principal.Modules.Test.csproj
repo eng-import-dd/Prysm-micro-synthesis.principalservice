@@ -312,7 +312,6 @@
     <Compile Include="Modules\UsersModuleTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\SuperAdminServiceTests.cs" />
-    <Compile Include="Validators\BulkUploadEmailValidatorTests.cs" />
     <Compile Include="Validators\CreateGroupRequestValidatorTests.cs" />
     <Compile Include="Validators\CreateGuestUserRequestValidatorTests.cs" />
     <Compile Include="Validators\CreateMachineRequestValidatorTests.cs" />
