@@ -12,11 +12,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Synthesis.Http.Microservice;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi.Api;
 using Xunit;
 
 namespace Synthesis.PrincipalService.Modules.Test.Modules
@@ -24,9 +26,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
     public class UsersModuleTests : BaseModuleTests<UsersModule>
     {
         private readonly Mock<IUsersController> _controllerMock = new Mock<IUsersController>();
-        protected override List<object> BrowserDependencies => new List<object> { _controllerMock.Object };
+        private readonly Mock<ITenantApi> _tenantApiMock = new Mock<ITenantApi>();
+
+        protected override List<object> BrowserDependencies => new List<object> { _controllerMock.Object, _tenantApiMock.Object };
 
         private const string ValidTestEmail = "asd@hmm.com";
+
+        public UsersModuleTests()
+        {
+            _tenantApiMock
+                .Setup(x => x.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(System.Net.HttpStatusCode.OK, new List<Guid> { TenantId }));
+        }
 
         [Fact]
         public async Task RespondWithUnauthorizedNoBearerAsync()
@@ -442,7 +453,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, Guid.NewGuid()), ctx => BuildRequest(ctx, new User()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
         }
 
         [Fact]
@@ -981,21 +991,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-
-        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
-        [Fact]
-        public async Task GetLicenseTypeForUserReturnsUnAuthorized()
-        {
-            _controllerMock.Setup(m => m.GetLicenseTypeForUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
-                           .Throws(new InvalidOperationException());
-
-            var userId = Guid.NewGuid();
-
-            var response = await UserTokenBrowser.Get(string.Format(Routing.LicenseTypeForUserBase, userId), BuildRequest);
-
-            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        }
-
 
         [Trait("GetLicenseTypeForUser", "Get License Type For User")]
         [Fact]

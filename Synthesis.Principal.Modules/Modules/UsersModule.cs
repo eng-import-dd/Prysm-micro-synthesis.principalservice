@@ -1022,7 +1022,7 @@ namespace Synthesis.PrincipalService.Modules
         private async Task RequireAccessWithTenantExpansionAsync(Guid userId)
         {
             var tenantIdResponse = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (tenantIdResponse.IsSuccess() || tenantIdResponse.Payload == null)
+            if (!tenantIdResponse.IsSuccess() || tenantIdResponse.Payload == null)
             {
                 throw new Exception($"Error fetching tentantIds for user {userId}, {tenantIdResponse.ResponseCode} - {tenantIdResponse.ReasonPhrase}, {tenantIdResponse.ErrorResponse}");
             }
