@@ -17,7 +17,6 @@ using Synthesis.DocumentStorage;
 using Synthesis.Http.Microservice;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PolicyEvaluator.Permissions;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
@@ -31,7 +30,6 @@ namespace Synthesis.PrincipalService.Modules
     {
         private readonly IUsersController _userController;
         private readonly ITenantApi _tenantApi;
-        private readonly ILogger _logger;
 
         public UsersModule(
             IUsersController userController,
@@ -42,7 +40,6 @@ namespace Synthesis.PrincipalService.Modules
             : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _userController = userController;
-            _logger = loggerFactory.GetLogger(this);
             _tenantApi = tenantApi;
 
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
@@ -1033,7 +1030,7 @@ namespace Synthesis.PrincipalService.Modules
             var tenantIds = tenantIdResponse.Payload.ToList();
 
             await RequiresAccess()
-                .WithIsTenantEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
+                .WithTenantAccessEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
                 .ExecuteAsync(CancellationToken.None);
         }
     }
