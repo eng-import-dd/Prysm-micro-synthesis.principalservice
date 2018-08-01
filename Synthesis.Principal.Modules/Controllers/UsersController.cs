@@ -146,11 +146,9 @@ namespace Synthesis.PrincipalService.Controllers
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
                 Groups = model.Groups ?? new List<Guid>(),
-                IdpMappedGroups = model.IdpMappedGroups,
                 Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType
             };
@@ -201,7 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
 
-            await _eventService.PublishAsync(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, result);
 
             return result;
         }
@@ -459,7 +457,6 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 Groups = new List<Guid>()
             };
 
