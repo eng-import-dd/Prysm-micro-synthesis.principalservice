@@ -24,6 +24,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>612,618</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -192,10 +193,10 @@
       <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta012\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta018\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta020\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta028\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1-beta029\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta015\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
@@ -255,7 +256,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta011\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta048\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta050\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta042\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -359,13 +360,13 @@
     <Compile Include="Controllers\Interfaces\IUsersController.cs" />
     <Compile Include="Controllers\IQueryRunner.cs" />
     <Compile Include="Services\ISuperAdminService.cs" />
-    <Compile Include="Controllers\IUserSearchBuilder.cs" />
+    <Compile Include="Controllers\ITenantUserSearchBuilder.cs" />
     <Compile Include="Controllers\MachinesController.cs" />
     <Compile Include="Services\SuperAdminService.cs" />
     <Compile Include="Controllers\UserInvitesController.cs" />
     <Compile Include="Controllers\UserQueryRunner.cs" />
     <Compile Include="Controllers\UsersController.cs" />
-    <Compile Include="Controllers\UserSearchBuilder.cs" />
+    <Compile Include="Controllers\TenantUserSearchBuilder.cs" />
     <Compile Include="Email\EmailSendingService.cs" />
     <Compile Include="Email\IEmailSendingService.cs" />
     <Compile Include="Email\VerifyGuestEmail.cs" />

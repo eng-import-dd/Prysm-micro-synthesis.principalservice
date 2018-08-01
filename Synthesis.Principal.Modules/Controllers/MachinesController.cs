@@ -74,7 +74,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var result = await CreateMachineInDb(machine);
 
-            await _eventService.PublishAsync(EventNames.MachineCreated, result);
+            _eventService.Publish(EventNames.MachineCreated, result);
 
             await _cloudShim.CopyMachineSettings(result.Id);
 

@@ -54,7 +54,7 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly string _deploymentType;
         private readonly ITenantApi _tenantApi;
         private readonly IIdentityUserApi _identityUserApi;
-        private readonly IUserSearchBuilder _searchBuilder;
+        private readonly ITenantUserSearchBuilder _searchBuilder;
         private readonly IQueryRunner<User> _queryRunner;
         private readonly IEmailSendingService _emailSendingService;
         private readonly IPolicyEvaluator _policyEvaluator;
@@ -88,7 +88,7 @@ namespace Synthesis.PrincipalService.Controllers
             IEmailSendingService emailSendingService,
             IMapper mapper,
             string deploymentType,
-            IUserSearchBuilder searchBuilder,
+            ITenantUserSearchBuilder searchBuilder,
             IQueryRunner<User> queryRunner,
             ITenantApi tenantApi,
             IPolicyEvaluator policyEvaluator,
@@ -146,11 +146,9 @@ namespace Synthesis.PrincipalService.Controllers
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
                 Groups = model.Groups ?? new List<Guid>(),
-                IdpMappedGroups = model.IdpMappedGroups,
                 Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType
             };
@@ -201,7 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
 
-            await _eventService.PublishAsync(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, result);
 
             return result;
         }
@@ -459,7 +457,6 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                LastAccessDate = DateTime.UtcNow,
                 Groups = new List<Guid>()
             };
 
@@ -814,33 +811,32 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var criteria = new List<Expression<Func<User, bool>>>();
-            Expression<Func<User, string>> orderBy;
+            var userQuery = _userRepository.CreateItemQuery(new BatchOptions { BatchSize = userFilteringOptions.PageSize, ContinuationToken = userFilteringOptions.ContinuationToken });
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
             if (userIdsInTenant.IsSuccess())
             {
                 var userids = userIdsInTenant.Payload.ToList();
-                criteria.Add(u => !userids.Contains(u.Id.Value));
+                userQuery = userQuery.Where(u => !userids.Contains(u.Id.Value));
             }
 
             var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
             if (tenantDomainsResponse.IsSuccess() && tenantDomainsResponse.Payload.Any())
             {
                 var tenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
-                criteria.Add(u => tenantDomains.Contains(u.EmailDomain));
+                userQuery = userQuery.Where(u => tenantDomains.Contains(u.EmailDomain));
             }
 
             if (!string.IsNullOrEmpty(userFilteringOptions.SearchValue))
             {
-                criteria.Add(x =>
+                userQuery = userQuery.Where(x =>
                     x != null &&
-                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                        userFilteringOptions.SearchValue.ToLower()) ||
+                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(userFilteringOptions.SearchValue.ToLower()) ||
                     x != null && x.Email.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()) ||
                     x != null && x.Username.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()));
             }
 
+            Expression<Func<User, string>> orderBy;
             if (string.IsNullOrWhiteSpace(userFilteringOptions.SortColumn))
             {
                 orderBy = u => u.FirstName;
@@ -871,28 +867,32 @@ namespace Synthesis.PrincipalService.Controllers
                 }
             }
 
-            var queryparams = new OrderedQueryParameters<User, string>
-            {
-                Criteria = criteria,
-                OrderBy = orderBy,
-                SortDescending = userFilteringOptions.SortDescending,
-                ContinuationToken = userFilteringOptions.ContinuationToken,
-                ChunkSize = userFilteringOptions.PageSize
-            };
+            userQuery = userFilteringOptions.SortDescending
+                ? userQuery.OrderByDescending(orderBy)
+                : userQuery.OrderBy(orderBy);
 
-            var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-            var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
-            var filteredUserCount = guestUsersInTenant.Count;
-            var returnMetaData = new PagingMetadata<User>
+            var userRepositoryQuery = userQuery.AsRepositoryQuery();
+            if (!await userRepositoryQuery.MoveNextAsync())
             {
-                FilteredRecords = filteredUserCount,
-                List = guestUsersInTenant,
+                return new PagingMetadata<User>
+                {
+                    FilteredRecords = 0,
+                    List = new List<User>(),
+                    SearchValue = userFilteringOptions.SearchValue,
+                    ContinuationToken = null,
+                    IsLastChunk = true
+                };
+            }
+
+            var users = userRepositoryQuery.Current.ToList();
+            return new PagingMetadata<User>
+            {
+                FilteredRecords = users.Count,
+                List = users,
                 SearchValue = userFilteringOptions.SearchValue,
-                ContinuationToken = guestUsersInTenantResult.ContinuationToken,
-                IsLastChunk = guestUsersInTenantResult.IsLastChunk
+                ContinuationToken = userRepositoryQuery.Current.ContinuationToken,
+                IsLastChunk = userRepositoryQuery.Current.ContinuationToken == null
             };
-
-            return returnMetaData;
         }
 
         private bool IsBuiltInOnPremTenant(Guid? tenantId)
@@ -1002,9 +1002,12 @@ namespace Synthesis.PrincipalService.Controllers
                 /* If the user is successfully created assign the license. */
                 var assignedLicenseServiceResult = await _licenseApi.AssignUserLicenseAsync(licenseRequestDto);
 
-                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success && sendWelcomeEmail)
+                if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
-                    await SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    if (sendWelcomeEmail)
+                    {
+                        await SendWelcomeEmailAsync(user.Email, user.FirstName);
+                    }
                     return;
                 }
             }
@@ -1257,7 +1260,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        #endregion
+        #endregion User Group Methods
 
         #region User License Type Method
 
@@ -1315,7 +1318,6 @@ namespace Synthesis.PrincipalService.Controllers
 
                     if (assignUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
                     {
-
                         validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to assign license to the user"));
                     }
                 }
@@ -1465,10 +1467,10 @@ namespace Synthesis.PrincipalService.Controllers
 
                 await _userRepository.UpdateItemAsync((Guid)user.Id, user);
 
-                return new VerifyUserEmailResponse{Result = true};
+                return new VerifyUserEmailResponse { Result = true };
             }
 
-            return new VerifyUserEmailResponse{Result = false};
+            return new VerifyUserEmailResponse { Result = false };
         }
 
         private async Task<bool> CanManageUserLicensesAsync(ClaimsPrincipal principal)
