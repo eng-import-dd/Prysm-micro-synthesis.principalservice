@@ -1270,13 +1270,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            return await GetUserLicenseType(userId, tenantId);
-        }
-
-        #endregion
-
-        private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid tenantId)
-        {
             var userLicenses = (await _licenseApi.GetUserLicenseDetailsAsync(tenantId, userId)).LicenseAssignments;
 
             if (userLicenses == null || userLicenses.Count == 0)
@@ -1286,6 +1279,8 @@ namespace Synthesis.PrincipalService.Controllers
 
             return (LicenseType)Enum.Parse(typeof(LicenseType), userLicenses[0].LicenseType);
         }
+
+        #endregion
 
         private async Task<bool> UpdateLockUserDetailsInDb(Guid id, Guid tenantId, bool isLocked)
         {

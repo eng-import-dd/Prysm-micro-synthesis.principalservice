@@ -602,7 +602,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-           _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+           _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, new UserGroup()));
@@ -622,7 +622,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateUserGroupAsync(It.IsAny<UserGroup>(), It.IsAny<Guid>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.UserGroups, ctx => BuildRequest(ctx, new UserGroup()));

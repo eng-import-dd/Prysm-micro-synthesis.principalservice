@@ -850,20 +850,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.IsType<LicenseType>(result);
         }
 
-        [Trait("GetLicenseTypeForUser", "Get License Type For User")]
-        [Fact]
-        public async Task GetLicenseTypeForUserReturnsUserNotFoundException()
-        {
-            var userId = Guid.Parse("4d1b116e-debe-47e2-b0bd-6d7856b0c616");
-            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
-                .Throws(new NotFoundException(string.Empty));
-
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
-        }
-
         [Fact]
         public async Task GetUserByNamesReturnsExpectedName()
         {
