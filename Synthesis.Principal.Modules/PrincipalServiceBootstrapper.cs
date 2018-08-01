@@ -351,20 +351,16 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
 
             builder.RegisterType<RepositoryHealthReporter<User>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<Machine>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<UserInvite>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<EmailApi>()
                 .WithParameter("serviceUrlSettingName", "Email.Url")
