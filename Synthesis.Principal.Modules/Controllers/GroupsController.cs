@@ -129,7 +129,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        public async Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId)
+        public async Task<Group> GetGroupByIdAsync(Guid groupId)
         {
             var validationResult = await _validatorLocator.GetValidator(typeof(GroupIdValidator)).ValidateAsync(groupId);
             if (!validationResult.IsValid)
@@ -143,12 +143,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 _logger.Error($"A Group resource could not be found for id {groupId}");
                 throw new NotFoundException($"A Group resource could not be found for id {groupId}");
-            }
-
-            var assignedTenantId = result.TenantId;
-            if (assignedTenantId == Guid.Empty || assignedTenantId != tenantId)
-            {
-                throw new UnauthorizedAccessException();
             }
 
             return result;

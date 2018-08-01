@@ -22,7 +22,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// </returns>
         Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId, bool isBuiltInGroup);
 
-        Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
+        Task<Group> GetGroupByIdAsync(Guid groupId);
 
         Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId);
 

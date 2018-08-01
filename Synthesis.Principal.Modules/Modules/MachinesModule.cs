@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -74,9 +75,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateMachineAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
 
             Machine newMachine;
             try
@@ -89,9 +87,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => newMachine.TenantId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                var result = await _machineController.CreateMachineAsync(newMachine, TenantId);
+                var result = await _machineController.CreateMachineAsync(newMachine);
 
                 return Negotiate
                     .WithModel(result)
@@ -110,14 +112,21 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetMachineByIdAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             var machineId = input.id;
+
             try
             {
-                return await _machineController.GetMachineByIdAsync(machineId, TenantId, IsServicePrincipal);
+                var machine = await _machineController.GetMachineByIdAsync(machineId);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => machine.TenantId)
+                    .ExecuteAsync(CancellationToken.None);
+
+                return machine;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -140,14 +149,21 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetMachineByKeyAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             var machinekey = Request.Query.machinekey;
+
             try
             {
-                return await _machineController.GetMachineByKeyAsync(machinekey, TenantId, IsServicePrincipal);
+                var machine = await _machineController.GetMachineByKeyAsync(machinekey);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => machine.TenantId)
+                    .ExecuteAsync(CancellationToken.None);
+
+                return machine;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -166,10 +182,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateMachineAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             Machine updateMachine;
 
             try
@@ -182,9 +194,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(_ => updateMachine.TenantId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                return await _machineController.UpdateMachineAsync(updateMachine, TenantId, IsServicePrincipal);
+                return await _machineController.UpdateMachineAsync(updateMachine);
             }
             catch (ValidationFailedException ex)
             {
@@ -193,10 +209,6 @@ namespace Synthesis.PrincipalService.Modules
             catch (NotFoundException)
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "UpdateMachine: Not authorized to edit this machine!");
             }
             catch (Exception ex)
             {
@@ -207,21 +219,27 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteMachineAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            var machineId = input.id;
+            Guid machineId = input.id;
 
             try
             {
-                await _machineController.DeleteMachineAsync(machineId, TenantId);
+                var machine = await _machineController.GetMachineByIdAsync(machineId);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(context => machine.TenantId)
+                    .ExecuteAsync(CancellationToken.None);
+
+                await _machineController.DeleteMachineAsync(machineId);
 
                 return new Response
                 {
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Machine has been deleted"
                 };
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -241,7 +259,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> ChangeMachineTenantAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             Machine updateMachine;
@@ -281,7 +298,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetTenantMachinesAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             try

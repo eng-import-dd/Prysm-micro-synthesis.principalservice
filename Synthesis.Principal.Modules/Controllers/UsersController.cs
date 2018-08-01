@@ -360,7 +360,7 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
-  
+
             return await UpdateUserInDb(userModel, userId, claimsPrincipal);
         }
 
@@ -1106,7 +1106,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         #region User Group Methods
 
-        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid currentUserId)
+        public async Task<UserGroup> CreateUserGroupAsync(UserGroup model,  Guid currentUserId)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -1131,19 +1131,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 _logger.Warning($"SuperAdmin group failed to create because the current user {currentUserId} is not a superadmin");
                 throw new ValidationFailedException(new[] { new ValidationFailure("GroupId", $"User group {model.GroupId} does not exist") });
-            }
-
-            var result = await _tenantApi.GetTenantIdsForUserIdAsync(existingUser.Id ?? Guid.Empty);
-            if (!result.IsSuccess())
-            {
-                throw new NotFoundException($"Error fetching tenant Ids for the user Id: {existingUser.Id} .");
-            }
-
-            var userTenantIds = result.Payload;
-
-            if (!userTenantIds.Contains(tenantId))
-            {
-                throw new InvalidOperationException();
             }
 
             if (existingUser.Groups.Contains(model.GroupId))
@@ -1281,26 +1268,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 _logger.Error("Failed to validate the resource id while attempting to retrieve a User license type resource.");
                 throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            var result = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
-            if (!result.IsSuccess())
-            {
-                _logger.Error($"Error fetching tenant Ids for the user Id: {userId} .");
-                throw new NotFoundException($"Error fetching tenant Ids for the user Id: {userId} .");
-            }
-
-            var userTenantIds = result.Payload;
-            // ReSharper disable once PossibleMultipleEnumeration
-            if (!userTenantIds.Any())
-            {
-                throw new NotFoundException($"A User resource could not be found for id {userId}");
-            }
-
-            // ReSharper disable once PossibleMultipleEnumeration
-            if (!userTenantIds.Contains(tenantId))
-            {
-                throw new InvalidOperationException();
             }
 
             return await GetUserLicenseType(userId, tenantId);

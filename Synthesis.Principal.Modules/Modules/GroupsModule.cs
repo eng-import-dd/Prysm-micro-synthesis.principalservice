@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -62,10 +63,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateGroupAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             Group newGroup;
             try
             {
@@ -76,6 +73,10 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to create a Group resource", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+              .WithTenantIdExpansion(_ => newGroup.TenantId.GetValueOrDefault())
+              .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -96,14 +97,21 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupByIdAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             Guid groupId = input.id;
+
             try
             {
-                return await _groupsController.GetGroupByIdAsync(groupId, TenantId);
+                var group = await _groupsController.GetGroupByIdAsync(groupId);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(_ => group.TenantId.GetValueOrDefault())
+                    .ExecuteAsync(CancellationToken.None);
+
+                return group;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -127,7 +135,6 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetGroupsForTenantAsync(dynamic input)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
                 .ExecuteAsync(CancellationToken.None);
 
             try
@@ -159,13 +166,16 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteGroupAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+            Guid groupId = input.id;
 
             try
             {
-                Guid groupId = input.id;
+                var group = await _groupsController.GetGroupByIdAsync(groupId);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(context => group.TenantId.GetValueOrDefault())
+                    .ExecuteAsync(CancellationToken.None);
+
                 await _groupsController.DeleteGroupAsync(groupId, PrincipalId);
 
                 return new Response
@@ -173,6 +183,10 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Resource has been deleted"
                 };
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -196,10 +210,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateGroupAsync(dynamic input)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
             Group existingGroup;
             try
             {
@@ -210,6 +220,10 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to update a Group resource", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(context => existingGroup.TenantId.GetValueOrDefault())
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {

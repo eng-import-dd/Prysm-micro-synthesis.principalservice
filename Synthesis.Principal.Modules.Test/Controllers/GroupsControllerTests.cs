@@ -169,8 +169,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             var groupId = Guid.NewGuid();
-            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
-            var result = await _controller.GetGroupByIdAsync(groupId, tenantId);
+            var result = await _controller.GetGroupByIdAsync(groupId);
 
             Assert.IsType<Group>(result);
         }
@@ -182,8 +181,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(default(Group));
 
             var groupId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupByIdAsync(groupId));
         }
 
         [Fact]
@@ -194,8 +192,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Throws(new ValidationFailedException(errors));
 
             var groupId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId, tenantId));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupByIdAsync(groupId));
         }
 
         [Trait("GetGroupsForTenant", "Get Groups For Tenant Test Cases")]

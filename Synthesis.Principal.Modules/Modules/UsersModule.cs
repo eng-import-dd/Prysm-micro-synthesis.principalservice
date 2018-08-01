@@ -8,10 +8,13 @@ using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Constants;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Nancy.ErrorHandling;
 using Synthesis.DocumentStorage;
+using Synthesis.Http.Microservice;
 using Synthesis.Nancy.MicroService.Modules;
 using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Permissions;
@@ -20,23 +23,27 @@ using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Modules
 {
     public sealed class UsersModule : SynthesisModule
     {
         private readonly IUsersController _userController;
-        private readonly IPolicyEvaluator _policyEvaluator;
+        private readonly ITenantApi _tenantApi;
+        private readonly ILogger _logger;
 
         public UsersModule(
             IUsersController userController,
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
+            ITenantApi tenantApi,
             ILoggerFactory loggerFactory)
             : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _userController = userController;
-            _policyEvaluator = policyEvaluator;
+            _logger = loggerFactory.GetLogger(this);
+            _tenantApi = tenantApi;
 
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
                 .Description("Create a new EnterpriseUser or TrialUser resource")
@@ -203,9 +210,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> LockUserAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid id = input.userId;
             User newUser;
             try
@@ -220,10 +224,16 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
+                await RequireAccessWithTenantExpansionAsync(id);
+
                 var result = await _userController.LockOrUnlockUserAsync(id, TenantId, newUser.IsLocked);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -243,9 +253,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             CreateUserRequest createUserRequest;
             try
             {
@@ -256,6 +263,10 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => createUserRequest.TenantId.GetValueOrDefault())
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -388,13 +399,16 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUserByIdAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.Id;
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 return await _userController.GetUserAsync(userId);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -482,13 +496,17 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUserByIdBasicAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.Id;
+
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 return await _userController.GetUserAsync(userId);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -508,9 +526,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             string userName = input.userName;
 
             // To work around nancy bug https://github.com/NancyFx/Nancy/issues/1280 https://github.com/NancyFx/Nancy/issues/1499
@@ -519,7 +534,14 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.GetUserByUserNameOrEmailAsync(userName);
+                var user = await _userController.GetUserByUserNameOrEmailAsync(userName);
+                await RequireAccessWithTenantExpansionAsync(user.Id.GetValueOrDefault());
+
+                return user;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -606,11 +628,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateUserAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId;
             User userModel;
+
             try
             {
                 userId = Guid.Parse(input.id);
@@ -624,7 +644,13 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 return await _userController.UpdateUserAsync(userId, userModel, Context.CurrentUser);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -643,13 +669,12 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteUserAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.id;
 
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 await _userController.DeleteUserAsync(userId);
 
                 return new Response
@@ -657,6 +682,10 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Resource has been deleted"
                 };
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -777,9 +806,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             IdpUserRequest idpUserRequest;
             try
             {
@@ -790,6 +816,10 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to auto provision and refresh groups.", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(context => idpUserRequest.TenantId)
+                .ExecuteAsync(CancellationToken.None);
 
             try
             {
@@ -839,18 +869,20 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, TenantId, PrincipalId);
+                await RequireAccessWithTenantExpansionAsync(newUserGroupRequest.UserId);
+
+                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
             }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
+            }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "CreateUserGroup: No valid Tenant level or User level access to groups!");
             }
             catch (Exception ex)
             {
@@ -890,16 +922,19 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupIdsByUserIdAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 var result = await _userController.GetGroupIdsByUserIdAsync(userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -918,14 +953,13 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
             Guid groupId = input.groupId;
 
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, PrincipalId);
                 if (!result)
                 {
@@ -937,6 +971,10 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Resource has been deleted"
                 };
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -956,15 +994,18 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetLicenseTypeForUserAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
 
             try
             {
+                await RequireAccessWithTenantExpansionAsync(userId);
+
                 var result = await _userController.GetLicenseTypeForUserAsync(userId, TenantId);
                 return result;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -974,15 +1015,26 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.NotFound(ResponseReasons.TenantNotFound);
             }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetLicenseTypeForUser: Not authorized to call this route!");
-            }
             catch (Exception ex)
             {
                 Logger.Error("GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
+        }
+
+        private async Task RequireAccessWithTenantExpansionAsync(Guid userId)
+        {
+            var tenantIdResponse = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            if (tenantIdResponse.IsSuccess() || tenantIdResponse.Payload == null)
+            {
+                throw new Exception($"Error fetching tentantIds for user {userId}, {tenantIdResponse.ResponseCode} - {tenantIdResponse.ReasonPhrase}, {tenantIdResponse.ErrorResponse}");
+            }
+
+            var tenantIds = tenantIdResponse.Payload.ToList();
+
+            await RequiresAccess()
+                .WithIsTenantEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
+                .ExecuteAsync(CancellationToken.None);
         }
     }
 }

@@ -56,7 +56,7 @@ namespace Synthesis.PrincipalService.Controllers
             _cloudShim = cloudShim;
         }
 
-        public async Task<Machine> CreateMachineAsync(Machine machine, Guid tenantId)
+        public async Task<Machine> CreateMachineAsync(Machine machine)
         {
             var validationResult = await _createMachineRequestValidator.ValidateAsync(machine);
 
@@ -66,7 +66,6 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            machine.TenantId = tenantId;
             machine.DateCreated = DateTime.UtcNow;
             machine.DateModified = DateTime.UtcNow;
             machine.Id = Guid.NewGuid();
@@ -82,7 +81,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        public async Task<Machine> GetMachineByIdAsync(Guid machineId, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> GetMachineByIdAsync(Guid machineId)
         {
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
             if (!machineIdValidationResult.IsValid)
@@ -98,16 +97,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
             }
 
-            var assignedTenantId = result.TenantId;
-            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
-            {
-                _logger.Error($"Invalid operation. Machine {machineId} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
-            }
             return result;
         }
 
-        public async Task<Machine> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> GetMachineByKeyAsync(string machineKey)
         {
             var normalizedMachineKey = machineKey.ToUpperInvariant();
             var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(normalizedMachineKey));
@@ -118,16 +111,10 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"A Machine resource could not be found for id {machineKey}");
             }
 
-            var assignedTenantId = machine.TenantId;
-            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
-            {
-                _logger.Error($"Invalid operation. Machine {machineKey} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
-            }
             return machine;
         }
 
-        public async Task<Machine> UpdateMachineAsync(Machine model, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> UpdateMachineAsync(Machine model)
         {
             var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
 
@@ -142,7 +129,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var machine = model;
                 machine.MachineKey = machine.MachineKey.ToUpperInvariant();
                 machine.NormalizedLocation = machine.Location.ToUpperInvariant();
-                return await UpdateMachineInDb(machine, tenantId, isServiceCall);
+                return await UpdateMachineInDb(machine);
             }
             catch (DocumentNotFoundException ex)
             {
@@ -181,7 +168,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<Machine> UpdateMachineInDb(Machine machine, Guid tenantId, bool isServiceCall)
+        private async Task<Machine> UpdateMachineInDb(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
 
@@ -196,12 +183,6 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 _logger.Error($"An error occurred updating machine because it does not exist: {machine.Id}");
                 throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
-            }
-
-            if (!isServiceCall && existingMachine.TenantId != tenantId)
-            {
-                _logger.Error($"Invalid operation. Machine {machine.Id} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
             }
 
             if (!await IsUniqueLocation(machine))
@@ -242,7 +223,7 @@ namespace Synthesis.PrincipalService.Controllers
             return existingMachine;
         }
 
-        public async Task DeleteMachineAsync(Guid machineId, Guid tenantId)
+        public async Task DeleteMachineAsync(Guid machineId)
         {
             var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
 

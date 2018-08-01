@@ -112,7 +112,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<Machine>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Machines, ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
@@ -124,7 +124,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>())).Throws(new Exception());
+            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<Machine>())).Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.Machines, ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
 
@@ -142,7 +142,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteMachineReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var machineId = new Guid();
@@ -156,7 +156,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteMachineAsync(It.IsAny<Guid>()))
                 .Throws(new Exception());
             var machineId = new Guid();
 
@@ -178,7 +178,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByIdReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var validMachineId = Guid.NewGuid();
@@ -191,7 +191,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByIdReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Throws(new Exception());
 
             var validMachineId = Guid.NewGuid();
@@ -204,7 +204,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByIdReturnsNotFoundIfItemDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Throws(new NotFoundException(string.Empty));
 
             var validMachineId = Guid.NewGuid();
@@ -217,7 +217,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByIdReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new Machine()));
 
             var validMachineId = Guid.NewGuid();
@@ -230,7 +230,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByIdReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Returns(Task.FromResult(new Machine()));
 
             var validMachineId = Guid.NewGuid();
@@ -244,7 +244,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetMachineByIdReturnsValidationFailedException()
         {
             var errors = Enumerable.Empty<ValidationFailure>();
-            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByIdAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(errors));
 
             var validMachineId = Guid.NewGuid();
@@ -305,7 +305,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByKeyReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>()))
                            .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = Guid.NewGuid().ToString();
@@ -323,7 +323,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByKeyReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>()))
                            .Returns(Task.FromResult(new Machine()));
 
             var validMachineKey = "0123456789";
@@ -341,7 +341,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByKeyReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>()))
                            .Throws(new Exception());
 
             var validMachineKey = "0123456789";
@@ -359,7 +359,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetMachineByKeyReturnsNotFoundIfItemDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+            _controllerMock.Setup(m => m.GetMachineByKeyAsync(It.IsAny<String>()))
                            .Throws(new NotFoundException(string.Empty));
 
             var validMachineKey = "0123456789";
@@ -385,7 +385,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateMachineReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.UpdateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>(), It.IsAny<bool>())).Throws(new Exception());
+            _controllerMock.Setup(m => m.UpdateMachineAsync(It.IsAny<Machine>())).Throws(new Exception());
 
             var response = await UserTokenBrowser.Put(string.Format(Routing.MachinesWithIdBase, "6b47560d-772a-41e5-8196-fb1ec6178539"), ctx => BuildRequest(ctx,
                 new Machine

@@ -100,7 +100,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var newMachine = Machine.Example();
             var tenantId = Guid.NewGuid();
             newMachine.TenantId = tenantId;
-            var result = await _controller.CreateMachineAsync(newMachine, tenantId);
+            var result = await _controller.CreateMachineAsync(newMachine);
             Assert.NotNull(result);
         }
 
@@ -109,8 +109,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { Location = string.Empty, MachineKey = string.Empty } });
             var newMachineRequest = new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620"), Location = string.Empty, MachineKey = string.Empty };
-            var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
             Assert.NotEmpty(ex.Errors.ToList());
         }
 
@@ -119,8 +118,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { Location = string.Empty, MachineKey = "machinekey" } });
             var newMachineRequest = new Machine { MachineKey = "machinekey", Location = string.Empty };
-            var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, tenantId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
             Assert.NotEmpty(ex.Errors.ToList());
         }
 
@@ -130,8 +128,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Throws(new NotFoundException("Not Found"));
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<NotFoundException>(() => _controller.DeleteMachineAsync(machineId, tenantId));
+            var ex = await Assert.ThrowsAsync<NotFoundException>(() => _controller.DeleteMachineAsync(machineId));
             Assert.IsType<NotFoundException>(ex);
         }
 
@@ -141,8 +138,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Returns(Task.FromResult(Guid.NewGuid()));
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await _controller.DeleteMachineAsync(machineId, tenantId);
+            await _controller.DeleteMachineAsync(machineId);
         }
 
         [Fact]
@@ -151,8 +147,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>())).Throws(new Exception());
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<Exception>(() => _controller.DeleteMachineAsync(machineId, tenantId));
+            var ex = await Assert.ThrowsAsync<Exception>(() => _controller.DeleteMachineAsync(machineId));
             Assert.IsType<Exception>(ex);
         }
 
@@ -166,8 +161,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
-            var result = await _controller.GetMachineByIdAsync(machineId, tenantId,false);
+            var result = await _controller.GetMachineByIdAsync(machineId);
 
             Assert.IsType<Machine>(result);
         }
@@ -179,8 +173,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Throws(new InvalidOperationException());
 
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByIdAsync(machineId, tenantId, false));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByIdAsync(machineId));
         }
 
         [Fact]
@@ -190,8 +183,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(default(Machine));
 
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByIdAsync(machineId, tenantId, false));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByIdAsync(machineId));
         }
 
         [Fact]
@@ -202,8 +194,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Throws(new ValidationFailedException(errors));
 
             var machineId = Guid.NewGuid();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetMachineByIdAsync(machineId, tenantId, false));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetMachineByIdAsync(machineId));
         }
 
         [Fact]
@@ -247,8 +238,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                                   });
 
             var machineKey = Guid.NewGuid().ToString();
-            var tenantId = Guid.Parse("d65bb77a-2658-4576-9b78-a6fc01a57c47");
-            var result = await _controller.GetMachineByKeyAsync(machineKey, tenantId, false);
+            var result = await _controller.GetMachineByKeyAsync(machineKey);
 
             Assert.IsType<Machine>(result);
         }
@@ -263,8 +253,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                                   });
 
             var machineKey = Guid.NewGuid().ToString();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByKeyAsync(machineKey, tenantId, false));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetMachineByKeyAsync(machineKey));
         }
 
         [Fact]
@@ -274,8 +263,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                                   .Throws(new InvalidOperationException());
 
             var machineKey = Guid.NewGuid().ToString();
-            var tenantId = Guid.NewGuid();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByKeyAsync(machineKey, tenantId, false));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetMachineByKeyAsync(machineKey));
         }
 
         [Fact]
@@ -284,21 +272,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620"), MachineKey = "1122334455", Location = "Location"});
 
             var newMachine = new Machine() { Id = Guid.NewGuid(), MachineKey = "1234567890", Location = "New Location"};
-            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
-            var result = await _controller.UpdateMachineAsync(newMachine, tenantId, false);
+            var result = await _controller.UpdateMachineAsync(newMachine);
             Assert.NotNull(result);
-        }
-
-        [Fact]
-        public async Task UpdateMachineAsyncThrowsUnauthorizedException()
-        {
-            _machineRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>())).ReturnsAsync(new Machine());
-            _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { TenantId = Guid.Parse("d1532c34-09dd-4cf8-b893-894afde2adad")} });
-
-            var newMachineRequest = new Machine { TenantId = Guid.Parse("cb37242e-af65-45b4-bcb4-bd259f0b4c76"), Location = string.Empty, MachineKey = string.Empty};
-            var tenantId = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
-            Assert.IsType<InvalidOperationException>(ex);
         }
 
         [Fact]
@@ -308,8 +283,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { Location = string.Empty, MachineKey = string.Empty } });
 
             var newMachineRequest = new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620"), Location = string.Empty, MachineKey = string.Empty };
-            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest));
             Assert.NotEmpty(ex.Errors.ToList());
         }
 
@@ -320,8 +294,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _machineRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Machine, bool>>>())).ReturnsAsync(new List<Machine> { new Machine { MachineKey = "machinekey", Location = "Abc" } });
 
             var newMachineRequest = new Machine { MachineKey = "machinekey", Location = string.Empty};
-            var tenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620");
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest, tenantId, false));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateMachineAsync(newMachineRequest));
             Assert.NotEmpty(ex.Errors.ToList());
         }
     }
