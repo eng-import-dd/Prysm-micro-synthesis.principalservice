@@ -199,7 +199,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
 
-            await _eventService.PublishAsync(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, result);
 
             return result;
         }
