@@ -81,13 +81,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserInviteListDuplicateInvite()
         {
-            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<UserInvite> { new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } });
 
-            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(UserInvite));
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInvite> { new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } };
@@ -105,13 +105,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserInviteListDuplicateUserEntry()
         {
-            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<UserInvite>()))
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<UserInvite>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
 
-            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(UserInvite));
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInvite>
@@ -177,13 +177,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserInviteListSuccess()
         {
-            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<UserInvite>()))
+            _repositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<UserInvite>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" });
 
-            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _repositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(UserInvite));
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var createUserInviteRequest = new List<UserInvite> { new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } };
@@ -193,7 +193,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var userInvite = await _controller.CreateUserInviteListAsync(createUserInviteRequest, tenantId);
 
-            _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>()));
+            _repositoryMock.Verify(m => m.CreateItemAsync(It.IsAny<UserInvite>(), It.IsAny<CancellationToken>()));
             _emailApiMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()));
             Assert.NotNull(userInvite);
             Assert.Equal(InviteUserStatus.Success, userInvite.ElementAt(0).Status);
@@ -203,7 +203,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetInvitedUsersForTenantIfUsersExists()
         {
             const int count = 5;
-            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
                     var itemsList = new List<UserInvite>();
@@ -236,7 +236,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task ResendUserInviteListSuccess()
         {
-            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>()))
+            _repositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<UserInvite> { new UserInvite { Id = Guid.NewGuid(), FirstName = "abc", LastName = "xyz", Email = "abc@yopmail.com" } });
             var userEmailRequests = new List<UserEmailResponse>
             {
@@ -249,7 +249,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             var userInvite = await _controller.ResendEmailInviteAsync(resendUserInviteRequest, tenantId);
 
-            _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<UserInvite>()));
+            _repositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<UserInvite>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
             _emailApiMock.Verify(m => m.SendUserInvite(It.IsAny<List<UserEmailRequest>>()));
 
             Assert.NotNull(userInvite);

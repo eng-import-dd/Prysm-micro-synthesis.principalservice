@@ -324,7 +324,8 @@ namespace Synthesis.PrincipalService
         {
             // The indexing policy also needs to be included in the documentdb section
 
-            var mapper = new MapperConfiguration(cfg => {
+            var mapper = new MapperConfiguration(cfg =>
+            {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
             }).CreateMapper();
@@ -346,7 +347,6 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
             builder.RegisterType<TenantUserSearchBuilder>().As<ITenantUserSearchBuilder>();
-            builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();
 
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
 
