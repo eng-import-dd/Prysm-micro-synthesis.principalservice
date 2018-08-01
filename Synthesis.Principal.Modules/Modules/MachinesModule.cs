@@ -194,6 +194,8 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            updateMachine.TenantId = TenantId;
+
             await RequiresAccess()
                 .WithTenantIdExpansion(_ => updateMachine.TenantId)
                 .ExecuteAsync(CancellationToken.None);

@@ -221,17 +221,14 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            existingGroup.TenantId = TenantId;
+
             await RequiresAccess()
                 .WithTenantIdExpansion(context => existingGroup.TenantId.GetValueOrDefault())
                 .ExecuteAsync(CancellationToken.None);
 
             try
             {
-                if (existingGroup.TenantId.Equals(Guid.Empty))
-                {
-                    existingGroup.TenantId = TenantId;
-                }
-
                 var result = await _groupsController.UpdateGroupAsync(existingGroup, TenantId, PrincipalId);
 
                 return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
