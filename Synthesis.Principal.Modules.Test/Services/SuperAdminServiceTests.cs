@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Synthesis.DocumentStorage;
@@ -30,11 +31,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
         public async Task IsSuperAdminAsyncReturnsTrueIfUserIsInSuperAdminGroup()
         {
             _userRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(new User {Groups = new List<Guid>()
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User
+                {
+                    Groups = new List<Guid>()
                 {
                     GroupIds.SuperAdminGroupId
-                }});
+                }
+                });
 
             var result = await _target.IsSuperAdminAsync(Guid.NewGuid());
 
@@ -45,7 +49,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
         public async Task IsSuperAdminAsyncReturnsFalseIfUserIsNotFound()
         {
             _userRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>()))
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var result = await _target.IsSuperAdminAsync(Guid.NewGuid());

@@ -325,7 +325,8 @@ namespace Synthesis.PrincipalService
         {
             // The indexing policy also needs to be included in the documentdb section
 
-            var mapper = new MapperConfiguration(cfg => {
+            var mapper = new MapperConfiguration(cfg =>
+            {
                 cfg.AddProfile<UserProfile>();
                 cfg.AddProfile<UserInviteProfile>();
             }).CreateMapper();
@@ -343,29 +344,24 @@ namespace Synthesis.PrincipalService
 
             builder.RegisterType<LicenseApi>().As<ILicenseApi>();
             builder.RegisterType<TenantApi>().As<ITenantApi>();
-            builder.RegisterType<ProjectApi>().As<IProjectApi>();
+            builder.RegisterType<ProjectAccessApi>().As<IProjectAccessApi>();
             builder.RegisterType<IdentityUserApi>().As<IIdentityUserApi>();
             builder.RegisterType<CloudShim>().As<ICloudShim>();
-            builder.RegisterType<UserSearchBuilder>().As<IUserSearchBuilder>();
-            builder.RegisterType<DocumentDbRepositoryHealthReport>().As<IRepositoryHealthReport>();
+            builder.RegisterType<TenantUserSearchBuilder>().As<ITenantUserSearchBuilder>();
 
             builder.RegisterType<UserQueryRunner>().As<IQueryRunner<User>>();
 
             builder.RegisterType<RepositoryHealthReporter<User>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<Machine>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<UserInvite>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<RepositoryHealthReporter<Group>>().As<IHealthReporter>()
-                .SingleInstance()
-                .WithParameter("serviceName", ServiceInformation.ServiceNameShort);
+                .SingleInstance();
 
             builder.RegisterType<EmailApi>()
                 .WithParameter("serviceUrlSettingName", "Email.Url")
