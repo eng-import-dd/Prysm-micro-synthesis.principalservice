@@ -1514,7 +1514,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<bool> CanManageUserLicensesAsync(ClaimsPrincipal principal)
         {
-            return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageLicenses);
+            return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageUserLicenses);
         }
     }
 }
