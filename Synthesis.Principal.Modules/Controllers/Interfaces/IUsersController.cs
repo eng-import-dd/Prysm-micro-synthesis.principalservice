@@ -14,7 +14,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<User> GetUserAsync(Guid userId);
 
-        Task<User> UpdateUserAsync(Guid userId, User userModel, ClaimsPrincipal claimsPrincipal);
+        Task<User> UpdateUserAsync(Guid userId, User userModel, Guid tenantId, ClaimsPrincipal claimsPrincipal);
 
         Task DeleteUserAsync(Guid userId);
 

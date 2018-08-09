@@ -212,7 +212,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                         {
                             new Permission
                             {
-                                Expression = SynthesisPermission.CanManageLicenses.ToString(),
+                                Expression = SynthesisPermission.CanManageUserLicenses.ToString(),
                                 Scope = PermissionScope.Allow,
                                 Type = PermissionType.Explicit
                             }
@@ -242,7 +242,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _tenantApiMock
                 .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid> { Guid.Empty }).AsEnumerable()));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid> { _defaultTenantId }).AsEnumerable()));
             _tenantApiMock
                 .Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, (new List<Guid> { Guid.Empty }).AsEnumerable()));
@@ -1494,7 +1494,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(default(User));
             var userId = Guid.NewGuid();
             var user = new User();
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user, _defaultTenantId, _defaultClaimsPrincipal));
         }
 
         [Fact]
@@ -1517,7 +1517,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 IsIdpUser = false
             };
 
-            var result = await _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal);
+            var result = await _controller.UpdateUserAsync(userId, user, _defaultTenantId, _defaultClaimsPrincipal);
             Assert.IsType<User>(result);
         }
 
@@ -1537,7 +1537,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     LicenseAssignments = new List<UserLicenseDto> { new UserLicenseDto { UserId = Guid.Empty.ToString(), LicenseType = "LegacyLicense" } }
                 });
 
-            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
+            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultTenantId, _defaultClaimsPrincipal);
 
             _licenseApiMock.Verify(x => x.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()));
         }
@@ -1564,7 +1564,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(oldUser);
 
-            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
+            await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultTenantId, _defaultClaimsPrincipal);
 
             _userRepositoryMock
                 .Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => u.LicenseType == LicenseType.LegacyLicense), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
@@ -1581,7 +1581,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
             _validatorMock.Setup(m => m.Validate(user))
                 .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user, _defaultTenantId, _defaultClaimsPrincipal));
             Assert.Equal(3, ex.Errors.ToList().Count);
         }
 
