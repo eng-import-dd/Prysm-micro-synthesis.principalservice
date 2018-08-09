@@ -333,7 +333,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await GetTenantUsersFromDb(tenantId, currentUserId, userFilteringOptions);
         }
 
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel, ClaimsPrincipal claimsPrincipal)
+        public async Task<User> UpdateUserAsync(Guid userId, User userModel, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             TrimNameOfUser(userModel);
             var errors = new List<ValidationFailure>();
@@ -359,7 +359,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(errors);
             }
 
-            return await UpdateUserInDb(userModel, userId, claimsPrincipal);
+            return await UpdateUserInDb(userModel, userId, tenantId, claimsPrincipal);
         }
 
         public async Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId)
@@ -940,7 +940,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<User> UpdateUserInDb(User user, Guid id, ClaimsPrincipal claimsPrincipal)
+        private async Task<User> UpdateUserInDb(User user, Guid id, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             var existingUser = await _userRepository.GetItemAsync(id);
             if (existingUser == null)
@@ -959,12 +959,13 @@ namespace Synthesis.PrincipalService.Controllers
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
-            var tenantId = claimsPrincipal.GetTenantId();
-            var userLicense = await GetLicenseTypeForUserAsync(id, claimsPrincipal.GetTenantId());
-
-            if (user.LicenseType != userLicense && await CanManageUserLicensesAsync(claimsPrincipal))
+            if (await CanManageUserLicensesAsync(claimsPrincipal))
             {
-                await AssignUserLicense(user, user.LicenseType, tenantId);
+                var userLicense = await GetLicenseTypeForUserAsync(id, tenantId);
+                if (user.LicenseType != userLicense)
+                {
+                    await AssignUserLicense(user, user.LicenseType, tenantId);
+                }
             }
 
             try
