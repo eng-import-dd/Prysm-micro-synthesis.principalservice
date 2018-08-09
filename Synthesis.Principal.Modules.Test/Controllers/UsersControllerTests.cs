@@ -212,7 +212,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                         {
                             new Permission
                             {
-                                Expression = SynthesisPermission.CanManageLicenses.ToString(),
+                                Expression = SynthesisPermission.CanManageUserLicenses.ToString(),
                                 Scope = PermissionScope.Allow,
                                 Type = PermissionType.Explicit
                             }
