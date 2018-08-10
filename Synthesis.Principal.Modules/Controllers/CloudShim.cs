@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
@@ -23,6 +25,13 @@ namespace Synthesis.PrincipalService.Controllers
             return microserviceHttpClient.GetAsync<bool>($"{_serviceUrl}{get}");
         }
 
+        public Task<MicroserviceResponse<IEnumerable<Guid>>> GetSettingProfileIdsForTenant(Guid tenantId)
+        {
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var get = string.Format(Routes.GetSettingProfileIdsForAccount, tenantId);
+            return microserviceHttpClient.GetAsync<IEnumerable<Guid>>($"{_serviceUrl}{get}");
+        }
+
         public async Task<MicroserviceResponse<bool>> CopyMachineSettings(Guid machineId)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
@@ -35,6 +44,8 @@ namespace Synthesis.PrincipalService.Controllers
         private static class Routes
         {
             public static string ValidateSettingProfileId => "/api/v1/settings/{0}/{1}/validate";
+
+            public static string GetSettingProfileIdsForAccount => "/api/v1/settings/account/settinggroupids/{0}";
 
             public static string CopyMachineSettings => "/api/v1/settings/{0}/copyMachineSettings";
         }
