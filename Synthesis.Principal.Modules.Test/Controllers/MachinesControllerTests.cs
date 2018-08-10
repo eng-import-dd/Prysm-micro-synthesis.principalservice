@@ -92,8 +92,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             var machineId = Guid.NewGuid();
             var settingProfileId = Guid.Empty;
-            var ex = await Assert.ThrowsAsync<BadRequestException>(() => _controller.ChangeMachineTenantasync(machineId, tenantId, settingProfileId));
-            Assert.IsType<BadRequestException>(ex);
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.ChangeMachineTenantasync(machineId, tenantId, settingProfileId));
+            Assert.IsType<ValidationFailedException>(ex);
         }
 
         [Fact]
