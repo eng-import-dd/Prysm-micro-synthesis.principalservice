@@ -643,7 +643,7 @@ namespace Synthesis.PrincipalService.Modules
             {
                 await RequireAccessWithTenantExpansionAsync(userId);
 
-                return await _userController.UpdateUserAsync(userId, userModel, Context.CurrentUser);
+                return await _userController.UpdateUserAsync(userId, userModel, TenantId, Context.CurrentUser);
             }
             catch (RouteExecutionEarlyExitException)
             {
