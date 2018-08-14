@@ -21,7 +21,7 @@ namespace Synthesis.PrincipalService.Controllers
         public Task<MicroserviceResponse<bool>> ValidateSettingProfileId(Guid tenantId, Guid settingProfileId)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var get = string.Format(Routes.ValidateSettingProfileId, tenantId,  settingProfileId);
+            var get = string.Format(Routes.ValidateSettingProfileId, tenantId, settingProfileId);
             return microserviceHttpClient.GetAsync<bool>($"{_serviceUrl}{get}");
         }
 
@@ -45,7 +45,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             public static string ValidateSettingProfileId => "/api/v1/settings/{0}/{1}/validate";
 
-            public static string GetSettingProfileIdsForAccount => "/api/v1/settings/account/settinggroupids/{0}";
+            public static string GetSettingProfileIdsForAccount => "/api/v1/accounts/{0}/settingprofileids";
 
             public static string CopyMachineSettings => "/api/v1/settings/{0}/copyMachineSettings";
         }
