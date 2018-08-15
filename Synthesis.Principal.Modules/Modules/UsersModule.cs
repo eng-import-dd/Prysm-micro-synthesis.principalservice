@@ -209,6 +209,9 @@ namespace Synthesis.PrincipalService.Modules
         {
             Guid id = input.userId;
             User newUser;
+
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(id);
+
             try
             {
                 newUser = this.Bind<User>();
@@ -221,16 +224,10 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                await RequireAccessWithTenantExpansionAsync(id);
-
                 var result = await _userController.LockOrUnlockUserAsync(id, TenantId, newUser.IsLocked);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -397,15 +394,12 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUserByIdAsync(dynamic input)
         {
             Guid userId = input.Id;
+
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 return await _userController.GetUserAsync(userId);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (NotFoundException)
             {
@@ -458,6 +452,7 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetUsersBasicAsync(dynamic input)
         {
             await RequiresAccess()
+                .WithTenantIdExpansion(ctx => TenantId)
                 .ExecuteAsync(CancellationToken.None);
 
             try
@@ -495,15 +490,11 @@ namespace Synthesis.PrincipalService.Modules
         {
             Guid userId = input.Id;
 
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 return await _userController.GetUserAsync(userId);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (NotFoundException)
             {
@@ -532,7 +523,7 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 var user = await _userController.GetUserByUserNameOrEmailAsync(userName);
-                await RequireAccessWithTenantExpansionAsync(user.Id.GetValueOrDefault());
+                await RequireAccessWithTenantOrPrincipalExpansionsAsync(user.Id.GetValueOrDefault());
 
                 return user;
             }
@@ -593,6 +584,9 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUsersByIdsAsync(dynamic input)
         {
+            // TODO: Secure GetUsersByIdsAsync route better. A requestor should be able to get information
+            // only on certain users. As-is, this method allows any authenticated principal
+            // to get data on all other users, assuming their Id's are known.
             await RequiresAccess()
                 .ExecuteAsync(CancellationToken.None);
 
@@ -639,15 +633,11 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 return await _userController.UpdateUserAsync(userId, userModel, TenantId, Context.CurrentUser);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -668,10 +658,10 @@ namespace Synthesis.PrincipalService.Modules
         {
             Guid userId = input.id;
 
+            await RequireAccessWithTenantExpansionAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 await _userController.DeleteUserAsync(userId);
 
                 return new Response
@@ -679,10 +669,6 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Resource has been deleted"
                 };
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -864,18 +850,14 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequireAccessWithTenantExpansionAsync(newUserGroupRequest.UserId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(newUserGroupRequest.UserId);
-
                 var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -920,18 +902,15 @@ namespace Synthesis.PrincipalService.Modules
         private async Task<object> GetGroupIdsByUserIdAsync(dynamic input)
         {
             Guid userId = input.userId;
+
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 var result = await _userController.GetGroupIdsByUserIdAsync(userId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (NotFoundException)
             {
@@ -953,10 +932,10 @@ namespace Synthesis.PrincipalService.Modules
             Guid userId = input.userId;
             Guid groupId = input.groupId;
 
+            await RequireAccessWithTenantExpansionAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 var result = await _userController.RemoveUserFromPermissionGroupAsync(userId, groupId, PrincipalId);
                 if (!result)
                 {
@@ -968,10 +947,6 @@ namespace Synthesis.PrincipalService.Modules
                     StatusCode = HttpStatusCode.NoContent,
                     ReasonPhrase = "Resource has been deleted"
                 };
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -993,16 +968,12 @@ namespace Synthesis.PrincipalService.Modules
         {
             Guid userId = input.userId;
 
+            await RequireAccessWithTenantOrPrincipalExpansionsAsync(userId);
+
             try
             {
-                await RequireAccessWithTenantExpansionAsync(userId);
-
                 var result = await _userController.GetLicenseTypeForUserAsync(userId, TenantId);
                 return result;
-            }
-            catch (RouteExecutionEarlyExitException)
-            {
-                throw;
             }
             catch (ValidationFailedException ex)
             {
@@ -1017,6 +988,25 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
+        }
+
+        private async Task RequireAccessWithTenantOrPrincipalExpansionsAsync(Guid userId)
+        {
+            var tenantIdResponse = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            if (!tenantIdResponse.IsSuccess() || tenantIdResponse.Payload == null)
+            {
+                throw new Exception($"Error fetching tentantIds for user {userId}, {tenantIdResponse.ResponseCode} - {tenantIdResponse.ReasonPhrase}, {tenantIdResponse.ErrorResponse}");
+            }
+
+            var tenantIds = tenantIdResponse.Payload.ToList();
+
+            // This usage involves defining two items in a policy document for the same route.
+            // One item's condition will have tenantAccess, and the other item's condition
+            // will have isPrincipal.
+            await RequiresAccess()
+                .WithTenantAccessEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
+                .WithPrincipalIdExpansion(ctx => userId)
+                .ExecuteAsync(CancellationToken.None);
         }
 
         private async Task RequireAccessWithTenantExpansionAsync(Guid userId)
