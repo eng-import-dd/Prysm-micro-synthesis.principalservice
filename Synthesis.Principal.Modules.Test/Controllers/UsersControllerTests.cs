@@ -11,6 +11,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Synthesis.DocumentStorage;
+using Synthesis.DocumentStorage.TestTools.Mocks;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
@@ -27,6 +28,7 @@ using Synthesis.PolicyEvaluator;
 using Synthesis.PolicyEvaluator.Permissions;
 using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Controllers.Exceptions;
 using Synthesis.PrincipalService.Email;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Enums;
@@ -63,12 +65,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IIdentityUserApi> _identityUserApiMock = new Mock<IIdentityUserApi>();
         private readonly Mock<IEmailSendingService> _emailSendingMock = new Mock<IEmailSendingService>();
         private readonly Mock<ISuperAdminService> _superadminServiceMock = new Mock<ISuperAdminService>();
-        private readonly Mock<IPolicyEvaluator> _policyManagerMock = new Mock<IPolicyEvaluator>();
+        private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
-        private readonly Mock<IUsersController> _userApiMock = new Mock<IUsersController>();
-        private readonly Mock<IUsersController> _mockUserController = new Mock<IUsersController>();
         private readonly Mock<IValidator> _validatorFailsMock = new Mock<IValidator>();
 
         private readonly Guid _defaultGroupId = Guid.NewGuid();
@@ -85,7 +85,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         };
 
         private readonly ClaimsPrincipal _defaultClaimsPrincipal = new ClaimsPrincipal();
-        private readonly IEnumerable<Guid> _fullMemberUserIds = new List<Guid>();
+        private readonly IEnumerable<Guid> _fullMemberUserIds;
 
         private List<User> _usersInSameProject;
         private List<User> _usersInSameGroup;
@@ -116,7 +116,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _policyManagerMock.Object,
+                _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
                 _identityUserApiMock.Object);
         }
@@ -154,17 +154,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             };
         }
 
+        private static IEnumerable<Group> GetBuiltInGroups(Guid tenantId = default(Guid))
+        {
+            yield return new Group { Id = Guid.NewGuid(), Type = GroupType.Default };
+
+            if (tenantId == default(Guid))
+            {
+                yield break;
+            }
+
+            yield return new Group { Id = Guid.NewGuid(), Type = GroupType.Basic, TenantId = tenantId };
+            yield return new Group { Id = Guid.NewGuid(), Type = GroupType.TenantAdmin, TenantId = tenantId };
+        }
+
         private void SetupMocks()
         {
             // repository mock
-            _repositoryFactoryMock.Setup(m => m.CreateRepository<User>())
-                .Returns(_userRepositoryMock.Object);
+            _repositoryFactoryMock.Setup(m => m.CreateRepositoryAsync<User>(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_userRepositoryMock.Object);
 
-            _repositoryFactoryMock.Setup(m => m.CreateRepository<Group>())
-                .Returns(_groupRepositoryMock.Object);
+            _repositoryFactoryMock.Setup(m => m.CreateRepositoryAsync<Group>(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_groupRepositoryMock.Object);
 
-            _repositoryFactoryMock.Setup(m => m.CreateRepository<UserInvite>())
-                .Returns(_userInviteRepositoryMock.Object);
+            _repositoryFactoryMock.Setup(m => m.CreateRepositoryAsync<UserInvite>(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_userInviteRepositoryMock.Object);
 
             // event service mock
             _eventServiceMock.Setup(m => m.PublishAsync(It.IsAny<ServiceBusEvent<User>>()))
@@ -202,7 +215,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _identityUserApiMock.Setup(x => x.SetPasswordAsync(It.IsAny<IdentityUser>())).ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK));
 
-            _policyManagerMock
+            _policyEvaluatorMock
                 .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PolicyDocument>
                 {
@@ -212,7 +225,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                         {
                             new Permission
                             {
-                                Expression = SynthesisPermission.CanManageLicenses.ToString(),
+                                Expression = SynthesisPermission.CanManageUserLicenses.ToString(),
                                 Scope = PermissionScope.Allow,
                                 Type = PermissionType.Explicit
                             }
@@ -221,7 +234,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 }.AsEnumerable());
 
             _userRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com", Groups = new List<Guid>() });
 
             _licenseApiMock
@@ -251,14 +264,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
 
-            _userRepositoryMock
-                .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new User());
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Guid id, User user, UpdateOptions o, CancellationToken t) => user);
         }
 
         [Fact]
         public async Task AutoProvisionRefreshGroupsFailsAndThrowsCreateUserException()
         {
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .Throws<Exception>();
 
@@ -310,14 +324,11 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task AutoProvisionRefreshGroupsFailsAndThrowsPromotionFailedException()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<LicenseSummaryDto>());
-
-            _userApiMock.Setup(u => u.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
-                .Throws(new PromotionFailedException(""));
 
             var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
@@ -332,26 +343,34 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task AutoProvisionRefreshGroupsReturnsIfSuccessful()
+        public async Task AutoProvisionRefreshGroupsAsync_WhenSuccessful_ReturnsProvisionedUser()
         {
+            var tenantId = Guid.NewGuid();
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) =>
                 {
                     u.Id = Guid.NewGuid();
                     return u;
                 });
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
 
-            var tenantId = Guid.NewGuid();
             var createdBy = Guid.NewGuid();
             var idpUserRequest = new IdpUserRequest
             {
                 FirstName = "TestUser",
                 LastName = "TestUser"
             };
-            var userResponse = await _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy, _defaultClaimsPrincipal);
-            Assert.NotNull(userResponse);
+
+            var result = await _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, createdBy, _defaultClaimsPrincipal);
+
+            Assert.NotNull(result);
         }
 
         [Fact]
@@ -360,14 +379,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _validatorLocatorMock.Setup(m => m.GetValidator(typeof(EmailValidator)))
                 .Returns(_validatorFailsMock.Object);
 
-            var email = "";
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CanPromoteUserAsync(email, Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CanPromoteUserAsync(string.Empty, Guid.NewGuid()));
         }
 
         [Fact]
         public async Task CanPromoteUserIfUserExistsInATenant()
         {
-            var email = "ch@asd.com";
+            const string email = "ch@asd.com";
             var tenantId = Guid.NewGuid();
             _userRepositoryMock
                 .Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
@@ -388,16 +406,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CanPromoteUserNotFoundException()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
-            var email = "ch@gmm.com";
+            const string email = "ch@gmm.com";
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email, Guid.NewGuid()));
         }
 
         [Fact]
         public async Task CanPromoteUserSuccess()
         {
-            var email = "ch@prysm.com";
+            const string email = "ch@prysm.com";
             var tenantId = Guid.NewGuid();
             _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(() =>
@@ -415,8 +433,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
             var result = await _controller.CanPromoteUserAsync(email, tenantId);
-            var response = CanPromoteUserResultCode.UserCanBePromoted;
-            Assert.Equal(response, result.ResultCode);
+            Assert.Equal(CanPromoteUserResultCode.UserCanBePromoted, result.ResultCode);
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -427,9 +444,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(Task.FromResult(new User()));
 
             _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(new User()));
+                .ReturnsAsync((Guid id, User user, UpdateOptions o, CancellationToken t) => user);
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new User
                 {
                     //TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3"),
@@ -446,10 +463,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { tenantId }.AsEnumerable()));
-            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new UserGroup()));
 
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, userId));
             Assert.Single(ex.Errors.ToList());
         }
 
@@ -457,13 +472,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserGroupAsyncReturnsNoUserFoundValidationException()
         {
-            _mockUserController.Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new UserGroup()));
-
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult<User>(null));
 
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()));
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), Guid.NewGuid()));
             Assert.Single(ex.Errors.ToList());
         }
 
@@ -471,7 +483,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserGroupAsyncReturnsUserGroupIfSuccessful()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User
                 {
                     Groups = new List<Guid> { Guid.NewGuid() }
@@ -484,20 +498,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             };
 
             var userId = Guid.Parse("79d68d52-838a-40e2-a83d-c509ba550a30");
-            var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { tenantId }.AsEnumerable()));
-            _mockUserController.Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId))
-                .Returns(Task.FromResult(new UserGroup()));
 
-            var result = await _controller.CreateUserGroupAsync(newUserGroupRequest, tenantId, userId);
+            var result = await _controller.CreateUserGroupAsync(newUserGroupRequest, userId);
             Assert.IsType<UserGroup>(result);
         }
 
         [Fact]
         public async Task CreateUserGroupThrowsValidationErrorIfNonSuperAdminCreatesSuperAdminGroup()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User
                 {
                     Groups = new List<Guid> { Guid.NewGuid() }
@@ -517,32 +526,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { _defaultTenantId }.AsEnumerable()));
 
-            _mockUserController
-                .Setup(m => m.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()))
-                .Returns(Task.FromResult(new UserGroup()));
-
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, _defaultTenantId, Guid.NewGuid()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(newUserGroupRequest, Guid.NewGuid()));
         }
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
-        public async Task CreateUserGroupAsyncReturnsValidationException()
+        public async Task CreateUserGroupAsync_WhenInvalidUserGroups_ThrowsValidationException()
         {
-            _mockUserController
-                .Setup(m => m.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new UserGroup()));
-
             _userRepositoryMock
-                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), It.IsAny<Guid>(), It.IsAny<Guid>()));
-            Assert.Single(ex.Errors.ToList());
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserGroupAsync(new UserGroup(), Guid.Empty));
+
+            Assert.Single(ex.Errors);
         }
 
         [Fact]
-        public async Task CreatUserAsyncSuccessAsync()
+        public async Task CreateUserAsyncSuccessAsync()
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) =>
                 {
@@ -551,6 +559,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             var createUserRequest = CreateUserRequest.Example();
+            createUserRequest.TenantId = tenantId;
             var createdBy = Guid.NewGuid();
             var user = await _controller.CreateUserAsync(createUserRequest, createdBy, _defaultClaimsPrincipal);
 
@@ -564,9 +573,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task NewUserIsAssignedDefaultLicenseTypeIfCurrentUserDoesNotHaveCanManageLicensePermissionAsync()
+        public async Task CreateUserAsync_WhenCurrentUserDoesNotHaveCanManageLicensePermission_UserIsAssignedDefaultLicenseType()
         {
-            _policyManagerMock
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _policyEvaluatorMock
                 .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PolicyDocument>
                 {
@@ -584,16 +599,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             var createUserRequest = CreateUserRequest.Example();
+            createUserRequest.TenantId = tenantId;
+
             createUserRequest.LicenseType = LicenseType.UserLicense;
+
             await _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal);
 
             _userRepositoryMock.Verify(m => m.CreateItemAsync(It.Is<User>(u => u.LicenseType == LicenseType.Default), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
-        public async Task PromotedUserIsAssignedDefaultLicenseTypeIfCurrentUserDoesNotHaveCanManageLicensePermissionAsync()
+        public async Task PromotedUserIsAssignedDefaultLicenseTypeIfCurrentUserDoesNotHaveCanManageLicensePermission()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
@@ -607,7 +627,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
-            _policyManagerMock
+            _policyEvaluatorMock
                 .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PolicyDocument>
                 {
@@ -624,36 +644,73 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailIsDuplicateAsync()
+        public async Task CreateUserAsync_WhenUsernameOrEmailIsDuplicate_ThrowsValidationException()
         {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User> { new User() });
+            var tenantId = Guid.NewGuid();
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last" };
-            createUserRequest.TenantId = Guid.NewGuid();
-            var createdBy = Guid.NewGuid();
-            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, createdBy, _defaultClaimsPrincipal));
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
 
-            Assert.Equal(2, ex.Errors.ToList().Count); //Duplidate Email & Duplicate username errors
+            var duplicateExistingUser = new User
+            {
+                Username = "duplicate",
+                Email = "duplicate@prysm.com",
+                LdapId = "something"
+            };
+
+            _userRepositoryMock.SetupCreateItemQuery(o => new[] { duplicateExistingUser });
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                TenantId = tenantId,
+                Username = "duplicate",
+                Email = "duplicate@prysm.com"
+            };
+
+            var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal));
+
+            Assert.Equal(2, ex.Errors.ToList().Count); // Duplicate Email & Duplicate username errors
         }
 
         [Fact]
-        public async Task CreatUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicateAsync()
+        public async Task CreateUserAsyncThrowsValidationExceptionIfUserNameOrEmailOrLdapIsDuplicateAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User> { new User() });
+            var tenantId = Guid.NewGuid();
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", LdapId = "ldap" };
-            createUserRequest.TenantId = Guid.NewGuid();
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            var duplicateExistingUser = new User
+            {
+                Username = "duplicate",
+                Email = "duplicate@prysm.com",
+                LdapId = "ldap"
+            };
+
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { duplicateExistingUser });
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                TenantId = tenantId,
+                Username = "duplicate",
+                Email = "duplicate@prysm.com",
+                LdapId = "ldap"
+            };
             var createdBy = Guid.NewGuid();
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateUserAsync(createUserRequest, createdBy, _defaultClaimsPrincipal));
 
-            Assert.Equal(3, ex.Errors.ToList().Count); //Duplidate Email, Duplicate Ldap & Duplicate username errors
+            Assert.Equal(3, ex.Errors.ToList().Count); // Duplicate Email, Duplicate Ldap & Duplicate username errors
         }
 
         [Fact]
-        public async Task CreatUserAsyncForEnterpriseUserAddsBuiltInGroups()
+        public async Task CreateUserAsyncForEnterpriseUserAddsBuiltInGroups()
         {
+            var tenantId = Guid.NewGuid();
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) =>
                 {
@@ -661,58 +718,84 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     return u;
                 });
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
 
-            _groupRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<Group> { new Group() });
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
 
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.NewGuid(), UserType = UserType.Enterprise };
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Enterprise
+            };
             await _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal);
 
             _userRepositoryMock.Verify(x => x.CreateItemAsync(It.Is<User>(u => u.Groups.Count == 2), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
-        public async Task CreatUserAsyncThrowsExceptionIfDuplicateDefaultGroupExists()
+        public async Task CreateUserAsync_WhenDuplicateDefaultGroupExists_ThrowsException()
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId).Concat(new[] { new Group { Type = GroupType.Default } }));
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((User u) =>
+                .ReturnsAsync((User u, CancellationToken t) =>
                 {
                     u.Id = Guid.NewGuid();
                     return u;
                 });
 
-            _groupRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<Group> { new Group(), new Group() });
-
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.NewGuid() };
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId
+            };
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal));
         }
 
         [Fact]
-        public async Task CreatUserAsyncThrowsExceptionIDefaultGroupIsMissing()
+        public async Task CreateUserAsync_WhenDefaultGroupMissing_ThrowsException()
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((User u) =>
+                .ReturnsAsync((User u, CancellationToken t) =>
                 {
                     u.Id = Guid.NewGuid();
                     return u;
                 });
 
-            _groupRepositoryMock
-                .Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<Group>());
-
-            var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.NewGuid() };
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId
+            };
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal));
         }
 
         [Fact]
-        public async Task CreatUserAsyncUserIsLockedIfLicenseApiThrowsExceptionAsync()
+        public async Task CreateUserAsync_WhenLicenseApiThrowsException_UserIsCreatedAsLocked()
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) =>
                 {
@@ -723,17 +806,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
 
-            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<Group> { new Group { Id = Guid.NewGuid() } }.AsEnumerable());
-
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).Throws<Exception>();
 
             var createUserRequest = CreateUserRequest.Example();
-            var createdBy = Guid.NewGuid();
-            var user = await _controller.CreateUserAsync(createUserRequest, createdBy, _defaultClaimsPrincipal);
+            createUserRequest.TenantId = tenantId;
+
+            var user = await _controller.CreateUserAsync(createUserRequest, Guid.NewGuid(), _defaultClaimsPrincipal);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
 
@@ -741,10 +822,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreatUserAsyncUserIsLockedIfNoLicenseAvailableAsync()
+        public async Task CreateUserAsync_WhenNoLicenseAvailable_UserIsCreatedAsLocked()
         {
             var createdBy = Guid.NewGuid();
-            var adminGroupId = Guid.NewGuid();
+            var tenantId = Guid.NewGuid();
+            var builtInGroups = GetBuiltInGroups(tenantId).ToList();
+            var tenantAdminUserId = Guid.NewGuid();
+            var adminGroupId = builtInGroups.Find(g => g.Type == GroupType.TenantAdmin).Id;
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => builtInGroups);
+
+            _userRepositoryMock.SetupCreateItemQuerySequence()
+                .WithData(Enumerable.Empty<User>())
+                .WithData(Enumerable.Empty<User>())
+                .WithData(Enumerable.Empty<User>())
+                .WithData(new[]
+                {
+                    new User
+                    {
+                        Id = tenantAdminUserId,
+                        FirstName = "admin",
+                        Email = "admin@test.com",
+                        Groups = new List<Guid> { adminGroupId.GetValueOrDefault() }
+                    }
+                });
 
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) =>
@@ -753,27 +854,22 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     return u;
                 });
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
-
-            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<Group> { new Group { Id = adminGroupId } }.AsEnumerable());
-
-            _userRepositoryMock.SetupSequence(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>())
-                .ReturnsAsync(new List<User>())
-                .ReturnsAsync(new List<User>())
-                .ReturnsAsync(new List<User> { new User { FirstName = "admin", Email = "admin@test.com" } }.AsEnumerable());
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
 
             var createUserRequest = CreateUserRequest.Example();
+            createUserRequest.TenantId = tenantId;
+
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { tenantAdminUserId }));
+
             var user = await _controller.CreateUserAsync(createUserRequest, createdBy, _defaultClaimsPrincipal);
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+
             _emailApiMock.Verify(m => m.SendUserLockedMail(It.IsAny<LockUserRequest>()));
 
             Assert.NotNull(user);
@@ -784,18 +880,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetGuestUserForTenantReturnsEmptyResult()
         {
-            var providerMock = new Mock<IRepositoryQueryProvider>();
-            var queryableMock = new Mock<IRepositoryQueryable<User>>();
-            queryableMock.SetupGet(m => m.Provider).Returns(providerMock.Object);
-            queryableMock.SetupGet(m => m.Expression).Returns(Expression.Constant(queryableMock.Object));
-            queryableMock.Setup(m => m.MoveNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
-
-            providerMock.Setup(m => m.CreateQuery<User>(It.IsAny<Expression>()))
-                .Returns<Expression>(e => queryableMock.Object);
-
-            _userRepositoryMock.Setup(m => m.CreateItemQuery(It.IsAny<BatchOptions>()))
-                .Returns(queryableMock.Object);
+            _userRepositoryMock.SetupCreateItemQuery();
 
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
@@ -817,31 +902,15 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetGuestUsersForTenantSuccess()
         {
-            var users = new List<User> { new User(), new User(), new User() };
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
 
-            var providerMock = new Mock<IRepositoryQueryProvider>();
-            var queryableMock = new Mock<IRepositoryQueryable<User>>();
-            queryableMock.SetupGet(m => m.Provider).Returns(providerMock.Object);
-            queryableMock.SetupGet(m => m.Expression).Returns(Expression.Constant(queryableMock.Object));
-            queryableMock.Setup(m => m.MoveNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
+            var users = Enumerable.Range(0, 3).Select(i => new User { Id = Guid.NewGuid(), Email = $"a{i}@test.com" }).ToList();
 
-            // Setup IBatchResult<User> that returns the test data and provide a continuation token
-            var batchResultMock = new Mock<IBatchResult<User>>();
-            batchResultMock.Setup(m => m.GetEnumerator())
-                .Returns(users.GetEnumerator());
-            batchResultMock.SetupGet(m => m.ContinuationToken)
-                .Returns("test");
-            queryableMock.SetupGet(m => m.Current).Returns(batchResultMock.Object);
-
-            providerMock.Setup(m => m.CreateQuery<User>(It.IsAny<Expression>()))
-                .Returns<Expression>(e => queryableMock.Object);
-
-            _userRepositoryMock.Setup(m => m.CreateItemQuery(It.IsAny<BatchOptions>()))
-                .Returns(queryableMock.Object);
+            _userRepositoryMock.SetupCreateItemQuery(o => users);
 
             var tenantId = Guid.NewGuid();
             var userFilteringOptions = new UserFilteringOptions();
+
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
@@ -852,8 +921,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             Assert.Equal(3, result.List.Count);
             Assert.Equal(3, result.FilteredRecords);
-            Assert.Equal("test", result.ContinuationToken);
-            Assert.False(result.IsLastChunk);
         }
 
         [Trait("GetLicenseTypeForUser", "Get License Type For User")]
@@ -876,7 +943,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { tenantId }.AsEnumerable()));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User
                 {
                     Id = userId
@@ -893,23 +960,37 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3");
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException(string.Empty));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetLicenseTypeForUserAsync(userId, tenantId));
         }
 
         [Fact]
-        public async Task GetUserByNamesReturnsExpectedName()
+        public async Task GetNamesForUsersAsync_WhenUsersMatched_ReturnsExpectedNames()
         {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User> { new User { FirstName = "Joe", LastName = "Blow" } });
+            var userIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
 
-            var usernames = (await _controller.GetNamesForUsers(new List<Guid>())).ToList();
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User>
+            {
+                new User { Id = userIds[0], FirstName = "Joe", LastName = "Blow" },
+                new User { Id = userIds[1], FirstName = "John", LastName = "Doe" }
+            });
 
-            Assert.NotEmpty(usernames);
-            Assert.Equal("Joe", usernames.First().FirstName);
-            Assert.Equal("Blow", usernames.First().LastName);
+            var usernames = await _controller.GetNamesForUsersAsync(userIds);
+
+            Assert.Collection(
+                usernames,
+                un =>
+                {
+                    Assert.Equal("Joe", un.FirstName);
+                    Assert.Equal("Blow", un.LastName);
+                },
+                un =>
+                {
+                    Assert.Equal("John", un.FirstName);
+                    Assert.Equal("Doe", un.LastName);
+                });
         }
 
         [Fact]
@@ -921,7 +1002,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     Errors = { new ValidationFailure(string.Empty, string.Empty, string.Empty) }
                 });
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetNamesForUsers(new List<Guid>()));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetNamesForUsersAsync(new List<Guid>()));
         }
 
         /// <summary>
@@ -931,7 +1012,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUserByIdAsyncReturnsUserIfExistsAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
 
             var userId = Guid.NewGuid();
@@ -947,7 +1028,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUserByIdAsyncThrowsNotFoundExceptionIfUserDoesNotExistAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
@@ -957,7 +1038,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUserByIdBasicReturnsUserIfExists()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
 
             var userId = Guid.NewGuid();
@@ -969,7 +1050,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUserByIdBasicThrowsNotFoundExceptionIfUserDoesNotExist()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             var userId = Guid.NewGuid();
@@ -1081,18 +1162,21 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUsersForGroupReturnsUsersIfExists()
         {
-            var validGroupId = Guid.NewGuid();
+            var groupId = Guid.NewGuid();
+            var foundUserId = Guid.NewGuid();
 
-            _mockUserController.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new List<Guid>()));
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User>
+            {
+                new User
+                {
+                    Id = foundUserId,
+                    Groups = new List<Guid> { groupId }
+                }
+            });
 
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(Enumerable.Empty<User>()));
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
-            var result = await _controller.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetUserIdsByGroupIdAsync(groupId, Guid.NewGuid());
 
-            Assert.IsType<List<Guid>>(result);
+            Assert.Collection(result, id => Assert.Equal(foundUserId, id));
         }
 
         [Trait("User Group", "User Group Tests")]
@@ -1103,23 +1187,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(false);
 
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserIdsByGroupIdAsync(GroupIds.SuperAdminGroupId, It.IsAny<Guid>(), It.IsAny<Guid>()));
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserIdsByGroupIdAsync(GroupIds.SuperAdminGroupId, Guid.NewGuid()));
         }
 
         [Trait("User Group", "User Group Tests")]
         [Fact]
-        public async Task GetUsersForGroupThrowsNotFoundExceptionIfGroupDoesNotExist()
+        public async Task GetUserIdsByGroupIdAsync_WhenGroupDoesNotExist_ReturnsEmptyList()
         {
-            var validGroupId = Guid.NewGuid();
+            _userRepositoryMock.SetupCreateItemQuery(o => Enumerable.Range(0, 5).Select(i => new User { Groups = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() } }));
 
-            _mockUserController.Setup(m => m.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Throws(new NotFoundException(string.Empty));
-
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(u => u.Groups.Contains(validGroupId), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .Throws(new NotFoundException(string.Empty));
-            _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }.AsEnumerable()));
-            var result = await _controller.GetUserIdsByGroupIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>());
+            var result = await _controller.GetUserIdsByGroupIdAsync(Guid.NewGuid(), Guid.NewGuid());
 
             Assert.Empty(result);
         }
@@ -1140,7 +1217,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _policyManagerMock.Object,
+                _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
                 _identityUserApiMock.Object);
 
@@ -1167,7 +1244,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _searchBuilderMock.Object,
                 _queryRunnerMock.Object,
                 _tenantApiMock.Object,
-                _policyManagerMock.Object,
+                _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
                 _identityUserApiMock.Object);
 
@@ -1181,7 +1258,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task LockUserAsyncIfAssigningLicenseFails()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>())).ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
             var userId = Guid.NewGuid();
@@ -1192,7 +1269,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task LockUserAsyncIfReleaseLicenseFails()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
             _licenseApiMock.Setup(m => m.ReleaseUserLicenseAsync(It.IsAny<UserLicenseDto>())).ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
             var userId = Guid.NewGuid();
@@ -1202,7 +1279,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task UserIsLockedIfUserExist()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
@@ -1225,7 +1302,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task LockUserThrowsNotFoundIfUserNotFound()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
@@ -1239,7 +1316,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestAutoShouldFaileIfNoLicenceAvailableAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
@@ -1258,7 +1335,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
@@ -1281,7 +1358,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com" });
 
             _tenantApiMock.Setup(m => m.GetTenantIdsForUserIdAsync(It.IsAny<Guid>()))
@@ -1302,7 +1379,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestManuallyShouldFailIfIfUserEmailIsEmptyAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid() });
 
             _licenseApiMock.Setup(m => m.GetTenantLicenseSummaryAsync(It.IsAny<Guid>()))
@@ -1317,7 +1394,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task PromoteGuestManuallyShouldFailIfIfUserIsAlreadyInTenantAsync()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -1338,9 +1415,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupsForUserSuccess()
         {
             Guid? userId = Guid.NewGuid();
-            _mockUserController.Setup(m => m.GetGroupIdsByUserIdAsync(It.IsAny<Guid>()))
-                               .Returns(Task.FromResult(new List<Guid>()));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = userId, Groups = new List<Guid>() });
             var result = await _controller.GetGroupIdsByUserIdAsync((Guid)userId);
             Assert.IsType<List<Guid>>(result);
@@ -1351,9 +1426,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             Guid? userId = Guid.NewGuid();
             const string exception = "Resource Not Found";
-            _mockUserController.Setup(m => m.GetGroupIdsByUserIdAsync(It.IsAny<Guid>()))
-                               .ThrowsAsync(new NotFoundException(exception));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                                .ThrowsAsync(new NotFoundException(exception));
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetGroupIdsByUserIdAsync((Guid)userId));
         }
@@ -1362,9 +1435,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupsForUserThrowsException()
         {
             Guid? userId = Guid.NewGuid();
-            _mockUserController.Setup(m => m.GetGroupIdsByUserIdAsync(It.IsAny<Guid>()))
-                               .ThrowsAsync(new Exception());
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                                .ThrowsAsync(new Exception());
             await Assert.ThrowsAsync<Exception>(() => _controller.GetGroupIdsByUserIdAsync((Guid)userId));
         }
@@ -1373,9 +1444,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupsForUserThrowsValidationException()
         {
             Guid? userId = Guid.NewGuid();
-            _mockUserController.Setup(m => m.GetGroupIdsByUserIdAsync(It.IsAny<Guid>()))
-                               .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                                .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupIdsByUserIdAsync((Guid)userId));
         }
@@ -1401,12 +1470,12 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var groupId = Guid.NewGuid();
 
             _userRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Groups = new List<Guid> { groupId } });
 
             _userRepositoryMock
                 .Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new User());
+                .ReturnsAsync((Guid id, User user, UpdateOptions o, CancellationToken t) => user);
 
             var result = await _controller.RemoveUserFromPermissionGroupAsync(userId, groupId, userId);
             Assert.True(result);
@@ -1456,7 +1525,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 });
 
             _userRepositoryMock
-                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new DocumentNotFoundException());
 
             await Assert.ThrowsAsync<DocumentNotFoundException>(() => _controller.RemoveUserFromPermissionGroupAsync(userId, groupId, userId));
@@ -1479,8 +1548,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     var items = userList;
                     return Task.FromResult(items.AsEnumerable());
                 });
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new User { Groups = new List<Guid> { groupId } }));
+
             _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception());
 
@@ -1490,20 +1560,27 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateUserNotFoundException()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
+
             var userId = Guid.NewGuid();
             var user = new User();
+
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal));
         }
 
         [Fact]
         public async Task UpdateUserSuccess()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User>());
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Username = "dummy1" });
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>());
+
+            //_userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            //    .ReturnsAsync(new List<User>());
 
             var userId = Guid.NewGuid();
             var user = new User
@@ -1527,7 +1604,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var newUser = new User { Id = Guid.NewGuid(), LicenseType = LicenseType.UserLicense };
             var oldUser = new User { Id = Guid.NewGuid(), LicenseType = LicenseType.LegacyLicense };
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(oldUser);
             _licenseApiMock
                 .Setup(m => m.GetUserLicenseDetailsAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
@@ -1548,7 +1627,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var newUser = new User { LicenseType = LicenseType.UserLicense };
             var oldUser = new User { LicenseType = LicenseType.LegacyLicense };
 
-            _policyManagerMock
+            _policyEvaluatorMock
                 .Setup(x => x.GetPoliciesAsync(It.IsAny<ClaimsPrincipal>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<PolicyDocument>
                 {
@@ -1561,7 +1640,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     }
                 });
 
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(oldUser);
 
             await _controller.UpdateUserAsync(_defaultUser.Id.GetValueOrDefault(), newUser, _defaultClaimsPrincipal);
@@ -1573,24 +1654,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task UpdateUserValidationException()
         {
-            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
+
             var userId = Guid.NewGuid();
             var user = new User();
+
             _validatorMock.Setup(m => m.Validate(userId))
                 .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+
             _validatorMock.Setup(m => m.Validate(user))
                 .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", ""), new ValidationFailure("", "") }));
+
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateUserAsync(userId, user, _defaultClaimsPrincipal));
+
             Assert.Equal(3, ex.Errors.ToList().Count);
         }
 
         [Fact]
         public async Task GetUserByEmailOrUserNameIfExistsAsync()
         {
-            var validEmail = "smm@pry.com";
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                               .ReturnsAsync(new List<User> { new User { Email = validEmail } });
+            const string validEmail = "smm@pry.com";
+
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { new User { Email = validEmail } });
 
             var result = await _controller.GetUserByUserNameOrEmailAsync(validEmail);
 
@@ -1600,9 +1688,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetUserByEmailOrUserNameIfDoesntExistsAsync()
         {
-            var validEmail = "smm@pry.com";
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                               .ThrowsAsync(new NotFoundException("Not found"));
+            const string validEmail = "smm@pry.com";
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetUserByUserNameOrEmailAsync(validEmail));
         }
 
@@ -1618,8 +1707,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestForExistingUserThrowsUserExists()
         {
-            _userRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User> { User.Example() });
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { User.Example() });
 
             await Assert.ThrowsAsync<UserExistsException>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
         }
@@ -1627,13 +1717,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestForUninvitedUserSucceeds()
         {
-            _userInviteRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<UserInvite, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<UserInvite>());
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
 
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
 
-            var result = await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
+            var request = CreateUserRequest.Example();
+            request.TenantId = tenantId;
+
+            var result = await _controller.CreateGuestUserAsync(request);
 
             Assert.NotNull(result);
         }
@@ -1641,6 +1737,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestCreatesUser()
         {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(User.GuestUserExample()));
 
@@ -1654,10 +1754,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [InlineData(true)]
         public async Task CreateGuestReturnsExpectedIsEmailVerificationRequired(bool emailVerificationRequired)
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(User.GuestUserExample()));
 
             var requestModel = CreateUserRequest.GuestUserExample();
+            requestModel.TenantId = tenantId;
             requestModel.EmailVerificationRequired = emailVerificationRequired;
 
             var response = await _controller.CreateGuestUserAsync(requestModel);
@@ -1668,6 +1775,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestCallsSetPassword()
         {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
 
@@ -1679,6 +1790,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSendsSetPasswordErrorDeletesUser()
         {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
             _identityUserApiMock.Setup(m => m.SetPasswordAsync(It.IsAny<IdentityUser>()))
@@ -1686,17 +1801,26 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             await Assert.ThrowsAsync<Exception>(() => _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample()));
 
-            _userRepositoryMock.Verify(x => x.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()));
+            _userRepositoryMock.Verify(x => x.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateGuestSendsVerificationEmail()
         {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             var example = CreateUserRequest.GuestUserExample();
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
 
-            await _controller.CreateGuestUserAsync(CreateUserRequest.GuestUserExample());
+            var request = CreateUserRequest.GuestUserExample();
+            request.TenantId = tenantId;
+
+            await _controller.CreateGuestUserAsync(request);
 
             _emailSendingMock.Verify(x => x.SendGuestVerificationEmailAsync(example.FirstName, example.Email, example.Redirect, It.IsAny<Guid?>()));
         }
@@ -1704,6 +1828,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestSendsEvent()
         {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
 
@@ -1715,6 +1843,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateGuestReturnsUser()
         {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(User.GuestUserExample());
 
@@ -1731,6 +1863,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var request = CreateUserRequest.GuestUserExample();
             request.FirstName = firstName;
             request.LastName = lastName;
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            _userRepositoryMock.SetupCreateItemQuery();
 
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((User u, CancellationToken c) => u);
@@ -1758,7 +1894,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
                 .ReturnsAsync(batchMock.Object);
 
-            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+            var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
 
             Assert.Equal(result.List[0], _allUsers[3]);
         }
@@ -1779,7 +1915,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
                 .ReturnsAsync(batchMock.Object);
 
-            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+            var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
 
             Assert.Equal(3, result.List.Count);
         }
@@ -1797,7 +1933,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
                 .ReturnsAsync(batchMock.Object);
 
-            var result = await _controller.GetTenantUsersFromDb(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+            var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
 
             Assert.Equal(_allUsers.Count, result.List.Count);
         }
@@ -1820,8 +1956,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             var request = GuestVerificationEmailRequest.Example();
 
-            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>
+            _userRepositoryMock.SetupCreateItemQuery(
+                o => new List<User>
                 {
                     new User
                     {
@@ -1841,19 +1977,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task SendGuestVerificationEmailThrowsEmailAlreadyVerifiedExceptionIfEmailAlreadyVerified()
         {
             var request = GuestVerificationEmailRequest.Example();
+            var testUser = new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = request.FirstName,
+                Email = request.Email,
+                EmailVerificationId = Guid.NewGuid(),
+                IsEmailVerified = true
+            };
 
-            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>
-                {
-                    new User
-                    {
-                        Id = Guid.NewGuid(),
-                        FirstName = request.FirstName,
-                        Email = request.Email,
-                        EmailVerificationId = Guid.NewGuid(),
-                        IsEmailVerified = true
-                    }
-                });
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { testUser });
 
             await Assert.ThrowsAsync<EmailAlreadyVerifiedException>(() => _controller.SendGuestVerificationEmailAsync(request));
         }
@@ -1862,19 +1995,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task SendGuestVerificationEmailThrowsEmailRecentlySentExceptionIfEmailRecentlySent()
         {
             var request = GuestVerificationEmailRequest.Example();
+            var testUser = new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = request.FirstName,
+                Email = request.Email,
+                EmailVerificationId = Guid.NewGuid(),
+                VerificationEmailSentAt = DateTime.UtcNow
+            };
 
-            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>
-                {
-                    new User
-                    {
-                        Id = Guid.NewGuid(),
-                        FirstName = request.FirstName,
-                        Email = request.Email,
-                        EmailVerificationId = Guid.NewGuid(),
-                        VerificationEmailSentAt = DateTime.UtcNow
-                    }
-                });
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { testUser });
 
             await Assert.ThrowsAsync<EmailRecentlySentException>(() => _controller.SendGuestVerificationEmailAsync(request));
         }
@@ -1884,8 +2014,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             var request = GuestVerificationEmailRequest.Example();
 
-            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>());
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User>());
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.SendGuestVerificationEmailAsync(request));
         }
@@ -1894,7 +2023,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task SendGuestVerificationEmailUpdatesUserIfEmailIsSent()
         {
             var request = GuestVerificationEmailRequest.Example();
-
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -1903,11 +2031,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 EmailVerificationId = Guid.NewGuid()
             };
 
-            _userRepositoryMock.Setup(x => x.GetItemsAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<User>
-                {
-                    user
-                });
+            _userRepositoryMock.SetupCreateItemQuery(o => new List<User> { user });
 
             var previousTime = DateTime.UtcNow;
 

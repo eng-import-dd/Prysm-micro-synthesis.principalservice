@@ -1,25 +1,26 @@
 ﻿using System;
-using System.Configuration;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Synthesis.Configuration;
 using Synthesis.Http.Microservice;
 
-namespace Synthesis.PrincipalService.Controllers
+namespace Synthesis.PrincipalService.Services
 {
     public class CloudShim : ICloudShim
     {
         private readonly IMicroserviceHttpClientResolver _microserviceHttpClientResolver;
         private readonly string _serviceUrl;
 
-        public CloudShim(IMicroserviceHttpClientResolver microserviceHttpClientResolver)
+        public CloudShim(IMicroserviceHttpClientResolver microserviceHttpClientResolver, IAppSettingsReader appSettingsReader)
         {
             _microserviceHttpClientResolver = microserviceHttpClientResolver;
-            _serviceUrl = "http://localhost:8090";
+            _serviceUrl = appSettingsReader.GetValue<string>("SynthesisCloud.Url");
         }
 
         public Task<MicroserviceResponse<bool>> ValidateSettingProfileId(Guid tenantId, Guid settingProfileId)
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
-            var get = string.Format(Routes.ValidateSettingProfileId, tenantId,  settingProfileId);
+            var get = string.Format(Routes.ValidateSettingProfileId, tenantId, settingProfileId);
             return microserviceHttpClient.GetAsync<bool>($"{_serviceUrl}{get}");
         }
 
@@ -27,9 +28,15 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
             var post = string.Format(Routes.CopyMachineSettings, machineId);
-            bool dummy = true;
-            var result = await microserviceHttpClient.PostAsync($"{_serviceUrl}{post}", dummy);
+            var result = await microserviceHttpClient.PostAsync($"{_serviceUrl}{post}", true);
             return result;
+        }
+
+        public Task<MicroserviceResponse<IEnumerable<Guid>>> GetSettingProfileIdsForTenant(Guid tenantId)
+        {
+            var microserviceHttpClient = _microserviceHttpClientResolver.Resolve();
+            var get = string.Format(Routes.GetSettingProfileIdsForAccount, tenantId);
+            return microserviceHttpClient.GetAsync<IEnumerable<Guid>>($"{_serviceUrl}{get}");
         }
 
         private static class Routes
@@ -37,6 +44,8 @@ namespace Synthesis.PrincipalService.Controllers
             public static string ValidateSettingProfileId => "/api/v1/settings/{0}/{1}/validate";
 
             public static string CopyMachineSettings => "/api/v1/settings/{0}/copyMachineSettings";
+
+            public static string GetSettingProfileIdsForAccount => "/api/v1/accounts/{0}/settingprofileids";
         }
     }
 }

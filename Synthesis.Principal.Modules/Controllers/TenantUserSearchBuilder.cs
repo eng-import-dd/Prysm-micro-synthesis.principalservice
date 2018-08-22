@@ -8,37 +8,39 @@ using Synthesis.Logging;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
+using Synthesis.Threading.Tasks;
 
 namespace Synthesis.PrincipalService.Controllers
 {
     public class TenantUserSearchBuilder : ITenantUserSearchBuilder
     {
-        private readonly IRepository<User> _userRepository;
+        private readonly AsyncLazy<IRepository<User>> _userRepositoryAsyncLazy;
         private readonly IProjectAccessApi _projectApi;
         private readonly ILogger _logger;
 
-        public TenantUserSearchBuilder(IRepositoryFactory repositoryFactor, IProjectAccessApi projectApi, ILogger logger)
+        public TenantUserSearchBuilder(IRepositoryFactory repositoryFactory, IProjectAccessApi projectApi, ILogger logger)
         {
-            _userRepository = repositoryFactor.CreateRepository<User>();
+            _userRepositoryAsyncLazy = new AsyncLazy<IRepository<User>>(() => repositoryFactory.CreateRepositoryAsync<User>());
             _projectApi = projectApi;
             _logger = logger;
         }
 
         public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
-            var query = _userRepository.CreateItemQuery();
-            query = await BuildWhereClauseAsync(currentUserId, userIds, filteringOptions, query);
+            var userRepository = await _userRepositoryAsyncLazy;
+            var query = userRepository.CreateItemQuery();
+            query = await BuildWhereClauseAsync(query, currentUserId, userIds, filteringOptions);
             var batch = BuildOrderByClause(filteringOptions, query);
             return batch;
         }
 
-        private async Task<IQueryable<User>> BuildWhereClauseAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, IQueryable<User> query)
+        private async Task<IQueryable<User>> BuildWhereClauseAsync(IQueryable<User> query, Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
             query = query.Where(user => userIds.Contains(user.Id ?? Guid.Empty));
 
-            if (filteringOptions.OnlyCurrentUser)
+            if (filteringOptions.OnlyCurrentUser && currentUserId.HasValue)
             {
-                query = query.Where(user => userIds.Contains(currentUserId ?? Guid.Empty));
+                query = query.Where(user => userIds.Contains(currentUserId.Value));
             }
 
             if (!filteringOptions.IncludeInactive)
@@ -51,9 +53,11 @@ namespace Synthesis.PrincipalService.Controllers
                 case IdpFilter.IdpUsers:
                     query = query.Where(user => user.IsIdpUser == true);
                     break;
+
                 case IdpFilter.LocalUsers:
                     query = query.Where(user => user.IsIdpUser == false);
                     break;
+
                 case IdpFilter.NotSet:
                     query = query.Where(user => user.IsIdpUser == null);
                     break;
@@ -64,23 +68,27 @@ namespace Synthesis.PrincipalService.Controllers
                 case UserGroupingType.Project when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
                     query = await AddFilterByProjectToQuery(query, filteringOptions);
                     break;
+
                 case UserGroupingType.Group when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
                     query = filteringOptions.ExcludeUsersInGroup ?
                         query.Where(user => !user.Groups.Contains(filteringOptions.UserGroupingId)) :
                         query.Where(user => user.Groups.Contains(filteringOptions.UserGroupingId));
                     break;
+
                 case UserGroupingType.None:
                     break;
             }
 
-            if (!string.IsNullOrEmpty(filteringOptions.SearchValue))
+            if (string.IsNullOrEmpty(filteringOptions.SearchValue))
             {
-                var searchValue = filteringOptions.SearchValue.ToLower();
-                query = query.Where(
-                    user => (user.FirstName + " " + user.LastName).ToLower().Contains(searchValue)
-                        || user.Email.ToLower().Contains(searchValue)
-                        || user.Username.ToLower().Contains(searchValue));
+                return query;
             }
+
+            var searchValue = filteringOptions.SearchValue.ToLower();
+            query = query.Where(
+                user => (user.FirstName + " " + user.LastName).ToLower().Contains(searchValue)
+                    || user.Email.ToLower().Contains(searchValue)
+                    || user.Username.ToLower().Contains(searchValue));
 
             return query;
         }
@@ -103,18 +111,22 @@ namespace Synthesis.PrincipalService.Controllers
             return query;
         }
 
-        private IQueryable<User> BuildOrderByClause(UserFilteringOptions filteringOptions, IQueryable<User> query)
+        private static IQueryable<User> BuildOrderByClause(UserFilteringOptions filteringOptions, IQueryable<User> query)
         {
             switch (filteringOptions.SortColumn?.ToLower())
             {
                 case "lastname":
                     return filteringOptions.SortDescending ? query.OrderByDescending(x => x.LastName) : query.OrderBy(x => x.LastName);
+
                 case "email":
                     return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Email) : query.OrderBy(x => x.Email);
+
                 case "username":
                     return filteringOptions.SortDescending ? query.OrderByDescending(x => x.Username) : query.OrderBy(x => x.Username);
+
                 case "firstname":
                     return filteringOptions.SortDescending ? query.OrderByDescending(x => x.FirstName) : query.OrderBy(x => x.FirstName);
+
                 default:
                     return query;
             }

@@ -1,1 +1,4 @@
-﻿{"Paths":["/EmailDomain"]}
+﻿{
+  "kind": "Hash",
+  "paths": [ "/PartitionKey" ]
+}

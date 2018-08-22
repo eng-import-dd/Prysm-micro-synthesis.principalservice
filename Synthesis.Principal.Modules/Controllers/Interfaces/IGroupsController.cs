@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Synthesis.PrincipalService.InternalApi.Models;
 
@@ -10,25 +11,18 @@ namespace Synthesis.PrincipalService.Controllers
     /// </summary>
     public interface IGroupsController
     {
-        /// <summary>
-        /// Creates the group asynchronous.
-        /// </summary>
-        /// <param name="group">The group.</param>
-        /// <param name="tenantId">The tenant identifier.</param>
-        /// <param name="userId">The user identifier.</param>
-        /// <param name="isBuiltInGroup"></param>
-        /// <returns>
-        /// Group object.
-        /// </returns>
-        Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid userId, bool isBuiltInGroup);
+        Task<Group> CreateGroupAsync(Group group, Guid tenantId, Guid currentUserId, CancellationToken cancellationToken = default(CancellationToken));
 
-        Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId);
+        Task<Group> GetGroupByIdAsync(Guid groupId, Guid tenantId, CancellationToken cancellationToken = default(CancellationToken));
 
-        Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, Guid userId);
+        Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, CancellationToken cancellationToken = default(CancellationToken));
 
-        Task<bool> DeleteGroupAsync(Guid groupId, Guid userId);
+        Task<bool> DeleteGroupAsync(Guid groupId, Guid tenantId, Guid currentUserId, CancellationToken cancellationToken = default(CancellationToken));
 
-        Task<Group> UpdateGroupAsync(Group group, Guid tenantId, Guid userId);
-        Task CreateBuiltInGroupsAsync(Guid tenantId);
+        Task<Group> UpdateGroupAsync(Group group, Guid userId, CancellationToken cancellationToken = default(CancellationToken));
+
+        Task CreateBuiltInGroupsAsync(Guid tenantId, CancellationToken cancellationToken = default(CancellationToken));
+
+        Task<Guid?> GetTenantIdForGroupIdAsync(Guid groupId, Guid? tenantId, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

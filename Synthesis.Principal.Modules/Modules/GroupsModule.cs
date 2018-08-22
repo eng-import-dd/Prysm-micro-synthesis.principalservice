@@ -60,11 +60,10 @@ namespace Synthesis.PrincipalService.Modules
                 .ResponseFormat(Group.Example());
         }
 
-        private async Task<object> CreateGroupAsync(dynamic input)
+        private async Task<object> CreateGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             Group newGroup;
             try
@@ -79,9 +78,15 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _groupsController.CreateGroupAsync(newGroup, TenantId, PrincipalId, false);
+                // Force the group type to Custom because you can't create a built-in group using
+                // this route.
+                newGroup.Type = GroupType.Custom;
 
-                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.Created);
+                var result = await _groupsController.CreateGroupAsync(newGroup, TenantId, PrincipalId, cancellationToken);
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.Created);
             }
             catch (ValidationFailedException ex)
             {
@@ -94,16 +99,15 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetGroupByIdAsync(dynamic input)
+        private async Task<object> GetGroupByIdAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             Guid groupId = input.id;
             try
             {
-                return await _groupsController.GetGroupByIdAsync(groupId, TenantId);
+                return await _groupsController.GetGroupByIdAsync(groupId, TenantId, cancellationToken);
             }
             catch (NotFoundException)
             {
@@ -124,15 +128,15 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetGroupsForTenantAsync(dynamic input)
+        private async Task<object> GetGroupsForTenantAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .WithTenantIdExpansion(ctx => TenantId)
+                .ExecuteAsync(cancellationToken);
 
             try
             {
-                var result = await _groupsController.GetGroupsForTenantAsync(TenantId, PrincipalId);
+                var result = await _groupsController.GetGroupsForTenantAsync(TenantId, cancellationToken);
 
                 return Negotiate
                     .WithModel(result)
@@ -157,22 +161,17 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> DeleteGroupAsync(dynamic input)
+        private async Task<object> DeleteGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
                 Guid groupId = input.id;
-                await _groupsController.DeleteGroupAsync(groupId, PrincipalId);
+                await _groupsController.DeleteGroupAsync(groupId, TenantId, PrincipalId, cancellationToken);
 
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.NoContent,
-                    ReasonPhrase = "Resource has been deleted"
-                };
+                return Response.NoContent("Resource has been deleted");
             }
             catch (ValidationFailedException ex)
             {
@@ -180,7 +179,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException ex)
             {
-                Logger.Error("Group is either deleted or doesn't exist", ex);
+                Logger.Info("Group is either deleted or doesn't exist", ex);
                 return new Response
                 {
                     StatusCode = HttpStatusCode.NoContent,
@@ -194,33 +193,29 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> UpdateGroupAsync(dynamic input)
+        private async Task<object> UpdateGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            Group existingGroup;
+            Group group;
             try
             {
-                existingGroup = this.Bind<Group>();
+                group = this.Bind<Group>();
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to update a Group resource", ex);
-                return Response.BadRequestBindingException();
+                return Response.BadRequestBindingException(ex.Message);
             }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => group.TenantId ?? TenantId)
+                .ExecuteAsync(cancellationToken);
 
             try
             {
-                if (existingGroup.TenantId.Equals(Guid.Empty))
-                {
-                    existingGroup.TenantId = TenantId;
-                }
+                var result = await _groupsController.UpdateGroupAsync(group, PrincipalId, cancellationToken);
 
-                var result = await _groupsController.UpdateGroupAsync(existingGroup, TenantId, PrincipalId);
-
-                return Negotiate.WithModel(result).WithStatusCode(HttpStatusCode.OK);
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.OK);
             }
             catch (ValidationFailedException ex)
             {

@@ -38,8 +38,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("CreateUserInviteListForTenant", HttpMethod.Post, Routing.UserInvites, _ => CreateUserInviteListForTenantAsync())
                 .Description("Email invites for passed user list")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new List<UserInvite>{UserInvite.Example()})
-                .ResponseFormat(new List<UserInvite>{ UserInvite.Example() });
+                .RequestFormat(new List<UserInvite> { UserInvite.Example() })
+                .ResponseFormat(new List<UserInvite> { UserInvite.Example() });
 
             CreateRoute("ResendEmailInvitation", HttpMethod.Post, Routing.ResendUserInvites, _ => ResendEmailInvitationAsync())
                 .Description("Resend Email invites for passed user list")
@@ -86,7 +86,6 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Failed to send an invite due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
-
         }
 
         private async Task<object> ResendEmailInvitationAsync()
@@ -149,10 +148,9 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Failed to get users invited for Tenant due to an error", ex);
+                Logger.Error($"Failed to get users invited for tenant {TenantId} due to an error", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
-
     }
 }

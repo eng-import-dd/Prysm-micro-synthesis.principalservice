@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -16,21 +17,22 @@ using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Requests;
 
 namespace Synthesis.PrincipalService.Modules
 {
     public sealed class MachinesModule : SynthesisModule
     {
-        private readonly IMachineController _machineController;
+        private readonly IMachinesController _machinesController;
 
         public MachinesModule(
-            IMachineController machineController,
+            IMachinesController machineController,
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
             : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
-            _machineController = machineController;
+            _machinesController = machineController;
 
             this.RequiresAuthentication();
 
@@ -72,12 +74,10 @@ namespace Synthesis.PrincipalService.Modules
                 .ResponseFormat(new List<Machine> { Machine.Example() });
         }
 
-        private async Task<object> CreateMachineAsync(dynamic input)
-        {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+        private Guid? NullableTenantId => IsServicePrincipal ? new Guid?() : TenantId;
 
+        private async Task<object> CreateMachineAsync(dynamic input, CancellationToken cancellationToken)
+        {
             Machine newMachine;
             try
             {
@@ -85,13 +85,17 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to create a Machine resource", ex);
+                Logger.Info("Binding failed while attempting to create a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(c => newMachine.TenantId)
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                var result = await _machineController.CreateMachineAsync(newMachine, TenantId);
+                var result = await _machinesController.CreateMachineAsync(newMachine, cancellationToken);
 
                 return Negotiate
                     .WithModel(result)
@@ -99,6 +103,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for CreateMachine", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -108,16 +113,23 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetMachineByIdAsync(dynamic input)
+        private async Task<object> GetMachineByIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+            Guid machineId = input.id;
 
-            var machineId = input.id;
             try
             {
-                return await _machineController.GetMachineByIdAsync(machineId, TenantId, IsServicePrincipal);
+                var machine = await _machinesController.GetMachineByIdAsync(machineId, NullableTenantId, cancellationToken);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => machine.TenantId)
+                    .ExecuteAsync(cancellationToken);
+
+                return machine;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (NotFoundException)
             {
@@ -125,11 +137,8 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for GetMachineById", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineById: No access to get machines!");
             }
             catch (Exception ex)
             {
@@ -138,24 +147,34 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetMachineByKeyAsync(dynamic input)
+        private async Task<object> GetMachineByKeyAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
-            var machinekey = Request.Query.machinekey;
+            string machinekey = Request.Query.machinekey;
             try
             {
-                return await _machineController.GetMachineByKeyAsync(machinekey, TenantId, IsServicePrincipal);
+                var machine = await _machinesController.GetMachineByKeyAsync(machinekey, NullableTenantId, cancellationToken);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => machine.TenantId)
+                    .ExecuteAsync(cancellationToken);
+
+                return machine;
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Debug("Validation failed for GetMachineByKey", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineByKey: No access to get machines!");
             }
             catch (Exception ex)
             {
@@ -164,11 +183,10 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> UpdateMachineAsync(dynamic input)
+        private async Task<object> UpdateMachineAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             Machine updateMachine;
 
@@ -182,21 +200,22 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => updateMachine.TenantId)
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                return await _machineController.UpdateMachineAsync(updateMachine, TenantId, IsServicePrincipal);
+                return await _machinesController.UpdateMachineAsync(updateMachine, cancellationToken);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for UpdateMachine", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "UpdateMachine: Not authorized to edit this machine!");
             }
             catch (Exception ex)
             {
@@ -205,100 +224,104 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> DeleteMachineAsync(dynamic input)
+        private async Task<object> DeleteMachineAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            var machineId = input.id;
+            Guid machineId = input.id;
 
             try
             {
-                await _machineController.DeleteMachineAsync(machineId, TenantId);
+                var tenantId = await _machinesController.GetMachineTenantIdAsync(machineId, NullableTenantId, cancellationToken);
 
-                return new Response
-                {
-                    StatusCode = HttpStatusCode.NoContent,
-                    ReasonPhrase = "Machine has been deleted"
-                };
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => tenantId)
+                    .ExecuteAsync(cancellationToken);
+
+                await _machinesController.DeleteMachineAsync(machineId, tenantId, cancellationToken);
+
+                return Response.NoContent("Machine has been deleted");
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for DeleteMachine", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "GetMachineById: No access to get machines!");
             }
             catch (Exception ex)
             {
-                Logger.Error("GetMachineById threw an unhandled exception", ex);
+                Logger.Error($"An unhandled exception was encountered while deleting machine '{machineId}'", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
 
-        private async Task<object> ChangeMachineTenantAsync(dynamic input)
+        private async Task<object> ChangeMachineTenantAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
-
-            Machine updateMachine;
+            ChangeMachineTenantRequest request;
             try
             {
-                updateMachine = this.Bind<Machine>();
+                request = this.Bind<ChangeMachineTenantRequest>();
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to update a Machine resource", ex);
+                Logger.Info("Binding failed while attempting to update a Machine resource", ex);
                 return Response.BadRequestBindingException();
             }
 
+            // We need to make sure that this route is NOT in the default policy document.
+            // Only the SuperAdmin group should have access to this route.
+
+            // The permissions logic for this method is extremely messy because there are source
+            // and target tenants involved. The user needs to have access to both of them. I think
+            // that the "tenantAccess" condition needs to be expanded to include whether or not
+            // the user can impersonate a particular tenant as well if the tenant claim on the
+            // principal doesn't match the tenant of the resource in question.
+
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                return await _machineController.ChangeMachineTenantasync(updateMachine.Id, TenantId, updateMachine.SettingProfileId.Value);
+                return await _machinesController.ChangeMachineTenantAsync(request, NullableTenantId, cancellationToken);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for ChangeMachineTenant", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
             {
                 return Response.NotFound(ResponseReasons.NotFoundMachine);
             }
-            catch (InvalidOperationException)
-            {
-                return Response.Unauthorized("Unauthorized", HttpStatusCode.Unauthorized.ToString(), "ChangeMachineTenant: Not authorized.");
-            }
             catch (Exception ex)
             {
-                Logger.Error("Unhandled exception encountered while attempting to Change Machine tenant", ex);
+                Logger.Error("Unhandled exception encountered while attempting to Change Machine Tenant", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorUpdateMachine);
             }
         }
 
-        private async Task<object> GetTenantMachinesAsync(dynamic input)
+        private async Task<object> GetTenantMachinesAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .WithPrincipalIdExpansion(_ => PrincipalId)
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
-                return await _machineController.GetTenantMachinesAsync(TenantId);
-            }
-            catch (NotFoundException)
-            {
-                return Response.NotFound(ResponseReasons.NotFoundMachines);
+                return await _machinesController.GetTenantMachinesAsync(TenantId, cancellationToken);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Debug("Validation failed for GetTenantMachines", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.LogMessage(LogLevel.Error, "GetTenantMachinesAsync threw an unhandled exception", ex);
+                Logger.Error("Unhandled exception encountered while attempting to Get Tenant Machines", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetMachine);
             }
         }
