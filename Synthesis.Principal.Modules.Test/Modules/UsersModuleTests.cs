@@ -458,7 +458,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsOk()
         {
-            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .ReturnsAsync(new User());
 
             Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var createdBy);
@@ -487,7 +487,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Setup(m => m.GetUserAsync(It.IsAny<Guid>()))
                            .ReturnsAsync(new User { Id = currentUserId });
 
-            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new NotFoundException("user not found"));
 
             var response = await UserTokenBrowser.Put(string.Format(Routing.UsersWithItemBase, currentUserId), ctx => BuildRequest(ctx, new User()));
@@ -506,7 +506,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateUserReturnsInternalServerError()
         {
-            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.UpdateUserAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new Exception());
 
             Guid.TryParse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3", out var createdBy);

@@ -330,7 +330,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await GetTenantUsersFromDbAsync(tenantId, currentUserId, userFilteringOptions);
         }
 
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel, ClaimsPrincipal claimsPrincipal)
+        public async Task<User> UpdateUserAsync(Guid userId, User userModel, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             TrimNameOfUser(userModel);
 
@@ -350,7 +350,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            return await UpdateUserInDbAsync(userModel, userId, claimsPrincipal);
+            return await UpdateUserInDbAsync(userModel, userId, tenantId, claimsPrincipal);
         }
 
         public async Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId)
@@ -1246,7 +1246,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await userRepository.CreateItemAsync(user);
         }
 
-        private async Task<User> UpdateUserInDbAsync(User user, Guid id, ClaimsPrincipal claimsPrincipal)
+        private async Task<User> UpdateUserInDbAsync(User user, Guid id, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             var userRepository = await _userRepositoryAsyncLazy;
             var existingUser = await userRepository.GetItemAsync(id, DefaultQueryOptions);
@@ -1266,10 +1266,13 @@ namespace Synthesis.PrincipalService.Controllers
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
-            var tenantId = claimsPrincipal.GetTenantId();
-            var userLicense = await GetLicenseTypeForUserAsync(id, claimsPrincipal.GetTenantId());
+            if (!await CanManageUserLicensesAsync(claimsPrincipal))
+            {
+                return await userRepository.UpdateItemAsync(id, existingUser);
+            }
 
-            if (user.LicenseType != userLicense && await CanManageUserLicensesAsync(claimsPrincipal))
+            var userLicenseType = await GetLicenseTypeForUserAsync(id, tenantId);
+            if (user.LicenseType != userLicenseType)
             {
                 await AssignUserLicenseAsync(user, user.LicenseType, tenantId);
             }
