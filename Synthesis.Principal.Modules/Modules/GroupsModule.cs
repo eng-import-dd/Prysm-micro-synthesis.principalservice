@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Nancy;
+using Nancy.ErrorHandling;
 using Nancy.ModelBinding;
 using Nancy.Security;
 using Synthesis.Logging;
@@ -62,9 +63,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             Group newGroup;
             try
             {
@@ -75,6 +73,10 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to create a Group resource", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => TenantId)
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -101,13 +103,16 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetGroupByIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             Guid groupId = input.id;
             try
             {
-                return await _groupsController.GetGroupByIdAsync(groupId, TenantId, cancellationToken);
+                var result = await _groupsController.GetGroupByIdAsync(groupId, TenantId, cancellationToken);
+
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => result.TenantId.GetValueOrDefault())
+                    .ExecuteAsync(cancellationToken);
+
+                return result;
             }
             catch (NotFoundException)
             {
@@ -163,18 +168,21 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
+            Guid groupId = input.id;
+
             await RequiresAccess()
+                .WithTenantIdExpansion(async (ctx, ct) => (await _groupsController.GetTenantIdForGroupIdAsync(groupId, TenantId, ct)).GetValueOrDefault())
                 .ExecuteAsync(cancellationToken);
 
             try
             {
-                Guid groupId = input.id;
                 await _groupsController.DeleteGroupAsync(groupId, TenantId, PrincipalId, cancellationToken);
 
                 return Response.NoContent("Resource has been deleted");
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while deleting group '{groupId}' from tenant '{TenantId}' as principal '{PrincipalId}'", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException ex)
@@ -205,17 +213,21 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException(ex.Message);
             }
 
-            await RequiresAccess()
-                .WithTenantIdExpansion(ctx => group.TenantId ?? TenantId)
-                .ExecuteAsync(cancellationToken);
-
             try
             {
                 var result = await _groupsController.UpdateGroupAsync(group, PrincipalId, cancellationToken);
 
+                await RequiresAccess()
+                    .WithTenantIdExpansion(ctx => result.TenantId.GetValueOrDefault())
+                    .ExecuteAsync(cancellationToken);
+
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
+            }
+            catch (RouteExecutionEarlyExitException)
+            {
+                throw;
             }
             catch (ValidationFailedException ex)
             {

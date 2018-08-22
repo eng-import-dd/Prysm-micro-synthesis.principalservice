@@ -373,22 +373,22 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                Logger.Info("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (EmailAlreadyVerifiedException ex)
             {
-                Logger.Error("Email not sent because it is already been verified.", ex);
+                Logger.Info("Email not sent because it is already been verified.", ex);
                 return Response.EmailAlreadyVerified(ex.Message);
             }
             catch (EmailRecentlySentException ex)
             {
-                Logger.Error("Email not sent because it was sent too recently.", ex);
+                Logger.Info("Email not sent because it was sent too recently.", ex);
                 return Response.EmailRecentlySent(ex.Message);
             }
             catch (NotFoundException ex)
             {
-                Logger.Error("Email was not sent because the user could not be found.", ex);
+                Logger.Debug("Email was not sent because the user could not be found.", ex);
                 return Response.NotFound(ex.Message);
             }
             catch (Exception ex)
@@ -422,18 +422,18 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserById threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user '{userId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
         private async Task<object> GetUserNamesAsync(dynamic input, CancellationToken cancellationToken)
         {
-            IEnumerable<Guid> userIds;
+            List<Guid> userIds;
 
             try
             {
-                userIds = this.Bind<IEnumerable<Guid>>();
+                userIds = this.Bind<List<Guid>>();
             }
             catch (Exception ex)
             {
@@ -455,43 +455,65 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error($"{nameof(GetUserNamesAsync)} threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user name information for the following users due to an unhandled exception: {string.Join(", ", userIds)}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
         private async Task<object> GetUsersBasicAsync(dynamic input, CancellationToken cancellationToken)
         {
+            UserFilteringOptions userFilteringOptions;
+
+            try
+            {
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Info("Binding failed while retrieving basic user information", ex);
+                return Response.BadRequestBindingException();
+            }
+
             await RequiresAccess()
                 .WithTenantIdExpansion(ctx => TenantId)
                 .ExecuteAsync(cancellationToken);
 
             try
             {
-                var userFilteringOptions = this.Bind<UserFilteringOptions>();
                 return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userFilteringOptions);
             }
             catch (Exception ex)
             {
-                Logger.Error($"{nameof(GetUsersBasicAsync)} threw an unhandled exception", ex);
+                Logger.Error($"Failed to get filtered basic user information for tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
         private async Task<object> GetUserCountAsync(dynamic input, CancellationToken cancellationToken)
         {
+            UserFilteringOptions userFilteringOptions;
+
+            try
+            {
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Info("Binding failed while retrieving the user count", ex);
+                return Response.BadRequestBindingException();
+            }
+
             await RequiresAccess()
                 .ExecuteAsync(cancellationToken);
 
             try
             {
-                var userFilteringOptions = this.Bind<UserFilteringOptions>();
                 var count = await _userController.GetUserCountAsync(TenantId, PrincipalId, userFilteringOptions);
                 return count.ToString();
             }
             catch (Exception ex)
             {
-                Logger.Error($"{nameof(GetUserCountAsync)} threw an unhandled exception", ex);
+                Logger.Error($"Failed to count users in tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -521,7 +543,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserByIdBasic threw an unhandled exception", ex);
+                Logger.Error($"Failed to get basic user information for '{userId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -563,7 +585,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserByUserNameOrEmailAsync threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user information by username (or email) from tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -577,7 +599,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                Logger.Info("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
 
@@ -590,7 +612,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundUser);
+                return Response.NotFound(ResponseReasons.NotFoundUsers);
             }
             catch (ValidationFailedException ex)
             {
@@ -616,7 +638,7 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
-            // TODO: Secure GetUsersByIdsAsync route better. A requestor should be able to get information
+            // TODO: Secure GetUsersByIdsAsync route better. A requester should be able to get information
             // only on certain users. As-is, this method allows any authenticated principal
             // to get data on all other users, assuming their Id's are known.
 
