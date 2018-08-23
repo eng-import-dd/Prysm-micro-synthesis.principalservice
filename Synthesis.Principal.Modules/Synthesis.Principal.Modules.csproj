@@ -210,6 +210,9 @@
     <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta007\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
     </Reference>
+    <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta003\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
@@ -271,7 +274,7 @@
       <HintPath>..\packages\Synthesis.SnapGridService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.SnapGridService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta022\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta024\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Threading.1.1.1-beta001\lib\net452\Synthesis.Threading.dll</HintPath>
@@ -337,9 +340,6 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Synthesis.Guest.ProjectContext, 1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta002\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
-    </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
