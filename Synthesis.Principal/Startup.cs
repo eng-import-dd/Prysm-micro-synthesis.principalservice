@@ -27,6 +27,7 @@ namespace Synthesis.PrincipalService
             // This middleware performs our authentication and populates the user principal.
             app.UseMiddlewareFromContainer<SynthesisAuthenticationMiddleware>();
             app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
+            app.UseMiddlewareFromContainer<GuestContextMiddleware>();
             app.UseStageMarker(PipelineStage.Authenticate);
 
             app.UseNancy(options =>
