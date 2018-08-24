@@ -34,6 +34,25 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="AsyncEnumerable, Version=2.1.0.0, Culture=neutral, PublicKeyToken=0426b068161bd1d1, processorArchitecture=MSIL">
       <HintPath>..\packages\AsyncEnumerator.2.1.0\lib\net45\AsyncEnumerable.dll</HintPath>
@@ -173,7 +192,7 @@
       <HintPath>..\packages\Synthesis.ApplicationInsights.2.0.6\lib\net452\Synthesis.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Authentication.Jwt, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta013\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Authentication.Jwt.1.0.0-beta015\lib\net452\Synthesis.Authentication.Jwt.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.1.0-beta003\lib\net452\Synthesis.Cache.dll</HintPath>
@@ -188,7 +207,7 @@
       <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta004\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.CopyProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta012\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.CopyProjectService.InternalApi.1.0.0-beta013\lib\net452\Synthesis.CopyProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1-beta022\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
@@ -233,7 +252,7 @@
       <HintPath>..\packages\Synthesis.Microservice.1.0.0-beta012\lib\net452\Synthesis.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta043\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta044\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>
@@ -242,7 +261,7 @@
       <HintPath>..\packages\Synthesis.Owin.Host.2.0.0\lib\net452\Synthesis.Owin.Host.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Owin.Security, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta011\lib\net452\Synthesis.Owin.Security.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Owin.Security.1.0.0-beta012\lib\net452\Synthesis.Owin.Security.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Policy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Policy.1.0.0-beta005\lib\net452\Synthesis.Policy.dll</HintPath>
@@ -254,10 +273,10 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta013\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta052\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta053\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta045\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta046\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.6\lib\net452\Synthesis.Serialization.dll</HintPath>

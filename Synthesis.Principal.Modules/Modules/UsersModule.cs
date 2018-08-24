@@ -315,7 +315,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest);
+                var userResponse = await _userController.CreateGuestUserAsync(createUserRequest, TenantId);
 
                 return Negotiate
                     .WithModel(userResponse)

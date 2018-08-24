@@ -31,6 +31,7 @@ using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.InternalApi.Models.Events;
 using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
@@ -207,7 +208,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new IdentityPasswordException("Setting the user's password failed. The user was removed from the database and from the tenant they were mapped to.");
             }
 
-            _eventService.Publish(EventNames.UserCreated, result);
+            _eventService.Publish(EventNames.UserCreated, new UserCreated { User = result, TenantId = tenantId });
 
             return result;
         }
@@ -412,7 +413,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<CreateGuestUserResponse> CreateGuestUserAsync(CreateUserRequest model)
+        public async Task<CreateGuestUserResponse> CreateGuestUserAsync(CreateUserRequest model, Guid creatingUserTenantId)
         {
             // Trim up the names
             model.FirstName = model.FirstName?.Trim();
@@ -491,7 +492,7 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerificationRequired = model.EmailVerificationRequired
             };
 
-            _eventService.Publish(EventNames.UserCreated, guestUser);
+            _eventService.Publish(EventNames.UserCreated, new UserCreated { User = guestUser, TenantId = creatingUserTenantId });
 
             // Send the verification email
             var emailResult = await _emailSendingService.SendGuestVerificationEmailAsync(model.FirstName,
