@@ -151,7 +151,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var user = CreateUserRequest.GuestUserExample();
 
             await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, user));
-            _controllerMock.Verify(x => x.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()));
+            _controllerMock.Verify(x => x.CreateGuestUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()));
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGuestUserReturnsConflictIfUserExistsExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.CreateGuestUserAsync(It.IsAny<CreateUserRequest>()))
+            _controllerMock.Setup(m => m.CreateGuestUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>()))
                 .Throws(new UserExistsException());
 
             var response = await UnauthenticatedBrowser.Post(Routing.Guests, ctx => BuildRequest(ctx, CreateUserRequest.GuestUserExample()));
