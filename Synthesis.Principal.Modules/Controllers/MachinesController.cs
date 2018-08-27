@@ -7,6 +7,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
+using Synthesis.Http.Microservice;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
@@ -256,8 +257,16 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (settingProfileId == Guid.Empty)
             {
-                _logger.Error("An error occurred changing the tenant. settingProfileId must not be null or empty");
-                throw new BadRequestException("Setting Profile Id cannot be null");
+                var settingProfileIds = await _cloudShim.GetSettingProfileIdsForTenant(tenantId);
+                if (settingProfileIds.IsSuccess() && settingProfileIds.Payload.Any())
+                {
+                    settingProfileId = settingProfileIds.Payload.First();
+                }
+                else
+                {
+                    _logger.Error("An error occurred changing the tenant. Unable to find a valid setting profile id in the new tenant");
+                    throw new ValidationFailedException(new []{new ValidationFailure(nameof(settingProfileId) ,  "Unable to find a valid setting profile id in the new tenant"), });
+                }
             }
 
             if (existingMachine == null)
@@ -269,9 +278,10 @@ namespace Synthesis.PrincipalService.Controllers
             if (!await IsValidSettingProfile(tenantId, settingProfileId))
             {
                 _logger.Error("Invalid operation. The settings profile is not valid.");
-                throw new InvalidOperationException();
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(settingProfileId), "The settings profile is not valid."), });
             }
 
+            existingMachine.TenantId = tenantId;
             existingMachine.SettingProfileId = settingProfileId;
 
             try

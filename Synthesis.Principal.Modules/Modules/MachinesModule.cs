@@ -260,9 +260,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> ChangeMachineTenantAsync(dynamic input)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Machine updateMachine;
             try
             {
@@ -274,9 +271,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(_=>updateMachine.TenantId)
+                .ExecuteAsync(CancellationToken.None);
+
             try
             {
-                return await _machineController.ChangeMachineTenantasync(updateMachine.Id, TenantId, updateMachine.SettingProfileId.Value);
+                return await _machineController.ChangeMachineTenantasync(updateMachine.Id, updateMachine.TenantId, updateMachine.SettingProfileId.GetValueOrDefault());
             }
             catch (ValidationFailedException ex)
             {
