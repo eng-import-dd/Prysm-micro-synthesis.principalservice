@@ -39,7 +39,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _validatorFailureMock
                 .Setup(x => x.ValidateAsync(It.IsAny<object>(), CancellationToken.None))
-                .ReturnsAsync(new ValidationResult(new List<ValidationFailure> {new ValidationFailure("", "")}));
+                .ReturnsAsync(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
 
             // validator mock
             _validatorLocatorMock.Setup(m => m.GetValidator(It.IsAny<Type>()))
@@ -73,7 +73,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task DefaultGroupsAreCreated(GroupType type, string groupName)
         {
             _groupRepositoryMock
-                .Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .Setup(m => m.CreateItemAsync(It.IsAny<Group>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Group());
 
             var tenantId = Guid.NewGuid();
@@ -81,13 +81,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _groupRepositoryMock.Verify(y => y.CreateItemAsync(It.Is<Group>(x =>
                 x.TenantId == tenantId && x.Name == groupName &&
-                x.IsLocked && x.Type == type)));
+                x.IsLocked && x.Type == type), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
         public async Task CreateGroupAsyncReturnsNewGroupIfSuccessful()
         {
-            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Group()));
 
             var newGroupRequest = new Group();
@@ -101,7 +101,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task CreateGroupAsyncThrowsValidationExceptionIfBuiltInGroupsAreNotPermitted()
         {
             _groupRepositoryMock
-                .Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+                .Setup(m => m.CreateItemAsync(It.IsAny<Group>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Group()));
 
             _validatorLocatorMock
@@ -111,17 +111,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateGroupAsync(new Group()
             {
                 Type = GroupType.Basic
-            },  Guid.NewGuid(), Guid.NewGuid(), false));
+            }, Guid.NewGuid(), Guid.NewGuid(), false));
         }
 
         [Fact]
         public async Task DeleteGroupAsyncReturnsTrueIfSuccessful()
         {
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Group()));
-            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Guid.NewGuid()));
-            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>()))
+            _userRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User());
             var groupId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -132,13 +132,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task OnlySuperAdminsCanCreateLockedGroups()
         {
-            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>()))
+            _groupRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<Group>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Group());
 
             await _controller.CreateGroupAsync(new Group { IsLocked = true }, Guid.NewGuid(), Guid.NewGuid(), false);
 
             _groupRepositoryMock
-                .Verify(x => x.CreateItemAsync(It.Is<Group>(g => g.IsLocked == false)));
+                .Verify(x => x.CreateItemAsync(It.Is<Group>(g => g.IsLocked == false), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
@@ -148,13 +148,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Setup(x => x.IsSuperAdminAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(false);
 
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Group() { IsLocked = true });
 
             var result = await _controller.DeleteGroupAsync(Guid.NewGuid(), Guid.NewGuid());
 
             _groupRepositoryMock
-                .Verify(x => x.DeleteItemAsync(It.IsAny<Guid>()), Times.Never);
+                .Verify(x => x.DeleteItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()), Times.Never);
 
             Assert.False(result);
         }
@@ -162,7 +162,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetGroupByIdReturnsGroupIfExists()
         {
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Group
                 {
                     TenantId = Guid.Parse("dbae315b-6abf-4a8b-886e-c9cc0e1d16b3")
@@ -178,7 +178,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task GetGroupByIdThrowsNotFoundExceptionIfGroupDoesNotExist()
         {
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(Group));
 
             var groupId = Guid.NewGuid();
@@ -190,7 +190,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupByIdThrowsValidationException()
         {
             var errors = Enumerable.Empty<ValidationFailure>();
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(errors));
 
             var groupId = Guid.NewGuid();
@@ -203,7 +203,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupsForTenantReturnsGroupsIfExists()
         {
             const int count = 5;
-            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
                     var itemsList = new List<Group>();
@@ -226,7 +226,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         public async Task GetGroupsForTenantReturnsNoMatchingRecords()
         {
             const int count = 0;
-            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+            _groupRepositoryMock.Setup(m => m.GetItemsAsync(It.IsAny<Expression<Func<Group, bool>>>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
                     var itemsList = new List<Group>();
@@ -259,7 +259,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 IsLocked = false
             };
 
-            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>()))
+            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException(string.Empty));
 
             await Assert.ThrowsAsync<NotFoundException>(() => _controller.UpdateGroupAsync(group, tenantId, userId));
@@ -280,10 +280,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 IsLocked = false
             };
 
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(group));
 
-            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>()))
+            _groupRepositoryMock.Setup(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<Group>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(group));
 
             var result = await _controller.UpdateGroupAsync(group, tenantId, userId);
@@ -307,7 +307,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var errors = Enumerable.Empty<ValidationFailure>();
 
-            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>()))
+            _groupRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(errors));
 
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.UpdateGroupAsync(group, tenantId, userId));

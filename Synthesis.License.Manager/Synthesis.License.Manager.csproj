@@ -88,7 +88,7 @@
       <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta002\lib\net452\Synthesis.Http.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta021\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
@@ -100,13 +100,13 @@
       <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6-beta\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta050\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta052\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.6\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Threading, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Threading.1.1.0\lib\net452\Synthesis.Threading.dll</HintPath>
+    <Reference Include="Synthesis.Threading, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta001\lib\net452\Synthesis.Threading.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Tracking.Correlations, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Tracking.Correlations.1.0.1\lib\net452\Synthesis.Tracking.Correlations.dll</HintPath>

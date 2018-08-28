@@ -333,7 +333,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await GetTenantUsersFromDb(tenantId, currentUserId, userFilteringOptions);
         }
 
-        public async Task<User> UpdateUserAsync(Guid userId, User userModel, ClaimsPrincipal claimsPrincipal)
+        public async Task<User> UpdateUserAsync(Guid userId, User userModel, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             TrimNameOfUser(userModel);
             var errors = new List<ValidationFailure>();
@@ -358,8 +358,8 @@ namespace Synthesis.PrincipalService.Controllers
                 _logger.Error("Failed to validate the resource id and/or resource while attempting to update a User resource.");
                 throw new ValidationFailedException(errors);
             }
-  
-            return await UpdateUserInDb(userModel, userId, claimsPrincipal);
+
+            return await UpdateUserInDb(userModel, userId, tenantId, claimsPrincipal);
         }
 
         public async Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId)
@@ -811,33 +811,32 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            var criteria = new List<Expression<Func<User, bool>>>();
-            Expression<Func<User, string>> orderBy;
+            var userQuery = _userRepository.CreateItemQuery(new BatchOptions { BatchSize = userFilteringOptions.PageSize, ContinuationToken = userFilteringOptions.ContinuationToken });
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
             if (userIdsInTenant.IsSuccess())
             {
                 var userids = userIdsInTenant.Payload.ToList();
-                criteria.Add(u => !userids.Contains(u.Id.Value));
+                userQuery = userQuery.Where(u => !userids.Contains(u.Id.Value));
             }
 
             var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
             if (tenantDomainsResponse.IsSuccess() && tenantDomainsResponse.Payload.Any())
             {
                 var tenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
-                criteria.Add(u => tenantDomains.Contains(u.EmailDomain));
+                userQuery = userQuery.Where(u => tenantDomains.Contains(u.EmailDomain));
             }
 
             if (!string.IsNullOrEmpty(userFilteringOptions.SearchValue))
             {
-                criteria.Add(x =>
+                userQuery = userQuery.Where(x =>
                     x != null &&
-                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(
-                        userFilteringOptions.SearchValue.ToLower()) ||
+                    (x.FirstName.ToLower() + " " + x.LastName.ToLower()).Contains(userFilteringOptions.SearchValue.ToLower()) ||
                     x != null && x.Email.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()) ||
                     x != null && x.Username.ToLower().Contains(userFilteringOptions.SearchValue.ToLower()));
             }
 
+            Expression<Func<User, string>> orderBy;
             if (string.IsNullOrWhiteSpace(userFilteringOptions.SortColumn))
             {
                 orderBy = u => u.FirstName;
@@ -868,28 +867,32 @@ namespace Synthesis.PrincipalService.Controllers
                 }
             }
 
-            var queryparams = new OrderedQueryParameters<User, string>
-            {
-                Criteria = criteria,
-                OrderBy = orderBy,
-                SortDescending = userFilteringOptions.SortDescending,
-                ContinuationToken = userFilteringOptions.ContinuationToken,
-                ChunkSize = userFilteringOptions.PageSize
-            };
+            userQuery = userFilteringOptions.SortDescending
+                ? userQuery.OrderByDescending(orderBy)
+                : userQuery.OrderBy(orderBy);
 
-            var guestUsersInTenantResult = await _userRepository.GetOrderedPaginatedItemsAsync(queryparams);
-            var guestUsersInTenant = guestUsersInTenantResult.Items.ToList();
-            var filteredUserCount = guestUsersInTenant.Count;
-            var returnMetaData = new PagingMetadata<User>
+            var userRepositoryQuery = userQuery.AsRepositoryQuery();
+            if (!await userRepositoryQuery.MoveNextAsync())
             {
-                FilteredRecords = filteredUserCount,
-                List = guestUsersInTenant,
+                return new PagingMetadata<User>
+                {
+                    FilteredRecords = 0,
+                    List = new List<User>(),
+                    SearchValue = userFilteringOptions.SearchValue,
+                    ContinuationToken = null,
+                    IsLastChunk = true
+                };
+            }
+
+            var users = userRepositoryQuery.Current.ToList();
+            return new PagingMetadata<User>
+            {
+                FilteredRecords = users.Count,
+                List = users,
                 SearchValue = userFilteringOptions.SearchValue,
-                ContinuationToken = guestUsersInTenantResult.ContinuationToken,
-                IsLastChunk = guestUsersInTenantResult.IsLastChunk
+                ContinuationToken = userRepositoryQuery.Current.ContinuationToken,
+                IsLastChunk = userRepositoryQuery.Current.ContinuationToken == null
             };
-
-            return returnMetaData;
         }
 
         private bool IsBuiltInOnPremTenant(Guid? tenantId)
@@ -937,7 +940,7 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        private async Task<User> UpdateUserInDb(User user, Guid id, ClaimsPrincipal claimsPrincipal)
+        private async Task<User> UpdateUserInDb(User user, Guid id, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             var existingUser = await _userRepository.GetItemAsync(id);
             if (existingUser == null)
@@ -956,12 +959,13 @@ namespace Synthesis.PrincipalService.Controllers
             existingUser.IsLocked = user.IsLocked;
             existingUser.IsIdpUser = user.IsIdpUser;
 
-            var tenantId = claimsPrincipal.GetTenantId();
-            var userLicense = await GetLicenseTypeForUserAsync(id, claimsPrincipal.GetTenantId());
-
-            if (user.LicenseType != userLicense && await CanManageUserLicensesAsync(claimsPrincipal))
+            if (await CanManageUserLicensesAsync(claimsPrincipal))
             {
-                await AssignUserLicense(user, user.LicenseType, tenantId);
+                var userLicense = await GetLicenseTypeForUserAsync(id, tenantId);
+                if (user.LicenseType != userLicense)
+                {
+                    await AssignUserLicense(user, user.LicenseType, tenantId);
+                }
             }
 
             try
@@ -1001,7 +1005,7 @@ namespace Synthesis.PrincipalService.Controllers
 
                 if (assignedLicenseServiceResult.ResultCode == LicenseResponseResultCode.Success)
                 {
-                    if(sendWelcomeEmail)
+                    if (sendWelcomeEmail)
                     {
                         await SendWelcomeEmailAsync(user.Email, user.FirstName);
                     }
@@ -1270,7 +1274,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        #endregion
+        #endregion User Group Methods
 
         #region User License Type Method
 
@@ -1306,7 +1310,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await GetUserLicenseType(userId, tenantId);
         }
 
-        #endregion
+        #endregion User License Type Method
 
         private async Task<LicenseType?> GetUserLicenseType(Guid userId, Guid tenantId)
         {
@@ -1353,7 +1357,6 @@ namespace Synthesis.PrincipalService.Controllers
 
                     if (assignUserLicenseResult.ResultCode != LicenseResponseResultCode.Success)
                     {
-
                         validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to assign license to the user"));
                     }
                 }
@@ -1503,15 +1506,15 @@ namespace Synthesis.PrincipalService.Controllers
 
                 await _userRepository.UpdateItemAsync((Guid)user.Id, user);
 
-                return new VerifyUserEmailResponse{Result = true};
+                return new VerifyUserEmailResponse { Result = true };
             }
 
-            return new VerifyUserEmailResponse{Result = false};
+            return new VerifyUserEmailResponse { Result = false };
         }
 
         private async Task<bool> CanManageUserLicensesAsync(ClaimsPrincipal principal)
         {
-            return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageLicenses);
+            return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageUserLicenses);
         }
     }
 }

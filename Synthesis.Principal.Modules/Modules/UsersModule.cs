@@ -624,7 +624,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                return await _userController.UpdateUserAsync(userId, userModel, Context.CurrentUser);
+                return await _userController.UpdateUserAsync(userId, userModel, TenantId, Context.CurrentUser);
             }
             catch (ValidationFailedException ex)
             {
