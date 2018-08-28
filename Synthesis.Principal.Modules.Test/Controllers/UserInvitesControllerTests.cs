@@ -158,7 +158,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         [Fact]
         public async Task CreateUserInviteListInvalidEmailFormate()
         {
-            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(BulkUploadEmailValidator)))
+            _validatorLocatorMock.Setup(m => m.GetValidator(typeof(EmailValidator)))
                 .Returns(_validatorFailsMock.Object);
 
             var createUserInviteRequest = new List<UserInvite> { new UserInvite { FirstName = "abc", LastName = "xyz", Email = "abc.com" } };
