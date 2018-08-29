@@ -998,13 +998,11 @@ namespace Synthesis.PrincipalService.Modules
                 throw new Exception($"Error fetching tentantIds for user {userId}, {tenantIdResponse.ResponseCode} - {tenantIdResponse.ReasonPhrase}, {tenantIdResponse.ErrorResponse}");
             }
 
-            var tenantIds = tenantIdResponse.Payload.ToList();
-
             // This usage involves defining two items in a policy document for the same route.
             // One item's condition will have tenantAccess, and the other item's condition
             // will have isPrincipal.
             await RequiresAccess()
-                .WithTenantAccessEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
+                .WithAnyTenantIdExpansion((ctx, ct) => Task.FromResult(tenantIdResponse.Payload))
                 .WithPrincipalIdExpansion(ctx => userId)
                 .ExecuteAsync(CancellationToken.None);
         }
@@ -1017,10 +1015,8 @@ namespace Synthesis.PrincipalService.Modules
                 throw new Exception($"Error fetching tentantIds for user {userId}, {tenantIdResponse.ResponseCode} - {tenantIdResponse.ReasonPhrase}, {tenantIdResponse.ErrorResponse}");
             }
 
-            var tenantIds = tenantIdResponse.Payload.ToList();
-
             await RequiresAccess()
-                .WithTenantAccessEvaluation((context, condition, arg3) => Task.FromResult(tenantIds.Contains(TenantId)))
+                .WithAnyTenantIdExpansion((ctx, ct) => Task.FromResult(tenantIdResponse.Payload))
                 .ExecuteAsync(CancellationToken.None);
         }
     }
