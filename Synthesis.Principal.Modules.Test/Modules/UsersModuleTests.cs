@@ -124,7 +124,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task CreateUserAsEnterpriseCallsCreateUserAsync()
         {
             await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
-            _usersControllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()));
+            _usersControllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()));
         }
 
         [Fact]
@@ -144,7 +144,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             user.UserType = UserType.Trial;
 
             await ServiceTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, user));
-            _usersControllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()));
+            _usersControllerMock.Verify(x => x.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()));
         }
 
         [Fact]
@@ -168,7 +168,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
@@ -199,7 +199,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsBadRequestIfValidationFails()
         {
-            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
@@ -211,7 +211,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateUserReturnsInternalServerErrorIfValidationExceptionIsThrown()
         {
-            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
@@ -226,7 +226,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            _usersControllerMock.Verify(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), PrincipalId, It.IsAny<ClaimsPrincipal>()));
+            _usersControllerMock.Verify(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()));
         }
 
         #endregion CreateUser
@@ -877,7 +877,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, new IdpUserRequest()));
@@ -888,7 +888,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
         {
-            _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+            _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Returns(Task.FromResult(new User()));
 
             var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, "invalid idp request"));

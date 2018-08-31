@@ -131,7 +131,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userRepository = await _userRepositoryAsyncLazy;
-            var usersWithGroupToBeDeleted = await userRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(Undefined.Value) })
+            var usersWithGroupToBeDeleted = await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
                 .Where(u => u.Groups.Contains(groupId))
                 .ToListAsync(cancellationToken);
 

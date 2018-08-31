@@ -193,7 +193,7 @@ namespace Synthesis.PrincipalService.Controllers
             // query string too long.
             foreach (var batch in invitedEmails.Batch(150))
             {
-                var tenantUsers = await userRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(tenantId) })
+                var tenantUsers = await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
                     .Where(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email))
                     .ToListAsync();
 
@@ -257,7 +257,7 @@ namespace Synthesis.PrincipalService.Controllers
                 var emails = grouping.Select(p => p.Email).ToList();
                 requestedInviteEmailAddrs.AddRange(emails);
 
-                var existingUserEmailsForDomain = await userRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(grouping.Key) })
+                var existingUserEmailsForDomain = await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
                     .Where(u => emails.Contains(u.Email.ToLower()))
                     .Select(u => u.Email.ToLower())
                     .ToListAsync();

@@ -272,7 +272,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId, Context.CurrentUser);
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(userResponse)
@@ -857,7 +857,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, PrincipalId, Context.CurrentUser);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(result)

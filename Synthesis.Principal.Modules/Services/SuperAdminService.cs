@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.PrincipalService.Constants;
+using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.Threading.Tasks;
 
@@ -19,7 +20,7 @@ namespace Synthesis.PrincipalService.Services
         public async Task<bool> IsSuperAdminAsync(Guid userId)
         {
             var userRepository = await _userRepositoryAsyncLazy;
-            var user = await userRepository.GetItemAsync(userId);
+            var user = await userRepository.GetItemAsync(userId, UsersController.DefaultBatchOptions);
 
             if (user?.Groups == null)
             {
@@ -32,11 +33,12 @@ namespace Synthesis.PrincipalService.Services
         public async Task<bool> IsLastRemainingSuperAdminAsync(Guid userId)
         {
             var userRepository = await _userRepositoryAsyncLazy;
-            var result = !await userRepository.CreateItemQuery().AnyAsync(u =>
-                u.Id != userId &&
-                u.IsLocked == false &&
-                u.Groups != null &&
-                u.Groups.Contains(GroupIds.SuperAdminGroupId));
+            var result = !await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
+                .AnyAsync(u =>
+                    u.Id != userId &&
+                    u.IsLocked == false &&
+                    u.Groups != null &&
+                    u.Groups.Contains(GroupIds.SuperAdminGroupId));
 
             return result;
         }

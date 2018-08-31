@@ -8,7 +8,7 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUsersController
     {
-        Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy, ClaimsPrincipal principal);
+        Task<User> CreateUserAsync(CreateUserRequest model, ClaimsPrincipal principal);
 
         Task<CreateGuestUserResponse> CreateGuestUserAsync(CreateUserRequest model);
 
@@ -38,7 +38,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserFilteringOptions userFilteringOptions);
 
-        Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy, ClaimsPrincipal claimsPrincipal);
+        Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal);
 
         Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId);
 

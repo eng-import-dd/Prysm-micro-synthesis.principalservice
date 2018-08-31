@@ -114,13 +114,13 @@ namespace Synthesis.PrincipalService.Controllers
             _superAdminService = superAdminService;
         }
 
-        private static PartitionKey DefaultPartitionKey => new PartitionKey(Undefined.Value);
+        internal static PartitionKey DefaultPartitionKey => new PartitionKey(Undefined.Value);
 
-        private static BatchOptions DefaultBatchOptions => new BatchOptions { PartitionKey = DefaultPartitionKey };
+        internal static BatchOptions DefaultBatchOptions => new BatchOptions { PartitionKey = DefaultPartitionKey };
 
-        private static QueryOptions DefaultQueryOptions => new QueryOptions { PartitionKey = DefaultPartitionKey };
+        internal static QueryOptions DefaultQueryOptions => new QueryOptions { PartitionKey = DefaultPartitionKey };
 
-        public async Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy, ClaimsPrincipal principal)
+        public async Task<User> CreateUserAsync(CreateUserRequest model, ClaimsPrincipal principal)
         {
             var validationResult = _validatorLocator.Validate<CreateUserRequestValidator>(model);
             if (!validationResult.IsValid)
@@ -144,7 +144,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var newUser = new User
             {
-                CreatedBy = createdBy,
+                CreatedBy = principal.GetPrincipialId(),
                 CreatedDate = DateTime.UtcNow,
                 FirstName = model.FirstName.Trim(),
                 LastName = model.LastName.Trim(),
@@ -152,7 +152,6 @@ namespace Synthesis.PrincipalService.Controllers
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username?.ToLower(),
                 Groups = model.Groups ?? new List<Guid>(),
-                Id = model.Id,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
                 LdapId = model.LdapId,
@@ -321,7 +320,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userRepository = await _userRepositoryAsyncLazy;
-            var usersInTenant = await userRepository.GetItemsAsync(u => tenantUsers.Payload.Contains(u.Id ?? Guid.Empty));
+            var usersInTenant = await userRepository.GetItemsAsync(u => tenantUsers.Payload.Contains(u.Id ?? Guid.Empty), DefaultBatchOptions);
             if (!usersInTenant.Any())
             {
                 throw new NotFoundException($"Users for tenant '{tenantId}' could not be found");
@@ -363,7 +362,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             email = email?.ToLower();
             var userRepository = await _userRepositoryAsyncLazy;
-            var userList = await userRepository.GetItemsAsync(u => u.Email.Equals(email));
+            var userList = await userRepository.GetItemsAsync(u => u.Email.Equals(email), DefaultBatchOptions);
             var existingUser = userList.FirstOrDefault();
             if (existingUser == null)
             {
@@ -446,7 +445,6 @@ namespace Synthesis.PrincipalService.Controllers
                 Email = model.Email,
                 EmailVerificationId = Guid.NewGuid(),
                 Username = model.Username,
-                Id = model.Id,
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
@@ -620,7 +618,7 @@ namespace Synthesis.PrincipalService.Controllers
             return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
-        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy, ClaimsPrincipal claimsPrincipal)
+        public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
@@ -632,7 +630,7 @@ namespace Synthesis.PrincipalService.Controllers
             var userId = model.UserId ?? Guid.Empty;
             if (userId == Guid.Empty)
             {
-                return await AutoProvisionUserAsync(model, tenantId, createdBy, claimsPrincipal);
+                return await AutoProvisionUserAsync(model, tenantId, claimsPrincipal);
             }
 
             if (model.IsGuestUser)
@@ -658,7 +656,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await userRepository.GetItemAsync(userId, DefaultQueryOptions);
         }
 
-        private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, Guid createddBy, ClaimsPrincipal claimsPrincipal)
+        private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
             var createUserRequest = new CreateUserRequest
             {
@@ -673,7 +671,7 @@ namespace Synthesis.PrincipalService.Controllers
                 UserType = UserType.Enterprise
             };
 
-            var result = await CreateUserAsync(createUserRequest, createddBy, claimsPrincipal);
+            var result = await CreateUserAsync(createUserRequest, claimsPrincipal);
             if (result == null || model.Groups == null)
             {
                 return result;
@@ -926,7 +924,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userRepository = await _userRepositoryAsyncLazy;
-            var userWithGivenUserId = await userRepository.GetItemAsync(userId);
+            var userWithGivenUserId = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
             if (userWithGivenUserId != null)
             {
                 return userWithGivenUserId.Groups;
@@ -946,7 +944,7 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userRepository = await _userRepositoryAsyncLazy;
-            var user = await userRepository.GetItemAsync(userId);
+            var user = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
             if (user == null)
             {
                 throw new DocumentNotFoundException($"User {userId} doesn't exist");
@@ -983,7 +981,7 @@ namespace Synthesis.PrincipalService.Controllers
             var userIdList = userIds.ToList();
 
             var userRepository = await _userRepositoryAsyncLazy;
-            return await userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty));
+            return await userRepository.GetItemsAsync(u => userIdList.Contains(u.Id ?? Guid.Empty), DefaultBatchOptions);
         }
 
         private async Task<UserGroup> CreateUserGroupInDbAsync(UserGroup userGroup, User existingUser)
@@ -1100,7 +1098,8 @@ namespace Synthesis.PrincipalService.Controllers
         public async Task<VerifyUserEmailResponse> VerifyEmailAsync(VerifyUserEmailRequest verifyRequest)
         {
             var userRepository = await _userRepositoryAsyncLazy;
-            var user = await userRepository.GetItemAsync(x => x.Email == verifyRequest.Email);
+            var user = await userRepository.CreateItemQuery(DefaultBatchOptions)
+                .FirstOrDefaultAsync(x => x.Email == verifyRequest.Email);
             if (user == null)
             {
                 throw new NotFoundException($"A User resource could not be found with email {verifyRequest.Email}");
@@ -1394,7 +1393,7 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<User> LockUserAsync(Guid userId, bool @lock)
         {
             var userRepository = await _userRepositoryAsyncLazy;
-            var user = await userRepository.GetItemAsync(userId);
+            var user = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
             user.IsLocked = @lock;
 
             await userRepository.UpdateItemAsync(userId, user);
@@ -1417,7 +1416,7 @@ namespace Synthesis.PrincipalService.Controllers
         {
             var validationErrors = new List<ValidationFailure>();
             var userRepository = await _userRepositoryAsyncLazy;
-            var existingUser = await userRepository.GetItemAsync(id);
+            var existingUser = await userRepository.GetItemAsync(id, DefaultQueryOptions);
             if (existingUser == null)
             {
                 validationErrors.Add(new ValidationFailure(nameof(existingUser), "Unable to find th euser with the user id"));
