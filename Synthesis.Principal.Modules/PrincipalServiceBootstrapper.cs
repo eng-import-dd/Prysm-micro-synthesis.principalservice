@@ -202,7 +202,8 @@ namespace Synthesis.PrincipalService
                 {
                     AuthKey = settings.GetValue<string>("Principal.DocumentDB.AuthKey"),
                     Endpoint = settings.GetValue<string>("Principal.DocumentDB.Endpoint"),
-                    DatabaseName = settings.GetValue<string>("Principal.DocumentDB.DatabaseName")
+                    DatabaseName = settings.GetValue<string>("Principal.DocumentDB.DatabaseName"),
+                    RuThroughput = settings.GetValue<int>("Principal.DocumentDB.RuThroughput"),
                 };
             });
             builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
@@ -338,7 +339,7 @@ namespace Synthesis.PrincipalService
                     (p, c) => p.Name == "deploymentType",
                     (p, c) => c.Resolve<IAppSettingsReader>().GetValue<string>("Principal.DeploymentType")));
             builder.RegisterType<UserInvitesController>().As<IUserInvitesController>();
-            builder.RegisterType<MachinesController>().As<IMachineController>();
+            builder.RegisterType<MachinesController>().As<IMachinesController>();
             builder.RegisterType<GroupsController>().As<IGroupsController>();
             builder.RegisterType<SuperAdminService>().As<ISuperAdminService>();
 

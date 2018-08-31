@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
@@ -21,8 +20,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
         public SuperAdminServiceTests()
         {
             _repositoryFactoryMock
-                .Setup(m => m.CreateRepository<User>())
-                .Returns(_userRepositoryMock.Object);
+                .Setup(m => m.CreateRepositoryAsync<User>(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_userRepositoryMock.Object);
 
             _target = new SuperAdminService(_repositoryFactoryMock.Object);
         }
@@ -34,10 +33,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Services
                 .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<BatchOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User
                 {
-                    Groups = new List<Guid>()
-                {
-                    GroupIds.SuperAdminGroupId
-                }
+                    Groups = new List<Guid>
+                    {
+                        GroupIds.SuperAdminGroupId
+                    }
                 });
 
             var result = await _target.IsSuperAdminAsync(Guid.NewGuid());

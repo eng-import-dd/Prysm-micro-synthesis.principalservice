@@ -1,42 +1,50 @@
-using FluentValidation;
-using Nancy;
-using Nancy.ModelBinding;
-using Synthesis.Logging;
-using Synthesis.Nancy.MicroService;
-using Synthesis.Nancy.MicroService.Metadata;
-using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Constants;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
+using Nancy;
+using Nancy.ErrorHandling;
+using Nancy.ModelBinding;
 using Synthesis.DocumentStorage;
+using Synthesis.Http.Microservice;
+using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Metadata;
 using Synthesis.Nancy.MicroService.Modules;
+using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PolicyEvaluator;
-using Synthesis.PolicyEvaluator.Permissions;
+using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.Controllers;
+using Synthesis.PrincipalService.Controllers.Exceptions;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.TenantService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService.Modules
 {
     public sealed class UsersModule : SynthesisModule
     {
         private readonly IUsersController _userController;
-        private readonly IPolicyEvaluator _policyEvaluator;
+        private readonly IGroupsController _groupsController;
+        private readonly ITenantApi _tenantApi;
 
         public UsersModule(
             IUsersController userController,
+            IGroupsController groupsController,
+            ITenantApi tenantApi,
             IMetadataRegistry metadataRegistry,
             IPolicyEvaluator policyEvaluator,
             ILoggerFactory loggerFactory)
             : base(ServiceInformation.ServiceNameShort, metadataRegistry, policyEvaluator, loggerFactory)
         {
             _userController = userController;
-            _policyEvaluator = policyEvaluator;
+            _groupsController = groupsController;
+            _tenantApi = tenantApi;
 
             CreateRoute("CreateUser", HttpMethod.Post, Routing.Users, CreateUserAsync)
                 .Description("Create a new EnterpriseUser or TrialUser resource")
@@ -70,8 +78,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("GetUserNames", HttpMethod.Post, Routing.GetUserNames, GetUserNamesAsync)
                 .Description("Gets the first and last name for each of the supplied userids")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(new List<Guid>() { Guid.Empty })
-                .ResponseFormat(new List<UserNames>() { UserNames.Example() });
+                .RequestFormat(new List<Guid> { Guid.Empty })
+                .ResponseFormat(new List<UserNames> { UserNames.Example() });
 
             CreateRoute("LockUser", HttpMethod.Post, Routing.LockUser, LockUserAsync)
                 .Description("Locks the respective user")
@@ -169,11 +177,8 @@ namespace Synthesis.PrincipalService.Modules
                 .ResponseFormat(VerifyUserEmailResponse.Example());
         }
 
-        private async Task<object> VerifyEmailAsync(dynamic args)
+        private async Task<object> VerifyEmailAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             VerifyUserEmailRequest verifyRequest;
 
             try
@@ -185,6 +190,9 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to verify an email", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -201,12 +209,9 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> LockUserAsync(dynamic input)
+        private async Task<object> LockUserAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            Guid id = input.userId;
+            Guid userId = input.userId;
             User newUser;
             try
             {
@@ -218,9 +223,14 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                var result = await _userController.LockOrUnlockUserAsync(id, TenantId, newUser.IsLocked);
+                var result = await _userController.LockOrUnlockUserAsync(userId, TenantId, newUser.IsLocked);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -241,11 +251,8 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> CreateUserAsync(dynamic input)
+        private async Task<object> CreateUserAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             CreateUserRequest createUserRequest;
             try
             {
@@ -257,11 +264,15 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            createUserRequest.ReplaceNullOrEmptyTenantId(TenantId);
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => createUserRequest.TenantId.GetValueOrDefault())
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                createUserRequest.ReplaceNullOrEmptyTenantId(TenantId);
-
-                var userResponse = await _userController.CreateUserAsync(createUserRequest, PrincipalId, Context.CurrentUser);
+                var userResponse = await _userController.CreateUserAsync(createUserRequest, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(userResponse)
@@ -279,6 +290,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Bad request while creating user", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -288,7 +300,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> CreateGuestUserAsync(dynamic input)
+        private async Task<object> CreateGuestUserAsync(dynamic input, CancellationToken cancellationToken)
         {
             CreateUserRequest createUserRequest;
             try
@@ -336,7 +348,7 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> SendGuestVerificationEmailAsync(dynamic input)
+        private async Task<object> SendGuestVerificationEmailAsync(dynamic input, CancellationToken cancellationToken)
         {
             GuestVerificationEmailRequest sendEmailRequest;
             try
@@ -350,7 +362,7 @@ namespace Synthesis.PrincipalService.Modules
             }
 
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -361,22 +373,22 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                Logger.Info("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (EmailAlreadyVerifiedException ex)
             {
-                Logger.Error("Email not sent because it is already been verified.", ex);
+                Logger.Info("Email not sent because it is already been verified.", ex);
                 return Response.EmailAlreadyVerified(ex.Message);
             }
             catch (EmailRecentlySentException ex)
             {
-                Logger.Error("Email not sent because it was sent too recently.", ex);
+                Logger.Info("Email not sent because it was sent too recently.", ex);
                 return Response.EmailRecentlySent(ex.Message);
             }
             catch (NotFoundException ex)
             {
-                Logger.Error("Email was not sent because the user could not be found.", ex);
+                Logger.Debug("Email was not sent because the user could not be found.", ex);
                 return Response.NotFound(ex.Message);
             }
             catch (Exception ex)
@@ -386,12 +398,15 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUserByIdAsync(dynamic input)
+        private async Task<object> GetUserByIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.Id;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
+
             try
             {
                 return await _userController.GetUserAsync(userId);
@@ -402,127 +417,166 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Bad request getting user by id", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserById threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user '{userId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-        private async Task<object> GetUserNamesAsync(dynamic input)
+        private async Task<object> GetUserNamesAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            IEnumerable<Guid> userIds;
+            List<Guid> userIds;
 
             try
             {
-                userIds = this.Bind<IEnumerable<Guid>>();
+                userIds = this.Bind<List<Guid>>();
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to fetch user ids", ex);
+                Logger.Info("Binding failed while attempting to fetch user ids", ex);
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                return await _userController.GetNamesForUsers(userIds);
-
+                return await _userController.GetNamesForUsersAsync(userIds);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Bad request getting user names", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error($"{nameof(GetUserNamesAsync)} threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user name information for the following users due to an unhandled exception: {string.Join(", ", userIds)}", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-        private async Task<object> GetUsersBasicAsync(dynamic input)
+        private async Task<object> GetUsersBasicAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+            UserFilteringOptions userFilteringOptions;
 
             try
             {
-                var userFilteringOptions = this.Bind<UserFilteringOptions>();
-                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userFilteringOptions);
-
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUsersBasic threw an unhandled exception", ex);
+                Logger.Info("Binding failed while retrieving basic user information", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => TenantId)
+                .ExecuteAsync(cancellationToken);
+
+            try
+            {
+                return await _userController.GetUsersBasicAsync(TenantId, PrincipalId, userFilteringOptions);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to get filtered basic user information for tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-        private async Task<object> GetUserCountAsync(dynamic input)
+        private async Task<object> GetUserCountAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+            UserFilteringOptions userFilteringOptions;
 
             try
             {
-                var userFilteringOptions = this.Bind<UserFilteringOptions>();
+                userFilteringOptions = this.Bind<UserFilteringOptions>();
+            }
+            catch (Exception ex)
+            {
+                Logger.Info("Binding failed while retrieving the user count", ex);
+                return Response.BadRequestBindingException();
+            }
+
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
+
+            try
+            {
                 var count = await _userController.GetUserCountAsync(TenantId, PrincipalId, userFilteringOptions);
                 return count.ToString();
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserCount threw an unhandled exception", ex);
+                Logger.Error($"Failed to count users in tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-        private async Task<object> GetUserByIdBasicAsync(dynamic input)
+        private async Task<object> GetUserByIdBasicAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.Id;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
+
             try
             {
                 return await _userController.GetUserAsync(userId);
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
+                Logger.Info("User not found while getting basic user info", ex);
                 return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Bad request while getting basic user information", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserByIdBasic threw an unhandled exception", ex);
+                Logger.Error($"Failed to get basic user information for '{userId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-
-        private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input)
+        private async Task<object> GetUserByUserNameOrEmailAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             string userName = input.userName;
 
             // To work around nancy bug https://github.com/NancyFx/Nancy/issues/1280 https://github.com/NancyFx/Nancy/issues/1499
             // Usernames/emailIds will never have spaces in them, so this workaround shouldn't break anything
             userName = userName?.Replace(" ", "+");
 
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                return await _userController.GetUserByUserNameOrEmailAsync(userName);
+                var user = await _userController.GetUserByUserNameOrEmailAsync(userName);
+
+                await RequiresAccess()
+                    .WithPrincipalIdExpansion(ctx => user.Id.GetValueOrDefault())
+                    .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(user.Id.GetValueOrDefault(), ct))
+                    .ExecuteAsync(cancellationToken);
+
+                return user;
             }
-            catch (NotFoundException)
+            catch (RouteExecutionEarlyExitException)
             {
+                throw;
+            }
+            catch (NotFoundException ex)
+            {
+                Logger.Info("User not found while getting user by username or email", ex);
                 return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (ValidationFailedException ex)
@@ -531,27 +585,26 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("GetUserByUserNameOrEmailAsync threw an unhandled exception", ex);
+                Logger.Error($"Failed to get user information by username (or email) from tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
 
-        private async Task<object> GetUsersForTenantAsync(dynamic input)
+        private async Task<object> GetUsersForTenantAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             UserFilteringOptions userFilteringOptions;
             try
             {
                 userFilteringOptions = this.Bind<UserFilteringOptions>();
             }
-
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to create a User resource", ex);
+                Logger.Info("Binding failed while attempting to create a User resource", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -559,7 +612,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException)
             {
-                return Response.NotFound(ResponseReasons.NotFoundUser);
+                return Response.NotFound(ResponseReasons.NotFoundUsers);
             }
             catch (ValidationFailedException ex)
             {
@@ -572,11 +625,8 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUsersByIdsAsync(dynamic input)
+        private async Task<object> GetUsersByIdsAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             IEnumerable<Guid> userIds;
             try
             {
@@ -587,6 +637,13 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to fetch users", ex);
                 return Response.BadRequestBindingException();
             }
+
+            // TODO: Secure GetUsersByIdsAsync route better. A requester should be able to get information
+            // only on certain users. As-is, this method allows any authenticated principal
+            // to get data on all other users, assuming their Id's are known.
+
+            await RequiresAccess()
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -604,16 +661,12 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> UpdateUserAsync(dynamic input)
+        private async Task<object> UpdateUserAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
-            Guid userId;
+            Guid userId = input.id;
             User userModel;
             try
             {
-                userId = Guid.Parse(input.id);
                 userModel = this.Bind<User>();
             }
             catch (Exception ex)
@@ -621,6 +674,11 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("Binding failed while attempting to update a User resource.", ex);
                 return Response.BadRequestBindingException();
             }
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -641,12 +699,17 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> DeleteUserAsync(dynamic input)
+        private async Task<object> DeleteUserAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             Guid userId = input.id;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -669,10 +732,10 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> CanPromoteUserAsync(dynamic input)
+        private async Task<object> CanPromoteUserAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             string email = input.email;
             try
@@ -698,10 +761,10 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> PromoteGuestAsync(dynamic input)
+        private async Task<object> PromoteGuestAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             LicenseType licenseType;
             try
@@ -740,10 +803,10 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetGuestUsersForTenantAsync(dynamic input)
+        private async Task<object> GetGuestUsersForTenantAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             UserFilteringOptions userFilteringOptions;
             try
@@ -775,11 +838,8 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input)
+        private async Task<object> AutoProvisionRefreshGroupsAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             IdpUserRequest idpUserRequest;
             try
             {
@@ -791,9 +851,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => idpUserRequest.TenantId)
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, PrincipalId, Context.CurrentUser);
+                var result = await _userController.AutoProvisionRefreshGroupsAsync(idpUserRequest, idpUserRequest.TenantId, Context.CurrentUser);
 
                 return Negotiate
                     .WithModel(result)
@@ -820,10 +884,10 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> CreateUserGroupAsync(dynamic input)
+        private async Task<object> CreateUserGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
             await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
+                .ExecuteAsync(cancellationToken);
 
             UserGroup newUserGroupRequest;
 
@@ -837,9 +901,13 @@ namespace Synthesis.PrincipalService.Modules
                 return Response.BadRequestBindingException();
             }
 
+            await RequiresAccess()
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(newUserGroupRequest.UserId, ct))
+                .ExecuteAsync(cancellationToken);
+
             try
             {
-                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, TenantId, PrincipalId);
+                var result = await _userController.CreateUserGroupAsync(newUserGroupRequest, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.Created);
@@ -859,16 +927,17 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetUserIdsByGroupIdAsync(dynamic input)
+        private async Task<object> GetUserIdsByGroupIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid groupId = input.id;
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(async (ctx, ct) => await _groupsController.GetTenantIdForGroupIdAsync(groupId, TenantId, ct) ?? Guid.Empty)
+                .ExecuteAsync(cancellationToken);
 
             try
             {
-                var result = await _userController.GetUserIdsByGroupIdAsync(groupId, TenantId, PrincipalId);
+                var result = await _userController.GetUserIdsByGroupIdAsync(groupId, PrincipalId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
@@ -888,12 +957,15 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetGroupIdsByUserIdAsync(dynamic input)
+        private async Task<object> GetGroupIdsByUserIdAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
+
             try
             {
                 var result = await _userController.GetGroupIdsByUserIdAsync(userId);
@@ -916,13 +988,15 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input)
+        private async Task<object> RemoveUserFromPermissionGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
             Guid groupId = input.groupId;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -954,12 +1028,14 @@ namespace Synthesis.PrincipalService.Modules
             }
         }
 
-        private async Task<object> GetLicenseTypeForUserAsync(dynamic input)
+        private async Task<object> GetLicenseTypeForUserAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(CancellationToken.None);
-
             Guid userId = input.userId;
+
+            await RequiresAccess()
+                .WithPrincipalIdExpansion(ctx => userId)
+                .WithAnyTenantIdExpansion(async (ctx, ct) => await GetTenantIdsForUserAsync(userId, ct))
+                .ExecuteAsync(cancellationToken);
 
             try
             {
@@ -983,6 +1059,17 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Error("GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
+        }
+
+        private async Task<IEnumerable<Guid>> GetTenantIdsForUserAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            var response = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            if (!response.IsSuccess())
+            {
+                throw new Exception($"Failed to get tenant IDs for user '{userId}': ({response.ResponseCode}) {response.ErrorResponse?.Message ?? response.ReasonPhrase} ");
+            }
+
+            return response.Payload ?? Enumerable.Empty<Guid>();
         }
     }
 }

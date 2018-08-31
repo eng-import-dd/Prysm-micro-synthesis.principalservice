@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Synthesis.Http.Microservice;
 
-namespace Synthesis.PrincipalService.Controllers
+namespace Synthesis.PrincipalService.Services
 {
     public interface ICloudShim
     {

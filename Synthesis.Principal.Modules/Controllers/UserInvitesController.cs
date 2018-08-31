@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -10,17 +11,19 @@ using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.Http.Microservice;
 using Synthesis.Logging;
+using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
+using Synthesis.Threading.Tasks;
 
 namespace Synthesis.PrincipalService.Controllers
 {
     public class UserInvitesController : IUserInvitesController
     {
-        private readonly IRepository<UserInvite> _userInviteRepository;
-        private readonly IRepository<User> _userRepository;
+        private readonly AsyncLazy<IRepository<UserInvite>> _userInviteRepositoryAsyncLazy;
+        private readonly AsyncLazy<IRepository<User>> _userRepositoryAsyncLazy;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
         private readonly IValidator _tenantIdValidator;
@@ -36,8 +39,8 @@ namespace Synthesis.PrincipalService.Controllers
             ITenantApi tenantApi,
             IEmailApi emailApi)
         {
-            _userInviteRepository = repositoryFactory.CreateRepository<UserInvite>();
-            _userRepository = repositoryFactory.CreateRepository<User>();
+            _userInviteRepositoryAsyncLazy = new AsyncLazy<IRepository<UserInvite>>(() => repositoryFactory.CreateRepositoryAsync<UserInvite>());
+            _userRepositoryAsyncLazy = new AsyncLazy<IRepository<User>>(() => repositoryFactory.CreateRepositoryAsync<User>());
             _logger = loggerFactory.GetLogger(this);
             _mapper = mapper;
             _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
@@ -83,7 +86,6 @@ namespace Synthesis.PrincipalService.Controllers
 
                 var host = new MailAddress(newUserInvite.Email).Host;
 
-
                 var isUserEmailDomainAllowed = validTenantDomains.Contains(host);
 
                 if (!isUserEmailDomainAllowed)
@@ -100,8 +102,8 @@ namespace Synthesis.PrincipalService.Controllers
             if (validUsers.Count > 0)
             {
                 validUsers.ForEach(x => x.TenantId = tenantId);
-                userInviteServiceResult = await CreateUserInviteInDb(validUsers);
-                await SendUserInvites(userInviteServiceResult);
+                userInviteServiceResult = await CreateUserInvitesInDbAsync(validUsers, tenantId);
+                await SendUserInvitesAsync(userInviteServiceResult, tenantId);
             }
 
             if (inValidEmailFormatUsers.Count > 0)
@@ -117,88 +119,181 @@ namespace Synthesis.PrincipalService.Controllers
             return userInviteServiceResult;
         }
 
-        private async Task<List<UserInvite>> SendUserInvites(List<UserInvite> userInviteServiceResult)
+        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInvites, Guid tenantId)
+        {
+            if (!userInvites.Any())
+            {
+                return new List<UserInvite>();
+            }
+
+            var inviteEmails = new HashSet<string>(userInvites.Select(u => u.Email.ToLower()));
+            var userInviteRepository = await _userInviteRepositoryAsyncLazy;
+
+            // Get the current invites and resend them.
+            var existingInvites = await userInviteRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(tenantId) })
+                .Where(u => inviteEmails.Contains(u.Email.ToLower()))
+                .ToListAsync();
+
+            foreach (var invite in userInvites)
+            {
+                if (!existingInvites.Any(e => string.Equals(e.Email, invite.Email, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    invite.Status = InviteUserStatus.UserNotExist;
+                }
+            }
+
+            await SendUserInvitesAsync(existingInvites, tenantId);
+
+            return userInvites;
+        }
+
+        public async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
+        {
+            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
+            if (!validationResult.IsValid)
+            {
+                _logger.Error("Failed to validate the resource id.");
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var userInviteRepository = await _userInviteRepositoryAsyncLazy;
+
+            var existingUserInvites = await userInviteRepository.CreateItemQuery()
+                .Where(u => u.TenantId == tenantId)
+                .ToListAsync();
+
+            if (allUsers)
+            {
+                return new PagingMetadata<UserInvite>
+                {
+                    List = existingUserInvites
+                };
+            }
+
+            // Filter out the invited users that are not full users.
+
+            var invitedEmails = existingUserInvites.Select(i => i.Email).ToList();
+
+            var response = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
+            if (!response.IsSuccess())
+            {
+                if (response.ResponseCode == HttpStatusCode.NotFound)
+                {
+                    throw new NotFoundException($"Failed to retrieve user identifiers for tenant {tenantId} because the tenant was not found");
+                }
+
+                throw new Exception($"Failed to get user identifiers for tenant {tenantId} due to unexpected result from the tenant service: ResponseCode = {response.ResponseCode}, ReasonPhrase = {response.ReasonPhrase}");
+            }
+
+            var userIds = response.Payload.ToList();
+            var userRepository = await _userRepositoryAsyncLazy;
+            var tenantUsersList = new List<User>();
+
+            // We need to batch the emails otherwise the generated IN clause will make the SQL
+            // query string too long.
+            foreach (var batch in invitedEmails.Batch(150))
+            {
+                var tenantUsers = await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
+                    .Where(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email))
+                    .ToListAsync();
+
+                tenantUsersList.AddRange(tenantUsers);
+            }
+
+            var tenantUserEmails = tenantUsersList.Select(s => s.Email);
+            existingUserInvites = existingUserInvites
+                .Where(u => !tenantUserEmails.Contains(u.Email))
+                .ToList();
+
+            return new PagingMetadata<UserInvite>
+            {
+                List = existingUserInvites
+            };
+        }
+
+        private async Task<List<UserInvite>> SendUserInvitesAsync(List<UserInvite> userInvites, Guid tenantId)
         {
             //Filter any duplicate users
-            List<UserInvite> validUsers = userInviteServiceResult.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
+            var validUsers = userInvites.FindAll(user => user.Status != InviteUserStatus.DuplicateUserEmail && user.Status != InviteUserStatus.DuplicateUserEntry);
             if (!validUsers.Any())
             {
                 return validUsers;
             }
-            var emailRequest = _mapper.Map<List<UserInvite>, List<UserEmailRequest>>(validUsers);
+
+            var userInviteEmailRequests = _mapper.Map<List<UserInvite>, List<UserEmailRequest>>(validUsers);
 
             //Mail newly created users
-            var userEmailResponses = await _emailApi.SendUserInvite(emailRequest);
+            var userEmailResponses = await _emailApi.SendUserInvite(userInviteEmailRequests);
 
             if (userEmailResponses == null || userEmailResponses.Count == 0)
             {
                 return validUsers;
             }
 
-            var emailResponse = _mapper.Map<List<UserEmailResponse>, List<UserInvite>>(userEmailResponses);
-            await UpdateUserInviteAsync(emailResponse);
+            var sentUserInvites = _mapper.Map<List<UserEmailResponse>, List<UserInvite>>(userEmailResponses);
+            await UpdateUserInvitesAsync(sentUserInvites, tenantId);
+
             return validUsers;
         }
 
-        public async Task<List<UserInvite>> ResendEmailInviteAsync(List<UserInvite> userInvites, Guid tenantId)
+        private async Task<List<UserInvite>> CreateUserInvitesInDbAsync(List<UserInvite> userInviteList, Guid tenantId)
         {
-            if (userInvites.Count > 0)
+            // The partition key for users is the email domain.
+            // We need to group the invite list by email domains so we don't perform a cross-
+            // partition query.
+
+            var emailDomainGroupings = userInviteList
+                .Select(u => u.Email.ToLower())
+                .Select(a => new { Email = a, Domain = a.Substring(a.IndexOf('@')) })
+                .GroupBy(p => p.Domain);
+
+            var userRepository = await _userRepositoryAsyncLazy;
+            var existingUserEmailAddrs = new List<string>();
+            var requestedInviteEmailAddrs = new List<string>();
+
+            // Gather the emails for all existing users that are in the invite list.
+            foreach (var grouping in emailDomainGroupings)
             {
+                var emails = grouping.Select(p => p.Email).ToList();
+                requestedInviteEmailAddrs.AddRange(emails);
 
-                //User is exist in system or not
-                foreach (var userInvite in userInvites)
-                {
-                    var userInviteDb = await _userInviteRepository.GetItemsAsync(u => u.Email == userInvite.Email);
+                var existingUserEmailsForDomain = await userRepository.CreateItemQuery(UsersController.DefaultBatchOptions)
+                    .Where(u => emails.Contains(u.Email.ToLower()))
+                    .Select(u => u.Email.ToLower())
+                    .ToListAsync();
 
-                    if (userInviteDb.Count() == 0)
-                    {
-                        userInvite.Status = InviteUserStatus.UserNotExist;
-                    }
-                    else
-                    {
-                        userInvite.TenantId = tenantId;
-                    }
-                }
-
-                var validUsers = userInvites.Where(i => i.Status != InviteUserStatus.UserNotExist).ToList();
-
-                await SendUserInvites(validUsers);
-
-                return userInvites;
+                existingUserEmailAddrs.AddRange(existingUserEmailsForDomain);
             }
-            return new List<UserInvite>();
-        }
 
-        private async Task<List<UserInvite>> CreateUserInviteInDb(List<UserInvite> userInviteList)
-        {
-            var invitedEmails = userInviteList.Select(u => u.Email.ToLower());
+            var userInviteRepository = await _userInviteRepositoryAsyncLazy;
+            var existingUserInviteEmails = await userInviteRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(tenantId) })
+                .Where(u => requestedInviteEmailAddrs.Contains(u.Email.ToLower()))
+                .Select(u => u.Email.ToLower())
+                .ToListAsync();
 
-            var existingSynthesisUsers = await _userRepository.GetItemsAsync(u => invitedEmails.Contains(u.Email.ToLower()));
-            var existingUserInvites = await _userInviteRepository.GetItemsAsync(u => invitedEmails.Contains(u.Email.ToLower()));
+            var existingEmailAddrs = existingUserEmailAddrs.Union(existingUserInviteEmails).ToList();
 
-            var existingSynthesisUsersEmail = existingSynthesisUsers.Select(x => x.Email.ToLower());
-            var existingUserInvitesEmail = existingUserInvites.Select(x => x.Email.ToLower());
-
-            var existingEmails = existingSynthesisUsersEmail.Union(existingUserInvitesEmail).ToList();
-
-            var validUsers = userInviteList
-                .Where(u => !existingEmails.Contains(u.Email.ToLower()))
+            var validUserInvites = userInviteList
+                .Where(u => !existingEmailAddrs.Contains(u.Email.ToLower()))
                 .ToList();
 
             var duplicateUsers = userInviteList
-               .Where(u => existingEmails.Contains(u.Email.ToLower()))
+               .Where(u => existingEmailAddrs.Contains(u.Email.ToLower()))
+               .Select(u =>
+               {
+                   u.Status = InviteUserStatus.DuplicateUserEmail;
+                   return u;
+               })
                .ToList();
-
-            duplicateUsers.ForEach(x => x.Status = InviteUserStatus.DuplicateUserEmail);
 
             var currentUserInvites = new List<UserInvite>();
 
-            if (validUsers.Count > 0)
+            if (validUserInvites.Count > 0)
             {
-                foreach (var validUser in validUsers)
+                foreach (var validUser in validUserInvites)
                 {
                     var isDuplicateUserEntry = currentUserInvites
-                        .Exists(u => string.Equals(u.Email, validUser.Email, StringComparison.CurrentCultureIgnoreCase));
+                        .Exists(u => string.Equals(u.Email, validUser.Email, StringComparison.InvariantCultureIgnoreCase));
                     if (isDuplicateUserEntry)
                     {
                         validUser.Status = InviteUserStatus.DuplicateUserEntry;
@@ -206,7 +301,7 @@ namespace Synthesis.PrincipalService.Controllers
                     }
                     else
                     {
-                        await _userInviteRepository.CreateItemAsync(validUser);
+                        await userInviteRepository.CreateItemAsync(validUser);
                         currentUserInvites.Add(validUser);
                     }
                 }
@@ -220,67 +315,29 @@ namespace Synthesis.PrincipalService.Controllers
             return currentUserInvites;
         }
 
-        private async Task UpdateUserInviteAsync(List<UserInvite> userInvite)
+        private async Task UpdateUserInvitesAsync(List<UserInvite> userInvites, Guid tenantId)
         {
-            var lastInvitedDates = userInvite.ToDictionary(u => u.Email, u => u.LastInvitedDate);
+            var lastInvitedDates = userInvites.ToDictionary(u => u.Email, u => u.LastInvitedDate);
+            var emails = new HashSet<string>(userInvites.Select(i => i.Email));
 
-            foreach (var userInviteupdate in userInvite)
+            var userInviteRepository = await _userInviteRepositoryAsyncLazy;
+            var existingUserInvites = await userInviteRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(tenantId) })
+                .Where(u => emails.Contains(u.Email))
+                .ToListAsync();
+
+            foreach (var userInvite in existingUserInvites)
             {
-                var userInviteDb = (await _userInviteRepository.GetItemsAsync(u => u.Email == userInviteupdate.Email)).First();
-                if (lastInvitedDates[userInviteupdate.Email] != null)
+                if (lastInvitedDates.TryGetValue(userInvite.Email, out var lastInvitedDate))
                 {
-                    userInviteDb.LastInvitedDate = lastInvitedDates[userInviteupdate.Email];
-                }
-                if (userInviteDb.Id != null)
-                {
-                    await _userInviteRepository.UpdateItemAsync(userInviteDb.Id.Value, userInviteDb);
-                }
-            }
-
-        }
-
-        public async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantAsync(Guid tenantId, bool allUsers = false)
-        {
-            return await GetUsersInvitedForTenantFromDb(tenantId, allUsers);
-        }
-
-        private async Task<PagingMetadata<UserInvite>> GetUsersInvitedForTenantFromDb(Guid tenantId, bool allUsers)
-        {
-            var validationResult = await _tenantIdValidator.ValidateAsync(tenantId);
-            if (!validationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the resource id.");
-                throw new ValidationFailedException(validationResult.Errors);
-            }
-
-            var existingUserInvites = (await _userInviteRepository.GetItemsAsync(u => u.TenantId == tenantId)).ToList();
-
-            if (!allUsers)
-            {
-                var invitedEmails = existingUserInvites.Select(i => i.Email).ToList();
-
-                var tenantUsersList = new List<User>();
-
-                var result = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-                var userIds = result.Payload.ToList();
-
-                foreach (var batch in invitedEmails.Batch(150))
-                {
-                    var tenantUsers = await _userRepository.GetItemsAsync(u => userIds.Contains(u.Id.Value) && batch.Contains(u.Email));
-                    tenantUsersList.AddRange(tenantUsers);
+                    userInvite.LastInvitedDate = lastInvitedDate;
                 }
 
-                var tenantUserEmails = tenantUsersList.Select(s => s.Email);
-                existingUserInvites = existingUserInvites.Where(u => !tenantUserEmails.Contains(u.Email)).ToList();
+                if (userInvite.Id != null)
+                {
+                    await userInviteRepository.UpdateItemAsync(userInvite.Id.Value, userInvite);
+                }
             }
-
-            var returnMetaData = new PagingMetadata<UserInvite>
-            {
-                List = existingUserInvites
-            };
-            return returnMetaData;
         }
-
     }
 
     public static class ListBatchExtensions
@@ -292,6 +349,4 @@ namespace Synthesis.PrincipalService.Controllers
                         .Select(g => g.Select(x => x.item));
         }
     }
-
-
 }

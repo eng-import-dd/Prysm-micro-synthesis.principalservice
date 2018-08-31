@@ -8,7 +8,7 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IUsersController
     {
-        Task<User> CreateUserAsync(CreateUserRequest model, Guid createdBy, ClaimsPrincipal principal);
+        Task<User> CreateUserAsync(CreateUserRequest model, ClaimsPrincipal principal);
 
         Task<CreateGuestUserResponse> CreateGuestUserAsync(CreateUserRequest model);
 
@@ -19,25 +19,26 @@ namespace Synthesis.PrincipalService.Controllers
         Task DeleteUserAsync(Guid userId);
 
         Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false);
+
         Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
 
         Task<int> GetUserCountAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
 
         Task<PagingMetadata<User>> GetUsersForTenantAsync(UserFilteringOptions userFilteringOptions, Guid tenantId, Guid currentUserId);
 
-        Task<IEnumerable<UserNames>> GetNamesForUsers(IEnumerable<Guid> userIds);
+        Task<IEnumerable<UserNames>> GetNamesForUsersAsync(IEnumerable<Guid> userIds);
 
         Task<bool> LockOrUnlockUserAsync(Guid userId, Guid tenantId, bool isLocked);
 
-        Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid tenantId, Guid currentUserId);
+        Task<UserGroup> CreateUserGroupAsync(UserGroup model, Guid currentUserId);
 
-        Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid tenantId, Guid userId);
+        Task<List<Guid>> GetUserIdsByGroupIdAsync(Guid groupId, Guid currentUserId);
 
         Task<List<Guid>> GetGroupIdsByUserIdAsync(Guid userId);
 
         Task<PagingMetadata<User>> GetGuestUsersForTenantAsync(Guid tenantId, UserFilteringOptions userFilteringOptions);
 
-        Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, Guid createdBy, ClaimsPrincipal claimsPrincipal);
+        Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal);
 
         Task<CanPromoteUser> CanPromoteUserAsync(string email, Guid tenantId);
 

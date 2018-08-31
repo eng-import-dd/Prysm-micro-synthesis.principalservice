@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IdentityModel;
 using System.Linq;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
-using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EventBus;
@@ -13,24 +13,26 @@ using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
+using Synthesis.PrincipalService.Requests;
+using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.TenantService.InternalApi.Api;
+using Synthesis.Threading.Tasks;
 
 namespace Synthesis.PrincipalService.Controllers
 {
     /// <summary>
     /// Represents a controller for Machine resources.
     /// </summary>
-    /// <seealso cref="IMachineController" />
-    public class MachinesController : IMachineController
+    /// <seealso cref="IMachinesController" />
+    public class MachinesController : IMachinesController
     {
-        private readonly IRepository<Machine> _machineRepository;
-        private readonly IValidator _createMachineRequestValidator;
-        private readonly IValidator _machineIdValidator;
-        private readonly IValidator _tenantIdValidator;
-        private readonly IValidator _updateMachineRequestValidator;
+        private readonly AsyncLazy<IRepository<Machine>> _machineRepositoryAsyncLazy;
+        private readonly IValidatorLocator _validatorLocator;
         private readonly IEventService _eventService;
         private readonly ILogger _logger;
         private readonly ICloudShim _cloudShim;
+        private readonly ITenantApi _tenantApi;
 
         /// <summary>
         /// Constructor for the MachinesController.
@@ -40,41 +42,38 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="loggerFactory">The Logger Factory Object </param>
         /// <param name="eventService">The Event Service </param>
         /// <param name="cloudShim">The cloud api service</param>
+        /// <param name="tenantApi">The tenant API.</param>
         public MachinesController(
             IRepositoryFactory repositoryFactory,
             IValidatorLocator validatorLocator,
             ILoggerFactory loggerFactory,
             IEventService eventService,
-            ICloudShim cloudShim)
+            ICloudShim cloudShim,
+            ITenantApi tenantApi)
         {
-            _machineRepository = repositoryFactory.CreateRepository<Machine>();
-            _createMachineRequestValidator = validatorLocator.GetValidator(typeof(CreateMachineRequestValidator));
-            _machineIdValidator = validatorLocator.GetValidator(typeof(MachineIdValidator));
-            _tenantIdValidator = validatorLocator.GetValidator(typeof(TenantIdValidator));
-            _updateMachineRequestValidator = validatorLocator.GetValidator(typeof(UpdateMachineRequestValidator));
+            _machineRepositoryAsyncLazy = new AsyncLazy<IRepository<Machine>>(() => repositoryFactory.CreateRepositoryAsync<Machine>());
+            _validatorLocator = validatorLocator;
             _eventService = eventService;
             _logger = loggerFactory.GetLogger(this);
             _cloudShim = cloudShim;
+            _tenantApi = tenantApi;
         }
 
-        public async Task<Machine> CreateMachineAsync(Machine machine, Guid tenantId)
+        public async Task<Machine> CreateMachineAsync(Machine machine, CancellationToken cancellationToken)
         {
-            var validationResult = await _createMachineRequestValidator.ValidateAsync(machine);
-
+            var validationResult = _validatorLocator.Validate<CreateMachineRequestValidator>(machine);
             if (!validationResult.IsValid)
             {
-                _logger.Error($"Validation failed while attempting to create a Machine resource. {validationResult.Errors}");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            machine.TenantId = tenantId;
             machine.DateCreated = DateTime.UtcNow;
             machine.DateModified = DateTime.UtcNow;
             machine.Id = Guid.NewGuid();
             machine.NormalizedLocation = machine.Location.ToUpperInvariant();
             machine.MachineKey = machine.MachineKey.ToUpperInvariant();
 
-            var result = await CreateMachineInDb(machine);
+            var result = await CreateMachineInDbAsync(machine, cancellationToken);
 
             _eventService.Publish(EventNames.MachineCreated, result);
 
@@ -83,141 +82,226 @@ namespace Synthesis.PrincipalService.Controllers
             return result;
         }
 
-        public async Task<Machine> GetMachineByIdAsync(Guid machineId, Guid tenantId, bool isServiceCall)
+        public async Task<Machine> GetMachineByIdAsync(Guid machineId, Guid? tenantId, CancellationToken cancellationToken)
         {
-            var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
-            if (!machineIdValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the resource id while attempting to retrieve a Machine resource.");
-                throw new ValidationFailedException(machineIdValidationResult.Errors);
-            }
-
-            var result = await _machineRepository.GetItemAsync(machineId);
-            if (result == null)
-            {
-                _logger.Error($"A Machine resource could not be found for id {machineId}");
-                throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
-            }
-
-            var assignedTenantId = result.TenantId;
-            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
-            {
-                _logger.Error($"Invalid operation. Machine {machineId} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
-            }
-            return result;
-        }
-
-        public async Task<Machine> GetMachineByKeyAsync(String machineKey, Guid tenantId, bool isServiceCall)
-        {
-            var normalizedMachineKey = machineKey.ToUpperInvariant();
-            var result = await _machineRepository.GetItemsAsync(m => m.MachineKey.Equals(normalizedMachineKey));
-            var machine = result.FirstOrDefault();
-            if (machine == null)
-            {
-                _logger.Error($"A Machine resource could not be found for id {machineKey}");
-                throw new NotFoundException($"A Machine resource could not be found for id {machineKey}");
-            }
-
-            var assignedTenantId = machine.TenantId;
-            if (!isServiceCall && (assignedTenantId == Guid.Empty || assignedTenantId != tenantId))
-            {
-                _logger.Error($"Invalid operation. Machine {machineKey} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
-            }
-            return machine;
-        }
-
-        public async Task<Machine> UpdateMachineAsync(Machine model, Guid tenantId, bool isServiceCall)
-        {
-            var validationResult = await _updateMachineRequestValidator.ValidateAsync(model);
-
+            var validationResult = _validatorLocator.Validate<MachineIdValidator>(machineId);
             if (!validationResult.IsValid)
             {
-                _logger.Error("Validation failed while attempting to update a Machine resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            var batchOptions = tenantId == null
+                ? new BatchOptions { EnableCrossPartitionQuery = true }
+                : new BatchOptions { PartitionKey = new PartitionKey(tenantId.Value) };
+
+            var result = await machineRepository.CreateItemQuery(batchOptions)
+                .FirstOrDefaultAsync(m => m.Id == machineId, cancellationToken);
+
+            return result ?? throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
+        }
+
+        public async Task<Machine> GetMachineByKeyAsync(string machineKey, Guid? tenantId, CancellationToken cancellationToken)
+        {
+            var normalizedMachineKey = machineKey.ToUpperInvariant();
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            var batchOptions = tenantId == null
+                ? new BatchOptions { EnableCrossPartitionQuery = true }
+                : new BatchOptions { PartitionKey = new PartitionKey(tenantId) };
+
+            var machine = await machineRepository.CreateItemQuery(batchOptions)
+                .FirstOrDefaultAsync(m => m.MachineKey.Equals(normalizedMachineKey), cancellationToken);
+
+            return machine ?? throw new NotFoundException($"A Machine resource could not be found for id {machineKey}");
+        }
+
+        public async Task<Guid> GetMachineTenantIdAsync(Guid machineId, Guid? tenantId, CancellationToken cancellationToken)
+        {
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            var batchOptions = tenantId == null
+                ? new BatchOptions { EnableCrossPartitionQuery = true }
+                : new BatchOptions { PartitionKey = new PartitionKey(tenantId) };
+
+            return await machineRepository.CreateItemQuery(batchOptions)
+                .Where(m => m.Id == machineId)
+                .Select(m => m.TenantId)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<Machine> UpdateMachineAsync(Machine model, CancellationToken cancellationToken)
+        {
+            var validationResult = _validatorLocator.Validate<UpdateMachineRequestValidator>(model);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            model.MachineKey = model.MachineKey.ToUpperInvariant();
+            model.NormalizedLocation = model.Location.ToUpperInvariant();
+
+            return await UpdateMachineInDbAsync(model);
+        }
+
+        public async Task DeleteMachineAsync(Guid machineId, Guid tenantId, CancellationToken cancellationToken)
+        {
+            var validationResult = _validatorLocator.Validate<MachineIdValidator>(machineId);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var machineRepository = await _machineRepositoryAsyncLazy;
             try
             {
-                var machine = model;
-                machine.MachineKey = machine.MachineKey.ToUpperInvariant();
-                machine.NormalizedLocation = machine.Location.ToUpperInvariant();
-                return await UpdateMachineInDb(machine, tenantId, isServiceCall);
+                await machineRepository.DeleteItemAsync(machineId, new QueryOptions { PartitionKey = new PartitionKey(tenantId) }, cancellationToken);
             }
-            catch (DocumentNotFoundException ex)
+            catch (DocumentNotFoundException)
             {
-                _logger.Error("Could not find the Machine to update", ex);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Could not Update the Machine.", ex);
-                throw;
+                // Suppressing this exception for deletes
             }
         }
 
-        private async Task<Machine> CreateMachineInDb(Machine machine)
+        public async Task<Machine> ChangeMachineTenantAsync(ChangeMachineTenantRequest request, Guid? sourceTenantId, CancellationToken cancellationToken)
+        {
+            // This operation should only be performed by superadmins. While permissions to this
+            // operation should be gated by policy documents, we need to make sure that if someone
+            // gets this far as a non-superadmin, we have additional checks.
+
+            // We're also assuming here that the existingMachine parameter has been retrieved from
+            // this controller using GetMachineByIdAsync.
+
+            // First, let's validate the target tenant ID because this is a free-form text field in
+            // the Admin.
+            if (request.TenantId == Guid.Empty)
+            {
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(request.TenantId), "The TenantId must not be empty") });
+            }
+
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            var batchOptions = sourceTenantId == null
+                ? new BatchOptions { EnableCrossPartitionQuery = true }
+                : new BatchOptions { PartitionKey = new PartitionKey(sourceTenantId.Value) };
+
+            var existingMachine = await machineRepository.CreateItemQuery(batchOptions)
+                .FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
+
+            if (existingMachine == null)
+            {
+                throw new NotFoundException($"Unable to find machine with identifier '{request.Id}'");
+            }
+
+            if (existingMachine.TenantId == request.TenantId)
+            {
+                // Nothing to change.
+                return existingMachine;
+            }
+
+            // Validate the target tenant by asking the Tenant service.
+            var tenantResponse = await _tenantApi.GetTenantByIdAsync(request.TenantId);
+            if (!tenantResponse.IsSuccess())
+            {
+                if (tenantResponse.ResponseCode != HttpStatusCode.NotFound)
+                {
+                    _logger.Error($"Failed to query the target tenant with identifier '{request.TenantId}' while attempting to move the machine '{request.Id}' to that tenant: ({tenantResponse.ResponseCode}) {tenantResponse.ErrorResponse?.Message ?? tenantResponse.ReasonPhrase}");
+                }
+
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(request.TenantId), "The TenantId provided in the request is either invalid or cannot be validated") });
+            }
+
+            // If the user didn't specify a setting profile identifier, we will pick the first
+            // valid setting profile from the target tenant.
+            var validateSettingProfileId = true;
+            if (request.SettingProfileId == Guid.Empty)
+            {
+                var settingProfileIdsResponse = await _cloudShim.GetSettingProfileIdsForTenant(request.TenantId);
+                if (!settingProfileIdsResponse.IsSuccess() || !settingProfileIdsResponse.Payload.Any())
+                {
+                    throw new ValidationFailedException(new[] { new ValidationFailure(nameof(request.SettingProfileId), "Unable to find a valid setting profile for the machine in the new tenant") });
+                }
+
+                request.SettingProfileId = settingProfileIdsResponse.Payload.First();
+
+                // We don't need to validate a setting profile that we just obtained.
+                validateSettingProfileId = false;
+            }
+
+            if (validateSettingProfileId && !await IsValidSettingProfileAsync(request.TenantId, request.SettingProfileId))
+            {
+                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(request.SettingProfileId), "The setting profile identifier is invalid or could not be validated") });
+            }
+
+            existingMachine.TenantId = request.TenantId;
+            existingMachine.SettingProfileId = request.SettingProfileId;
+
+            return await machineRepository.UpdateItemAsync(request.Id, existingMachine, cancellationToken: cancellationToken);
+        }
+
+        public async Task<List<Machine>> GetTenantMachinesAsync(Guid tenantId, CancellationToken cancellationToken)
+        {
+            var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            return await machineRepository.CreateItemQuery()
+                .Where(m => m.TenantId == tenantId)
+                .ToListAsync(cancellationToken);
+        }
+
+        private async Task<Machine> CreateMachineInDbAsync(Machine machine, CancellationToken cancellationToken)
         {
             var validationErrors = new List<ValidationFailure>();
 
-            if (!await IsUniqueLocation(machine))
+            if (!await IsUniqueLocationAsync(machine))
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Location was not unique"));
+                validationErrors.Add(new ValidationFailure(nameof(machine.Location), "Location is not unique"));
             }
 
-            if (!await IsUniqueMachineKey(machine))
+            if (!await IsUniqueMachineKeyAsync(machine))
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
+                validationErrors.Add(new ValidationFailure(nameof(machine.MachineKey), "Machine Key is not unique"));
             }
 
             if (validationErrors.Any())
             {
-                _logger.Error("An error occurred creating the machine");
                 throw new ValidationFailedException(validationErrors);
             }
 
-            var result = await _machineRepository.CreateItemAsync(machine);
-
-            return result;
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            return await machineRepository.CreateItemAsync(machine, cancellationToken);
         }
 
-        private async Task<Machine> UpdateMachineInDb(Machine machine, Guid tenantId, bool isServiceCall)
+        private async Task<Machine> UpdateMachineInDbAsync(Machine machine)
         {
             var validationErrors = new List<ValidationFailure>();
 
             if (machine.Id == Guid.Empty)
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Id was not provided."));
+                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine identifier is required"));
             }
 
-            var existingMachine = await _machineRepository.GetItemAsync(machine.Id);
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            var existingMachine = await machineRepository.GetItemAsync(machine.Id, new QueryOptions { PartitionKey = new PartitionKey(machine.TenantId) });
 
             if (existingMachine == null)
             {
-                _logger.Error($"An error occurred updating machine because it does not exist: {machine.Id}");
-                throw new NotFoundException("No Machine with id " + machine.Id + " was found.");
+                throw new NotFoundException($"No machine with identifier {machine.Id} was found");
             }
 
-            if (!isServiceCall && existingMachine.TenantId != tenantId)
+            if (!await IsUniqueLocationAsync(machine))
             {
-                _logger.Error($"Invalid operation. Machine {machine.Id} does not belong to tenant {tenantId}.");
-                throw new InvalidOperationException();
+                validationErrors.Add(new ValidationFailure(nameof(machine.NormalizedLocation), "Location is not unique"));
             }
 
-            if (!await IsUniqueLocation(machine))
+            if (!await IsUniqueMachineKeyAsync(machine))
             {
-                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Location was not unique"));
-            }
-
-            if (!await IsUniqueMachineKey(machine))
-            {
-                validationErrors.Add(new ValidationFailure(nameof(machine.Id), "Machine Key was not unique"));
+                validationErrors.Add(new ValidationFailure(nameof(machine.MachineKey), "Machine key is not unique"));
             }
 
             if (validationErrors.Any())
             {
-                _logger.Error($"A validation error occurred updating machine: {machine.Id}");
                 throw new ValidationFailedException(validationErrors);
             }
 
@@ -230,128 +314,33 @@ namespace Synthesis.PrincipalService.Controllers
             existingMachine.LastOnline = machine.LastOnline;
             existingMachine.NormalizedLocation = machine.NormalizedLocation;
 
-            try
-            {
-                await _machineRepository.UpdateItemAsync(machine.Id, existingMachine);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Machine Update failed.", ex);
-                throw;
-            }
-
-            return existingMachine;
+            return await machineRepository.UpdateItemAsync(machine.Id, existingMachine);
         }
 
-        public async Task DeleteMachineAsync(Guid machineId, Guid tenantId)
+        private async Task<bool> IsUniqueLocationAsync(Machine machine)
         {
-            var machineIdValidationResult = await _machineIdValidator.ValidateAsync(machineId);
-
-            if (!machineIdValidationResult.IsValid)
-            {
-                _logger.Error("Failed to validate the resource id while attempting to delete a Machine resource.");
-                throw new ValidationFailedException(machineIdValidationResult.Errors);
-            }
-
-            var result = await _machineRepository.GetItemAsync(machineId);
-            if (result == null)
-            {
-                _logger.Error($"A Machine resource could not be found for id {machineId}");
-                throw new NotFoundException($"A Machine resource could not be found for id {machineId}");
-            }
-
-            try
-            {
-                await _machineRepository.DeleteItemAsync(machineId);
-            }
-            catch (DocumentNotFoundException)
-            {
-                // Suppressing this exception for deletes
-            }
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            return !await machineRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(machine.TenantId) })
+                .AnyAsync(m => m.NormalizedLocation == machine.NormalizedLocation && m.Id != machine.Id);
         }
 
-        public async Task<Machine> ChangeMachineTenantasync(Guid machineId, Guid tenantId, Guid settingProfileId)
+        private async Task<bool> IsUniqueMachineKeyAsync(Machine machine)
         {
-            var existingMachine = await _machineRepository.GetItemAsync(machineId);
-
-            if (settingProfileId == Guid.Empty)
-            {
-                var settingProfileIds = await _cloudShim.GetSettingProfileIdsForTenant(tenantId);
-                if (settingProfileIds.IsSuccess() && settingProfileIds.Payload.Any())
-                {
-                    settingProfileId = settingProfileIds.Payload.First();
-                }
-                else
-                {
-                    _logger.Error("An error occurred changing the tenant. Unable to find a valid setting profile id in the new tenant");
-                    throw new ValidationFailedException(new []{new ValidationFailure(nameof(settingProfileId) ,  "Unable to find a valid setting profile id in the new tenant"), });
-                }
-            }
-
-            if (existingMachine == null)
-            {
-                _logger.Error($"An error occurred changing the tenant. Machine {machineId} was not found.");
-                throw new NotFoundException($"No Machine with id {machineId} was found.");
-            }
-
-            if (!await IsValidSettingProfile(tenantId, settingProfileId))
-            {
-                _logger.Error("Invalid operation. The settings profile is not valid.");
-                throw new ValidationFailedException(new[] { new ValidationFailure(nameof(settingProfileId), "The settings profile is not valid."), });
-            }
-
-            existingMachine.TenantId = tenantId;
-            existingMachine.SettingProfileId = settingProfileId;
-
-            try
-            {
-                await _machineRepository.UpdateItemAsync(machineId, existingMachine);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Could not move machine", ex);
-                throw;
-            }
-
-            return existingMachine;
+            var machineRepository = await _machineRepositoryAsyncLazy;
+            return !await machineRepository.CreateItemQuery(new BatchOptions { PartitionKey = new PartitionKey(machine.TenantId) })
+                .AnyAsync(m => m.MachineKey == machine.MachineKey && m.Id != machine.Id);
         }
 
-        public async Task<List<Machine>> GetTenantMachinesAsync(Guid tenantId)
+        private async Task<bool> IsValidSettingProfileAsync(Guid tenantId, Guid settingProfileId)
         {
-            var tenantIdValidationResult = await _tenantIdValidator.ValidateAsync(tenantId);
-            if (!tenantIdValidationResult.IsValid)
+            var response = await _cloudShim.ValidateSettingProfileId(tenantId, settingProfileId);
+            if (response.IsSuccess())
             {
-                _logger.Warning("Failed to validate the resource id while attempting to retrieve a Machines for tenant.");
-                throw new ValidationFailedException(tenantIdValidationResult.Errors);
+                return response.Payload;
             }
 
-            var result = await _machineRepository.GetItemsAsync(m => m.TenantId == tenantId);
-
-            if (result == null)
-            {
-                _logger.Warning($"Machine resources could not be found for id {tenantId}");
-                throw new NotFoundException($"Machine resources could not be found for id {tenantId}");
-            }
-
-            return result.ToList();
-        }
-
-        private async Task<bool> IsUniqueLocation(Machine machine)
-        {
-            var tenantMachines = await _machineRepository.GetItemsAsync(m => m.TenantId == machine.TenantId && (m.NormalizedLocation == machine.NormalizedLocation && m.Id != machine.Id));
-            return tenantMachines.Any() == false;
-        }
-
-        private async Task<bool> IsUniqueMachineKey(Machine machine)
-        {
-            var machinesWithMatchingMachinesKey = await _machineRepository.GetItemsAsync(m => m.MachineKey == machine.MachineKey && (m.Id != machine.Id));
-            return machinesWithMatchingMachinesKey.Any() == false;
-        }
-
-        private async Task<bool> IsValidSettingProfile(Guid tenantId, Guid settingProfileId)
-        {
-            var result = await _cloudShim.ValidateSettingProfileId(tenantId, settingProfileId);
-            return result.Payload;
+            _logger.Warning($"Unable to determine validity of setting profile ({settingProfileId}) in tenant ({tenantId}). Assuming it's not valid.\n({response.ResponseCode}) {response.ErrorResponse?.Message ?? response.ReasonPhrase}");
+            return false;
         }
     }
 }

@@ -6,6 +6,9 @@ namespace Synthesis.PrincipalService.Services
     public interface ISuperAdminService
     {
         Task<bool> IsSuperAdminAsync(Guid userId);
+
         Task<bool> IsLastRemainingSuperAdminAsync(Guid userId);
+
+        bool IsSuperAdminGroup(Guid groupId);
     }
 }

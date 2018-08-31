@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Synthesis.PrincipalService.Controllers
+namespace Synthesis.PrincipalService.Controllers.Exceptions
 {
     public class LicenseAssignmentFailedException : Exception
     {

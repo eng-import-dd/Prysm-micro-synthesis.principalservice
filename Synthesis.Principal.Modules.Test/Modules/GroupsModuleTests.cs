@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
+using Nancy.Testing;
+using Synthesis.Http.Microservice.Models;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
 using Synthesis.Nancy.MicroService.Validation;
@@ -19,8 +22,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
     {
         /// <inheritdoc />
         protected override List<object> BrowserDependencies { get; }
-        private readonly Mock<IGroupsController> _controllerMock = new Mock<IGroupsController>();
 
+        private readonly Mock<IGroupsController> _controllerMock = new Mock<IGroupsController>();
 
         public GroupsModuleTests()
         {
@@ -30,7 +33,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), false))
+            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Groups, ctx => BuildRequest(ctx, new Group()));
@@ -42,7 +45,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), false))
+            _controllerMock.Setup(m => m.CreateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.Groups, ctx => BuildRequest(ctx, new Group()));
@@ -69,7 +72,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var groupId = Guid.NewGuid();
@@ -83,7 +86,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task DeleteGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.DeleteGroupAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var groupId = Guid.NewGuid();
@@ -106,7 +109,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsBadRequest()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var validGroupId = Guid.NewGuid();
@@ -119,7 +122,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var validGroupId = Guid.NewGuid();
@@ -132,7 +135,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsNotFoundIfItemDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException(string.Empty));
 
             var validGroupId = Guid.NewGuid();
@@ -145,7 +148,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Group()));
 
             var validGroupId = Guid.NewGuid();
@@ -158,7 +161,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupByIdReturnsUnauthorized()
         {
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Group()));
 
             var validGroupId = Guid.NewGuid();
@@ -172,7 +175,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         public async Task GetGroupByIdReturnsValidationFailedException()
         {
             var errors = Enumerable.Empty<ValidationFailure>();
-            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupByIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(errors));
 
             var validGroupId = Guid.NewGuid();
@@ -186,7 +189,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupsForTenantReturnsInternalServerError()
         {
-            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Get(Routing.Groups, BuildRequest);
@@ -198,7 +201,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupsForTenantReturnsNotFoundIfItemDoesNotExist()
         {
-            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new NotFoundException(string.Empty));
 
             var response = await UserTokenBrowser.Get(Routing.Groups, BuildRequest);
@@ -210,7 +213,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task GetGroupsForTenantReturnsOk()
         {
-            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.GetGroupsForTenantAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(Enumerable.Empty<Group>()));
 
             var response = await UserTokenBrowser.Get(Routing.Groups, BuildRequest);
@@ -222,7 +225,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateGroupReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Put(Routing.Groups, ctx => BuildRequest(ctx, new Group()));
@@ -235,7 +238,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task UpdateGroupReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+            _controllerMock.Setup(m => m.UpdateGroupAsync(It.IsAny<Group>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Put(Routing.Groups, ctx => BuildRequest(ctx, new Group()));
@@ -249,8 +252,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         {
             var response = await UserTokenBrowser.Put(Routing.Groups, ctx => BuildRequest(ctx, "invalid body"));
 
+            var errorResponse = response.Body.DeserializeJson<ErrorResponse>();
+
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+            Assert.Equal(Nancy.MicroService.Constants.ErrorCodes.BindingException, errorResponse.Code);
         }
 
         [Trait("Update Group", "Update Group Test Cases")]
