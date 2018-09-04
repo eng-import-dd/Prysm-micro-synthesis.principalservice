@@ -149,9 +149,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetMachineByKeyAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             string machinekey = Request.Query.machinekey;
             try
             {
@@ -185,9 +182,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> UpdateMachineAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             Machine updateMachine;
 
             try
