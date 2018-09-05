@@ -556,9 +556,6 @@ namespace Synthesis.PrincipalService.Modules
             // Usernames/emailIds will never have spaces in them, so this workaround shouldn't break anything
             userName = userName?.Replace(" ", "+");
 
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             try
             {
                 var user = await _userController.GetUserByUserNameOrEmailAsync(userName);
@@ -701,9 +698,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> DeleteUserAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             Guid userId = input.id;
 
             await RequiresAccess()
@@ -886,9 +880,6 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> CreateUserGroupAsync(dynamic input, CancellationToken cancellationToken)
         {
-            await RequiresAccess()
-                .ExecuteAsync(cancellationToken);
-
             UserGroup newUserGroupRequest;
 
             try
