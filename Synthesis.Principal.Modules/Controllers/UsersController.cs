@@ -156,8 +156,8 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType,
-                IsEmailVerified = true,
-                EmailVerifiedAt = DateTime.UtcNow
+                IsEmailVerified = !model.EmailVerificationRequired,
+                EmailVerifiedAt = !model.EmailVerificationRequired ? DateTime.UtcNow : new DateTime?()
             };
 
             newUser.Groups.AddRange(new List<Guid>
