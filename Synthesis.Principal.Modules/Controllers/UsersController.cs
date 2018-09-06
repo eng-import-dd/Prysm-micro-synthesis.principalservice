@@ -155,7 +155,9 @@ namespace Synthesis.PrincipalService.Controllers
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
                 LdapId = model.LdapId,
-                LicenseType = model.LicenseType
+                LicenseType = model.LicenseType,
+                IsEmailVerified = true,
+                EmailVerifiedAt = DateTime.UtcNow
             };
 
             newUser.Groups.AddRange(new List<Guid>
