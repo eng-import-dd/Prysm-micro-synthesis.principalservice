@@ -1064,7 +1064,7 @@ namespace Synthesis.PrincipalService.Controllers
             var tenantUsers = tenantUsersResponse.Payload.ToList();
             var totalRecords = tenantUsers.Count;
 
-            var query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
+            var query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions, tenantId);
             var batch = await _queryRunner.RunQuery(query);
             var userList = batch.ToList();
 

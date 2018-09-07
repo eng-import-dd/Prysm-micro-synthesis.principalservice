@@ -94,7 +94,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta021\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta024\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Logging, Version=2.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Logging.2.0.5-beta002\lib\net452\Synthesis.Logging.dll</HintPath>

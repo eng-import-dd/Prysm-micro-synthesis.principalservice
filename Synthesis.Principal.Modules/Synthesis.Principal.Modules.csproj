@@ -215,7 +215,7 @@
       <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta021\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta024\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
@@ -257,7 +257,7 @@
       <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta054\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta049\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta050\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization, Version=1.0.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.1.0.6\lib\net452\Synthesis.Serialization.dll</HintPath>
