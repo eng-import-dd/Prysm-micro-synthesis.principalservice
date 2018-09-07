@@ -207,7 +207,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(_loggerMock.Object);
 
             // project internal api mock
-            _projectAccessApiMock.Setup(x => x.GetProjectMemberUserIdsAsync(It.IsAny<Guid>(), MemberRoleFilter.All))
+            _projectAccessApiMock.Setup(x => x.GetProjectMemberUserIdsAsync(It.IsAny<Guid>(), MemberRoleFilter.All, It.IsAny<IEnumerable<KeyValuePair<string, string>>>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _fullMemberUserIds));
 
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
