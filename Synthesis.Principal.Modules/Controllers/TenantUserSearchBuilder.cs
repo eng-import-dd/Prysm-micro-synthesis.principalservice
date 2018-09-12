@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Synthesis.DocumentStorage;
 using Synthesis.Http.Microservice;
-using Synthesis.Http.Microservice.Constants;
 using Synthesis.Logging;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.ProjectService.InternalApi.Api;
@@ -27,16 +26,16 @@ namespace Synthesis.PrincipalService.Controllers
             _logger = logger;
         }
 
-        public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, Guid tenantId)
+        public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
             var userRepository = await _userRepositoryAsyncLazy;
             var query = userRepository.CreateItemQuery(UsersController.DefaultBatchOptions);
-            query = await BuildWhereClauseAsync(query, currentUserId, userIds, filteringOptions, tenantId);
+            query = await BuildWhereClauseAsync(query, currentUserId, userIds, filteringOptions);
             var batch = BuildOrderByClause(filteringOptions, query);
             return batch;
         }
 
-        private async Task<IQueryable<User>> BuildWhereClauseAsync(IQueryable<User> query, Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions, Guid tenantId)
+        private async Task<IQueryable<User>> BuildWhereClauseAsync(IQueryable<User> query, Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
             query = query.Where(user => userIds.Contains(user.Id ?? Guid.Empty));
 
@@ -68,7 +67,7 @@ namespace Synthesis.PrincipalService.Controllers
             switch (filteringOptions.GroupingType)
             {
                 case UserGroupingType.Project when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
-                    query = await AddFilterByProjectToQuery(query, filteringOptions, tenantId);
+                    query = await AddFilterByProjectToQuery(query, filteringOptions);
                     break;
 
                 case UserGroupingType.Group when !filteringOptions.UserGroupingId.Equals(Guid.Empty):
@@ -95,12 +94,9 @@ namespace Synthesis.PrincipalService.Controllers
             return query;
         }
 
-        private async Task<IQueryable<User>> AddFilterByProjectToQuery(IQueryable<User> query, UserFilteringOptions userFilteringOptions, Guid tenantId)
+        private async Task<IQueryable<User>> AddFilterByProjectToQuery(IQueryable<User> query, UserFilteringOptions userFilteringOptions)
         {
-            var tenantHeader = HeaderKeys.CreateTenantHeaderKey(tenantId);
-            var requestHeaders = new List<KeyValuePair<string, string>> { tenantHeader };
-
-            var projectUserIdsResponse = await _projectApi.GetProjectMemberUserIdsAsync(userFilteringOptions.UserGroupingId, MemberRoleFilter.FullUser, requestHeaders);
+            var projectUserIdsResponse = await _projectApi.GetProjectMemberUserIdsAsync(userFilteringOptions.UserGroupingId, MemberRoleFilter.FullUser);
             if (!projectUserIdsResponse.IsSuccess() || projectUserIdsResponse.Payload == null)
             {
                 _logger.Error($"Could not find members for user grouping id: {userFilteringOptions.UserGroupingId}");
