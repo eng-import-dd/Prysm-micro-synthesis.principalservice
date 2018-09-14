@@ -33,6 +33,7 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{03F2CB10-1D2C-11E8-8334-D906597EAF7D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{03F2CB10-1D2C-11E8-8334-D906597EAF7D}.Debug|Any CPU.Build.0 = Debug|x64
 		{03F2CB10-1D2C-11E8-8334-D906597EAF7D}.Debug|x64.ActiveCfg = Debug|x64
 		{03F2CB10-1D2C-11E8-8334-D906597EAF7D}.Debug|x64.Build.0 = Debug|x64
 		{03F2CB10-1D2C-11E8-8334-D906597EAF7D}.Dev|Any CPU.ActiveCfg = Release|x64
@@ -91,6 +92,8 @@ Global
 		{03F2CB12-1D2C-11E8-8334-D906597EAF7D}.Release|x64.ActiveCfg = Release|Any CPU
 		{03F2CB12-1D2C-11E8-8334-D906597EAF7D}.Release|x64.Build.0 = Release|Any CPU
 		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|Any CPU.Build.0 = Debug|x64
+		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|Any CPU.Deploy.0 = Debug|x64
 		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|x64.ActiveCfg = Debug|x64
 		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|x64.Build.0 = Debug|x64
 		{03F2CB13-1D2C-11E8-8334-D906597EAF7D}.Debug|x64.Deploy.0 = Debug|x64
