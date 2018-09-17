@@ -95,7 +95,7 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                var result = await _machinesController.CreateMachineAsync(newMachine, cancellationToken);
+                var result = await _machinesController.CreateMachineAsync(newMachine, TenantId, cancellationToken);
 
                 return Negotiate
                     .WithModel(result)

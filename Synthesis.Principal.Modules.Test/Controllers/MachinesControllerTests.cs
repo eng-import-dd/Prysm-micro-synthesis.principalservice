@@ -178,7 +178,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var newMachine = Machine.Example();
 
-            var result = await _controller.CreateMachineAsync(newMachine, CancellationToken.None);
+            var result = await _controller.CreateMachineAsync(newMachine, Guid.NewGuid(), CancellationToken.None);
 
             Assert.Same(newMachine, result);
         }
@@ -190,7 +190,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var newMachineRequest = new Machine { TenantId = Guid.Parse("e4ae81cb-1ddb-4d04-9c08-307a40099620"), Location = "location", MachineKey = string.Empty };
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, Guid.NewGuid()));
         }
 
         [Fact]
@@ -200,7 +200,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var newMachineRequest = new Machine { Id = Guid.NewGuid(), MachineKey = "machinekey", Location = string.Empty };
 
-            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest));
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.CreateMachineAsync(newMachineRequest, Guid.NewGuid()));
         }
 
         [Fact]

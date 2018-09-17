@@ -59,7 +59,7 @@ namespace Synthesis.PrincipalService.Controllers
             _tenantApi = tenantApi;
         }
 
-        public async Task<Machine> CreateMachineAsync(Machine machine, CancellationToken cancellationToken)
+        public async Task<Machine> CreateMachineAsync(Machine machine, Guid tenantId, CancellationToken cancellationToken)
         {
             var validationResult = _validatorLocator.Validate<CreateMachineRequestValidator>(machine);
             if (!validationResult.IsValid)
@@ -67,6 +67,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
+            machine.TenantId = tenantId;
             machine.DateCreated = DateTime.UtcNow;
             machine.DateModified = DateTime.UtcNow;
             machine.Id = Guid.NewGuid();

@@ -116,7 +116,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsBadRequestIfValidationFails()
         {
-            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<CancellationToken>()))
+            _controllerMock.Setup(m => m.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Post(Routing.Machines, ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
@@ -128,7 +128,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         [Fact]
         public async Task CreateMachineReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
         {
-            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<CancellationToken>()))
+            _controllerMock.Setup(x => x.CreateMachineAsync(It.IsAny<Machine>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             var response = await UserTokenBrowser.Post(Routing.Machines, ctx => BuildRequest(ctx, new Machine { MachineKey = "TestMachineKey", Location = "Dummy", SettingProfileId = Guid.NewGuid() }));
