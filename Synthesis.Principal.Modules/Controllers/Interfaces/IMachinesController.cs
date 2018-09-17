@@ -9,7 +9,7 @@ namespace Synthesis.PrincipalService.Controllers
 {
     public interface IMachinesController
     {
-        Task<Machine> CreateMachineAsync(Machine model, CancellationToken cancellationToken = default(CancellationToken));
+        Task<Machine> CreateMachineAsync(Machine model, Guid tenantId, CancellationToken cancellationToken = default(CancellationToken));
 
         Task<Machine> GetMachineByIdAsync(Guid id, Guid? tenantId, CancellationToken cancellationToken = default(CancellationToken));
 
