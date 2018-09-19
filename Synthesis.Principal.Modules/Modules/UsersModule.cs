@@ -731,9 +731,10 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(cancellationToken);
 
-            string email = input.email;
             try
             {
+                string email = Request.Query["email"];
+
                 var result = await _userController.CanPromoteUserAsync(email, TenantId);
                 return Negotiate
                     .WithModel(result)

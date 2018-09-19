@@ -581,7 +581,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Returns(Task.FromResult(new CanPromoteUser()));
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
+            var response = await UserTokenBrowser.Get($"{Routing.PromoteUser}?email={ValidTestEmail}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -592,7 +592,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new ValidationException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
+            var response = await UserTokenBrowser.Get($"{Routing.PromoteUser}?email={ValidTestEmail}", BuildRequest);
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -603,7 +603,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format($"{Routing.PromoteUser}?email={ValidTestEmail}", ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
@@ -614,7 +614,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
                            .Throws(new NotFoundException("User Doesn't Exist"));
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.PromoteUserBase, ValidTestEmail), BuildRequest);
+            var response = await UserTokenBrowser.Get(string.Format($"{Routing.PromoteUser}?email={ValidTestEmail}", ValidTestEmail), BuildRequest);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
