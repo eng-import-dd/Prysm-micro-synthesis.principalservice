@@ -744,9 +744,9 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            catch (NotFoundException)
+            catch (NotFoundException ex)
             {
-                //Logger.Error("User not found", ex);
+                Logger.Error("User not found", ex);
                 return Response.NotFound();
             }
             catch (Exception ex)
