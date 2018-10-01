@@ -747,7 +747,7 @@ namespace Synthesis.PrincipalService.Modules
             catch (NotFoundException ex)
             {
                 Logger.Error("User not found", ex);
-                return Response.NotFound(ResponseReasons.NotFoundUser);
+                return Response.NotFound();
             }
             catch (Exception ex)
             {
