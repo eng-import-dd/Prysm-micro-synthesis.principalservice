@@ -575,8 +575,7 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Info("User not found while getting user by username or email", ex);
 
-                return Negotiate
-                    .WithStatusCode(HttpStatusCode.NotFound)
+                return Response.NotFound()
                     .WithHeader("X-ServiceFabric", "ResourceNotFound");
             }
             catch (ValidationFailedException ex)
