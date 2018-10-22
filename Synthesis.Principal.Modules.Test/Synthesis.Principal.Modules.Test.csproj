@@ -206,7 +206,7 @@
       <HintPath>..\packages\Synthesis.Microservice.1.0.0-beta012\lib\net452\Synthesis.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService, Version=3.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta046\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Nancy.MicroService.3.2.0-beta049\lib\net452\Synthesis.Nancy.MicroService.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Nancy.MicroService.Metadata, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Nancy.MicroService.Metadata.1.0.1-beta001\lib\net452\Synthesis.Nancy.MicroService.Metadata.dll</HintPath>

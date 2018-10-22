@@ -40,6 +40,7 @@ using Synthesis.Microservice.Health;
 using Synthesis.Nancy.MicroService.Authentication;
 using Synthesis.Nancy.MicroService.EventBus;
 using Synthesis.Nancy.MicroService.Metadata;
+using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.Nancy.MicroService.Serialization;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.Owin.Security;
@@ -186,6 +187,7 @@ namespace Synthesis.PrincipalService
             builder.RegisterType<GlobalExceptionHandlerMiddleware>().InstancePerRequest();
             builder.RegisterType<CorrelationScopeMiddleware>().InstancePerRequest();
             builder.RegisterType<SynthesisAuthenticationMiddleware>().InstancePerRequest();
+            builder.RegisterType<ResourceNotFoundMiddleware>().InstancePerRequest();
             builder.RegisterType<GuestContextMiddleware>().InstancePerRequest();
             builder
                 .RegisterType<ImpersonateTenantMiddleware>()
