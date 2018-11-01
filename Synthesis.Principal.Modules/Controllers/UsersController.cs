@@ -529,7 +529,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"No user found with the email: {request.Email}");
             }
 
-            if (user.IsEmailVerified != null && (bool)user.IsEmailVerified)
+            if (user.IsEmailVerified)
             {
                 throw new EmailAlreadyVerifiedException($"User with email: {request.Email} has already been verified");
             }
@@ -1110,11 +1110,6 @@ namespace Synthesis.PrincipalService.Controllers
             if (user.Id == null)
             {
                 throw new Exception($"User resource with email {verifyRequest.Email} has a null Id");
-            }
-
-            if (user.IsEmailVerified == null)
-            {
-                return new VerifyUserEmailResponse { Result = true };
             }
 
             if (user.EmailVerificationId != verifyRequest.VerificationId)
