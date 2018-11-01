@@ -1406,7 +1406,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userid = Guid.NewGuid();
             var promoteResponse = await _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
 
-            Assert.Equal(CanPromoteUserResultCode.UserAccountAlreadyExists, promoteResponse);
+            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse);
         }
 
         [Fact]
@@ -1458,7 +1458,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
 
-            Assert.Equal(CanPromoteUserResultCode.UserCanBePromoted, promoteResponse);
+            Assert.Equal(PromoteGuestResultCode.Success, promoteResponse);
         }
 
         [Fact]
@@ -2061,8 +2061,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                     {
                         Email = request.Email,
                         EmailVerificationId = request.VerificationId,
-                        Id = new Guid(),
-                        IsEmailVerified = null
+                        Id = new Guid()
                     }
                 });
 

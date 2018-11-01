@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Script.Services;
 using FluentValidation;
 using Nancy;
 using Nancy.ErrorHandling;
@@ -22,6 +23,7 @@ using Synthesis.PrincipalService.Controllers.Exceptions;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 
@@ -95,7 +97,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, Routing.PromoteUser, CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError/*, HttpStatusCode.NotFound*/)
                 .ResponseFormat(CanPromoteUser.Example());
 
             CreateRoute("GetUserIdsByGroupId", HttpMethod.Get, Routing.UserIdsByGroupId, GetUserIdsByGroupIdAsync)
@@ -162,7 +164,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(LicenseType.UserLicense);
+                .RequestFormat(LicenseType.UserLicense)
+                .ResponseFormat(PromoteGuestResponse.Example());
 
             CreateRoute("AutoProvisionRefreshGroups", HttpMethod.Post, Routing.AutoProvisionRefreshGroups, AutoProvisionRefreshGroupsAsync)
                 .Description("Autoprovisions the refresh groups")
@@ -740,14 +743,9 @@ namespace Synthesis.PrincipalService.Modules
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
             }
-            catch (ValidationException ex)
+            catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (NotFoundException ex)
-            {
-                Logger.Error("User not found", ex);
-                return Response.NotFound();
             }
             catch (Exception ex)
             {
@@ -774,22 +772,61 @@ namespace Synthesis.PrincipalService.Modules
 
             try
             {
-                await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType, Context.CurrentUser);
-
-                return Negotiate
-                    .WithStatusCode(HttpStatusCode.OK);
+                var code = await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType, Context.CurrentUser);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = code
+                };
             }
             catch (ValidationFailedException ex)
             {
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            catch (PromotionFailedException ex)
+            catch (LicenseNotAvailableException ex)
             {
-                return Response.Forbidden(ResponseReasons.PromotionFailed, "FAILED", ex.Message);
+                var result = new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
+                };
+
+                return Negotiate
+                    .WithModel(result)
+                    .WithStatusCode(HttpStatusCode.BadRequest)
+                    .WithReasonPhrase(ex.Message);
             }
-            catch (LicenseAssignmentFailedException ex)
+            catch (PromotionNotPossibleException)
             {
-                return Response.Forbidden(ResponseReasons.LicenseAssignmentFailed, "FAILED", ex.Message);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
+            }
+            catch (UserAlreadyPromotedException)
+            {
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.UserAlreadyPromoted
+                };
+            }
+            catch (PromotionFailedException)
+            {
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
+            }
+            catch (LicenseAssignmentFailedException)
+            {
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
+                };
             }
             catch (Exception ex)
             {

@@ -34,6 +34,7 @@ using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
 using Synthesis.TenantService.InternalApi.Api;
+using Synthesis.TenantService.InternalApi.Models;
 using Synthesis.Threading.Tasks;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -362,29 +363,41 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
-            email = email?.ToLower();
-            var userRepository = await _userRepositoryAsyncLazy;
-            var userList = await userRepository.GetItemsAsync(u => u.Email.Equals(email), DefaultBatchOptions);
-            var existingUser = userList.FirstOrDefault();
-            if (existingUser == null)
-            {
-                throw new NotFoundException("User not found with that email.");
-            }
-
-            var isValidForPromotion = await IsValidPromotionForTenant(existingUser, tenantId);
-            if (isValidForPromotion != CanPromoteUserResultCode.UserAccountAlreadyExists && isValidForPromotion != CanPromoteUserResultCode.PromotionNotPossible)
+            var user = await GetUserByEmail(email);
+            if (user == null)
             {
                 return new CanPromoteUser
                 {
-                    ResultCode = CanPromoteUserResultCode.UserCanBePromoted,
-                    UserId = existingUser.Id
+                    ResultCode = CanPromoteUserResultCode.UserDoesNotExist,
+                    UserId = null
                 };
             }
 
+            var canPromoteCode = await IsValidPromotionForTenant(user, tenantId);
             return new CanPromoteUser
             {
-                ResultCode = CanPromoteUserResultCode.UserAccountAlreadyExists
+                ResultCode = canPromoteCode,
+                UserId = user.Id
             };
+        }
+
+        private CanPromoteUser MakePromoteResponse(CanPromoteUserResultCode code, Guid? userId)
+        {
+            return new CanPromoteUser
+            {
+                ResultCode = code,
+                UserId = userId
+            };
+        }
+
+        private async Task<User> GetUserByEmail(string emailAddress)
+        {
+            emailAddress = emailAddress?.ToLower();
+            var userRepository = await _userRepositoryAsyncLazy;
+            var userList = await userRepository.GetItemsAsync(u => u.Email.Equals(emailAddress), DefaultBatchOptions);
+            var existingUser = userList.FirstOrDefault();
+
+            return existingUser;
         }
 
         public async Task DeleteUserAsync(Guid id)
@@ -529,7 +542,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new NotFoundException($"No user found with the email: {request.Email}");
             }
 
-            if (user.IsEmailVerified != null && (bool)user.IsEmailVerified)
+            if (user.IsEmailVerified != null && (bool) user.IsEmailVerified)
             {
                 throw new EmailAlreadyVerifiedException($"User with email: {request.Email} has already been verified");
             }
@@ -552,10 +565,9 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<CanPromoteUserResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false)
+        public async Task<PromoteGuestResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false)
         {
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
-
             if (!validationResult.IsValid)
             {
                 _logger.Error("Validation failed while attempting to promote guest.");
@@ -565,11 +577,9 @@ namespace Synthesis.PrincipalService.Controllers
             if (autoPromote)
             {
                 var licenseAvailable = await IsLicenseAvailable(tenantId, licenseType);
-
                 if (!licenseAvailable)
                 {
-                    _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
-                    throw new PromotionFailedException("Not promoting the user as there are no user licenses available");
+                    throw new LicenseNotAvailableException($"No license of type={licenseType} is available to assign to user={userId} and tenantId={tenantId}");
                 }
             }
 
@@ -577,23 +587,16 @@ namespace Synthesis.PrincipalService.Controllers
             var user = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
 
             var isValidResult = await IsValidPromotionForTenant(user, tenantId);
-            if (isValidResult != CanPromoteUserResultCode.UserCanBePromoted)
+            if (isValidResult == CanPromoteUserResultCode.UserAccountAlreadyExists)
             {
-                if (isValidResult == CanPromoteUserResultCode.UserAccountAlreadyExists)
-                {
-                    return CanPromoteUserResultCode.UserAccountAlreadyExists;
-                }
-
-                _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
-                throw new PromotionFailedException("User is not valid for promotion");
+                throw new UserAlreadyPromotedException($"UserId={userId} already promoted.");
+            }
+            if (isValidResult == CanPromoteUserResultCode.EmailNotInTenantDomain)
+            {
+                throw new PromotionNotPossibleException($"User={userId} email domain is not in the tenant domain.");
             }
 
-            var assignGuestResult = await AssignGuestUserToTenant(user, tenantId);
-            if (assignGuestResult != CanPromoteUserResultCode.UserCanBePromoted)
-            {
-                _logger.Error(string.Format(ErrorMessages.UserPromotionFailed, userId));
-                throw new PromotionFailedException($"Failed to assign Guest User {userId} to tenant {tenantId}");
-            }
+            await AssignGuestUserToTenant(user, tenantId);
 
             if (!autoPromote && licenseType != LicenseType.Default && !await CanManageUserLicensesAsync(claimsPrincipal))
             {
@@ -609,7 +612,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (assignLicenseResult == null || assignLicenseResult.ResultCode != LicenseResponseResultCode.Success)
             {
-                // If assignign a license fails, then we must disable the user
+                // If assigning a license fails, then we must disable the user
                 await LockUserAsync(userId, true);
 
                 throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
@@ -617,7 +620,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             await SendWelcomeEmailAsync(user);
 
-            return CanPromoteUserResultCode.UserCanBePromoted;
+            return PromoteGuestResultCode.Success;
         }
 
         public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal)
@@ -1152,45 +1155,53 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<CanPromoteUserResultCode> IsValidPromotionForTenant(User user, Guid tenantId)
         {
-            if (user?.Email == null)
+            var tenants = await GetTentantsForUser(user.Id.GetValueOrDefault());
+            if (tenants.Contains(tenantId))
             {
-                return CanPromoteUserResultCode.PromotionNotPossible;
+                return CanPromoteUserResultCode.UserAccountAlreadyExists;
             }
 
-            if (user.Id != null)
+            var userDomain = user.Email.Substring(user.Email.IndexOf('@') + 1);
+            var tenantDomains = await GetTentantDomains(tenantId);
+            if (!tenantDomains.Any(d => d.Domain.Equals(userDomain, StringComparison.OrdinalIgnoreCase)))
             {
-                var result = await _tenantApi.GetTenantIdsForUserIdAsync(user.Id ?? Guid.Empty);
-
-                if (!result.Payload.IsNullOrEmpty() && result.Payload.Contains(tenantId))
-                {
-                    return CanPromoteUserResultCode.UserAccountAlreadyExists;
-                }
+                return CanPromoteUserResultCode.EmailNotInTenantDomain;
             }
 
-            var domain = user.Email.Substring(user.Email.IndexOf('@') + 1);
-            var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
-            if (!tenantDomainsResponse.IsSuccess())
-            {
-                return CanPromoteUserResultCode.PromotionNotPossible;
-            }
-
-            return tenantDomainsResponse.Payload.Any(d => d.Domain.Equals(domain, StringComparison.OrdinalIgnoreCase))
-                ? CanPromoteUserResultCode.UserCanBePromoted
-                : CanPromoteUserResultCode.PromotionNotPossible;
+            return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
-        private async Task<CanPromoteUserResultCode> AssignGuestUserToTenant(User user, Guid tenantId)
+        private async Task<IEnumerable<Guid>> GetTentantsForUser(Guid userId)
+        {
+            var result = await _tenantApi.GetTenantIdsForUserIdAsync(userId);
+            if (!result.IsSuccess() || result.Payload == null)
+            {
+                throw new Exception($"Could not get tenants for user={userId}. Reason={result}");
+            }
+            return result.Payload;
+        }
+
+        private async Task<IEnumerable<TenantDomain>> GetTentantDomains(Guid tenantId)
+        {
+            var result = await _tenantApi.GetTenantDomainsAsync(tenantId);
+            if (!result.IsSuccess() || result.Payload == null)
+            {
+                throw new Exception($"Could not get tenant domains for tenant={tenantId}. Reason={result}");
+            }
+            return result.Payload;
+        }
+
+        private async Task AssignGuestUserToTenant(User user, Guid tenantId)
         {
             if (user.Id == null)
             {
-                return CanPromoteUserResultCode.PromotionNotPossible;
+                throw new ArgumentException("The id of the user cannot be null");
             }
 
-            var result = await _tenantApi.AddUserToTenantAsync(tenantId, (Guid)user.Id);
-
+            var result = await _tenantApi.AddUserToTenantAsync(tenantId, user.Id.Value);
             if (!result.IsSuccess())
             {
-                return CanPromoteUserResultCode.PromotionNotPossible;
+                throw new Exception($"Error while adding userId={user.Id} to tenantId={tenantId}.  Reason={result.ReasonPhrase}");
             }
 
             _eventService.Publish(new ServiceBusEvent<Guid>
@@ -1198,8 +1209,6 @@ namespace Synthesis.PrincipalService.Controllers
                 Name = EventNames.UserPromoted,
                 Payload = user.Id.GetValueOrDefault()
             });
-
-            return CanPromoteUserResultCode.UserCanBePromoted;
         }
 
         private bool IsBuiltInOnPremTenant(Guid? tenantId)

@@ -350,6 +350,9 @@
     <Compile Include="Constants\GroupIds.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
+    <Compile Include="Controllers\Exceptions\PromotionNotPossibleException.cs" />
+    <Compile Include="Controllers\Exceptions\UserAlreadyPromotedException.cs" />
+    <Compile Include="Controllers\Exceptions\LicenseNotAvailableException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseAssignmentFailedException.cs" />
     <Compile Include="Controllers\Exceptions\PromotionFailedException.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
@@ -418,6 +421,7 @@
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
+    <Compile Include="Validators\PromoteUserValidator.cs" />
     <Compile Include="Validators\UserNameValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
   </ItemGroup>
