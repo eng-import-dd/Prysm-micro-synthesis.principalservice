@@ -1,4 +1,5 @@
 {
+  "SeedVersion": 1,
   "EmailDomain": "me.com",
   "CreatedBy": "00000000-0000-0000-0000-000000000000",
   "CreatedDate": "2017-12-06T10:38:34.9109573-05:00",
@@ -8,6 +9,7 @@
     "7711bc47-6544-41e2-b1d1-c83d5cf7d866"
   ],
   "id": "b99918da-d9ec-4a94-be5c-d8aaabb60daf",
+  "IsEmailVerified": true,  
   "IsIdpUser": false,
   "IsLocked": false,
   "LastName": "Me",
