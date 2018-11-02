@@ -381,15 +381,6 @@ namespace Synthesis.PrincipalService.Controllers
             };
         }
 
-        private CanPromoteUser MakePromoteResponse(CanPromoteUserResultCode code, Guid? userId)
-        {
-            return new CanPromoteUser
-            {
-                ResultCode = code,
-                UserId = userId
-            };
-        }
-
         private async Task<User> GetUserByEmail(string emailAddress)
         {
             emailAddress = emailAddress?.ToLower();
