@@ -2051,25 +2051,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task VerifyEmailReturnsTrueVerifyUserEmailResponseIfIsEmailVerifiedIsNull()
-        {
-            var request = VerifyUserEmailRequest.Example();
-
-            _userRepositoryMock.SetupCreateItemQuery(x => new[]
-                {
-                    new User
-                    {
-                        Email = request.Email,
-                        EmailVerificationId = request.VerificationId,
-                        Id = new Guid()
-                    }
-                });
-
-            var response = await _controller.VerifyEmailAsync(request);
-            Assert.True(response.Result);
-        }
-
-        [Fact]
         public async Task VerifyEmailReturnsTrueVerifyUserEmailResponseIfRequestEmailVerificationIdMatches()
         {
             var request = VerifyUserEmailRequest.Example();
