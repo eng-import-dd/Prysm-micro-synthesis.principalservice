@@ -1147,6 +1147,11 @@ namespace Synthesis.PrincipalService.Controllers
                 return CanPromoteUserResultCode.UserAccountAlreadyExists;
             }
 
+            if (user.Email == null)
+            {
+                return CanPromoteUserResultCode.EmailNotInTenantDomain;
+            }
+
             var userDomain = user.Email.Substring(user.Email.IndexOf('@') + 1);
             var tenantDomains = await GetTentantDomains(tenantId);
             if (!tenantDomains.Any(d => d.Domain.Equals(userDomain, StringComparison.OrdinalIgnoreCase)))

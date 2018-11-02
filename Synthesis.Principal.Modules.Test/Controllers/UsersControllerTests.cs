@@ -411,7 +411,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(default(User));
             const string email = "ch@gmm.com";
-            await Assert.ThrowsAsync<NotFoundException>(() => _controller.CanPromoteUserAsync(email, Guid.NewGuid()));
+
+            var result = await _controller.CanPromoteUserAsync(email, Guid.NewGuid());
+
+            Assert.Equal(CanPromoteUserResultCode.UserDoesNotExist, result.ResultCode);
         }
 
         [Fact]
@@ -1322,7 +1325,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var tenantId = Guid.NewGuid();
             var userid = Guid.NewGuid();
-            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal, true));
+            await Assert.ThrowsAsync<LicenseNotAvailableException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal, true));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -1369,7 +1372,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
 
             var userid = Guid.NewGuid();
-            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<PromotionNotPossibleException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -1384,7 +1387,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new List<LicenseSummaryDto>());
 
             var userid = Guid.NewGuid();
-            await Assert.ThrowsAsync<PromotionFailedException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<PromotionNotPossibleException>(() => _controller.PromoteGuestUserAsync(userid, Guid.NewGuid() /*_defaultTenantId*/, LicenseType.UserLicense, _defaultClaimsPrincipal));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
@@ -1404,9 +1407,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid> { _defaultTenantId }.AsEnumerable()));
 
             var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
 
-            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, promoteResponse);
+            await Assert.ThrowsAsync<UserAlreadyPromotedException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
         }
 
         [Fact]
