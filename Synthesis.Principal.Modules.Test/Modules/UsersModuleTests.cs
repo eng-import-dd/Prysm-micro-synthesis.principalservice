@@ -584,10 +584,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task CanPromoteuserReturnsBadrequest()
+        public async Task CanPromoteUser_ReturnsBadrequest()
         {
             _usersControllerMock.Setup(m => m.CanPromoteUserAsync(It.IsAny<string>(), It.IsAny<Guid>()))
-                           .Throws(new ValidationException(new List<ValidationFailure>()));
+                           .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
             var response = await UserTokenBrowser.Get($"{Routing.PromoteUser}", BuildRequest);
 
