@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Synthesis.PrincipalService.InternalApi.Enums;
+using Synthesis.Nancy.MicroService;
+using Synthesis.Nancy.MicroService.Validation;
+using Synthesis.PrincipalService.Controllers.Exceptions;
 using Synthesis.PrincipalService.InternalApi.Models;
 
 namespace Synthesis.PrincipalService.Controllers
@@ -19,7 +21,23 @@ namespace Synthesis.PrincipalService.Controllers
 
         Task DeleteUserAsync(Guid userId);
 
-        Task<PromoteGuestResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false);
+        /// <summary>
+        /// Promotes a guest user to a fully licensed user
+        /// </summary>
+        /// <param name="userId">Guid of the user to promote</param>
+        /// <param name="tenantId">The Guid of the tenant to add the user to</param>
+        /// <param name="licenseType">Type of license to assign to the user</param>
+        /// <param name="claimsPrincipal">Principal who can manage licenses</param>
+        /// <param name="autoPromote">Force using license type regardless of Claims Principal rights</param>
+        /// <returns>Task to await</returns>
+        /// <exception cref="ValidationFailedException">Thrown when invalid params are passed in</exception>
+        /// <exception cref="LicenseNotAvailableException">Thrown when no license is available to assign to a user</exception>
+        /// <exception cref="NotFoundException">Thrown when the user cannot be found</exception>
+        /// <exception cref="UserAlreadyMemberOfTenantException">Thrown when the user has already been promoted to a licensed user</exception>
+        /// <exception cref="EmailNotInTenantDomainException">Thrown when the users email domain is not an domain used by the tenant.</exception>
+        /// <exception cref="AssignUserToTenantException">Thrown when there was error adding the user to the tenant</exception>
+        /// <exception cref="LicenseAssignmentFailedException">Thrown when assigning a license to the user fails</exception>
+        Task PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false);
 
         Task<PagingMetadata<BasicUser>> GetUsersBasicAsync(Guid tenantId, Guid userId, UserFilteringOptions userFilteringOptions);
 

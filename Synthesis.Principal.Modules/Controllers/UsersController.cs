@@ -6,9 +6,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using Castle.Core.Internal;
 using Castle.Core.Resource;
-using FluentValidation;
 using FluentValidation.Results;
 using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
@@ -139,7 +137,6 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (IsBuiltInOnPremTenant(tenantId))
             {
-                _logger.Error("Validation failed while attempting to create a User resource.");
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
@@ -556,12 +553,16 @@ namespace Synthesis.PrincipalService.Controllers
             }
         }
 
-        public async Task<PromoteGuestResultCode> PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false)
+        /// <inheritdoc />
+        public async Task PromoteGuestUserAsync(Guid userId, Guid tenantId, LicenseType licenseType, ClaimsPrincipal claimsPrincipal, bool autoPromote = false)
         {
-            var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
+            var validationResult = _validatorLocator.ValidateMany(new Dictionary<Type, object>
+            {
+                { typeof(UserIdValidator), userId },
+                { typeof(TenantIdValidator), tenantId }
+            });
             if (!validationResult.IsValid)
             {
-                _logger.Error("Validation failed while attempting to promote guest.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -576,15 +577,19 @@ namespace Synthesis.PrincipalService.Controllers
 
             var userRepository = await _userRepositoryAsyncLazy;
             var user = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
+            if (user == null)
+            {
+                throw new NotFoundException($"User={userId} not found.");
+            }
 
             var isValidResult = await IsValidPromotionForTenant(user, tenantId);
             if (isValidResult == CanPromoteUserResultCode.UserAccountAlreadyExists)
             {
-                throw new UserAlreadyPromotedException($"UserId={userId} already promoted.");
+                throw new UserAlreadyMemberOfTenantException($"UserId={userId} already a member of tenant={tenantId}.");
             }
             if (isValidResult == CanPromoteUserResultCode.EmailNotInTenantDomain)
             {
-                throw new PromotionNotPossibleException($"User={userId} email domain is not in the tenant domain.");
+                throw new EmailNotInTenantDomainException($"User={userId} email domain is not in the tenant domain.");
             }
 
             await AssignGuestUserToTenant(user, tenantId);
@@ -606,12 +611,10 @@ namespace Synthesis.PrincipalService.Controllers
                 // If assigning a license fails, then we must disable the user
                 await LockUserAsync(userId, true);
 
-                throw new LicenseAssignmentFailedException($"Assigned user {userId} to tenant {tenantId}, but failed to assign license", userId);
+                throw new LicenseAssignmentFailedException($"Assigned user={userId} to tenant={tenantId}, but failed to assing license");
             }
 
             await SendWelcomeEmailAsync(user);
-
-            return PromoteGuestResultCode.Success;
         }
 
         public async Task<User> AutoProvisionRefreshGroupsAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal)
@@ -619,7 +622,6 @@ namespace Synthesis.PrincipalService.Controllers
             var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the tenant id.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -635,12 +637,15 @@ namespace Synthesis.PrincipalService.Controllers
                 {
                     await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, claimsPrincipal, true);
                 }
+                catch (UserAlreadyMemberOfTenantException ex)
+                {
+                    // It's ok that the user is already assigned a user license since that's what we wanted in the first place
+                    _logger.Warning("User already promoted to licensed user.", ex);
+                }
                 catch (Exception ex)
                 {
-                    throw new PromotionFailedException($"Failed to promote user {userId}", ex);
+                    throw new PromotionFailedException($"Failed to promote user={userId}", ex);
                 }
-
-                await SendWelcomeEmailAsync(new User { Id = userId, Email = model.EmailId, FirstName = model.FirstName });
             }
 
             if (model.Groups != null)
@@ -730,7 +735,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if (!unameValidationResult.IsValid)
             {
-                throw new ValidationException("Email/Username is either empty or invalid");
+                throw new ValidationFailedException(new[] { new ValidationFailure("Email/Username", "Value cannot be empty or invalid") });
             }
 
             username = username.ToLower();
@@ -1001,7 +1006,6 @@ namespace Synthesis.PrincipalService.Controllers
             var validationResult = _validatorLocator.Validate<UserIdValidator>(userId);
             if (!validationResult.IsValid)
             {
-                _logger.Error("Failed to validate the resource id while attempting to retrieve a User license type resource.");
                 throw new ValidationFailedException(validationResult.Errors);
             }
 
@@ -1184,15 +1188,10 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task AssignGuestUserToTenant(User user, Guid tenantId)
         {
-            if (user.Id == null)
-            {
-                throw new ArgumentException("The id of the user cannot be null");
-            }
-
-            var result = await _tenantApi.AddUserToTenantAsync(tenantId, user.Id.Value);
+            var result = await _tenantApi.AddUserToTenantAsync(tenantId, user.Id.GetValueOrDefault());
             if (!result.IsSuccess())
             {
-                throw new Exception($"Error while adding userId={user.Id} to tenantId={tenantId}.  Reason={result.ReasonPhrase}");
+                throw new AssignUserToTenantException($"Error while adding userId={user.Id} to tenantId={tenantId}.  Reason={result.ReasonPhrase}");
             }
 
             _eventService.Publish(new ServiceBusEvent<Guid>

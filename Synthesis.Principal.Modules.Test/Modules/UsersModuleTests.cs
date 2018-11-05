@@ -7,9 +7,11 @@ using FluentValidation;
 using FluentValidation.Results;
 using Moq;
 using Nancy;
+using Nancy.Testing;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
+using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Controllers.Exceptions;
@@ -361,7 +363,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         #region PromoteGuest
 
         [Fact]
-        public async Task PromoteGuestRespondWithUnauthorizedNoBearerAsync()
+        public async Task PromoteGuest_WithNoBearer_ReturnsUnauthorized()
         {
             var response = await UnauthenticatedBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
@@ -369,7 +371,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task PromoteGuestRespondWithOkAsync()
+        public async Task PromoteGuest_WithValidRequest_ReturnsOk()
         {
             var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
@@ -377,7 +379,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task PromoteGuestReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        public async Task PromoteGuest_IfUnhandledExceptionIsThrown_ReturnsInternalServerError()
         {
             _usersControllerMock
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
@@ -389,7 +391,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task PromoteGuestReturnsItemWithInvalidBodyReturnsBadRequest()
+        public async Task PromoteGuest_WithInvalidBody_ReturnsBadRequest()
         {
             var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, "invalid body"));
 
@@ -398,7 +400,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task PromoteGuestReturnsBadRequestIfValidationFails()
+        public async Task PromoteGuest_IfValidationFails_ReturnsBadRequest()
         {
             _usersControllerMock
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
@@ -411,31 +413,89 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task PromoteGuestReturnsForbiddenIfPromotionFails()
+        public async Task PromoteGuest_IfUserNotFound_ReturnsBadRequest()
         {
             _usersControllerMock
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
-                .Throws(new PromotionFailedException(""));
+                .Throws(new NotFoundException());
 
             var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [Fact]
-        public async Task PromoteGuest_IfLicenseAssignmentFails_ReturnsOK()
+        public async Task PromoteGuest_IfLicenseNotAvailableExceptionIsThrown_ReturnsFailedToAssignLicense()
         {
             _usersControllerMock
                 .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
-                .Throws(new LicenseAssignmentFailedException("", Guid.NewGuid()));
+                .Throws(new LicenseNotAvailableException(""));
 
             var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
 
+            var payload = response.Body.DeserializeJson<PromoteGuestResponse>();
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(PromoteGuestResultCode.FailedToAssignLicense, payload.ResultCode);
         }
 
         [Fact]
-        public async Task PromoteGuestReadsTenantIdFromUserClaimAsync()
+        public async Task PromoteGuest_IfUserAlreadyMemberOfTenantExceptionIsThrown_ReturnsUserAlreadyPromoted()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
+                .Throws(new UserAlreadyMemberOfTenantException(""));
+
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
+
+            var payload = response.Body.DeserializeJson<PromoteGuestResponse>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(PromoteGuestResultCode.UserAlreadyPromoted, payload.ResultCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuest_IfEmailNotInTenantDomainExceptionIsThrown_ReturnsFailed()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
+                .Throws(new EmailNotInTenantDomainException(""));
+
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
+
+            var payload = response.Body.DeserializeJson<PromoteGuestResponse>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(PromoteGuestResultCode.Failed, payload.ResultCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuest_IfAssignUserToTenantExceptionIsThrown_ReturnsFailed()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
+                .Throws(new AssignUserToTenantException(""));
+
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
+
+            var payload = response.Body.DeserializeJson<PromoteGuestResponse>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(PromoteGuestResultCode.Failed, payload.ResultCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuest_IfLicenseAssignmentFailedExceptionIsThrown_ReturnsFailedToAssignLicense()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.PromoteGuestUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<LicenseType>(), It.IsAny<ClaimsPrincipal>(), It.IsAny<bool>()))
+                .Throws(new LicenseAssignmentFailedException(""));
+
+            var response = await UserTokenBrowser.Post(string.Format(Routing.PromoteGuestBase, "C3220603-09D9-452B-B204-6CC3946CE1F4"), ctx => BuildRequest(ctx, LicenseType.UserLicense));
+
+            var payload = response.Body.DeserializeJson<PromoteGuestResponse>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(PromoteGuestResultCode.FailedToAssignLicense, payload.ResultCode);
+        }
+
+        [Fact]
+        public async Task PromoteGuest_ReadsTenantIdFromUserClaim()
         {
             const LicenseType expectedLicense = LicenseType.UserLicense;
             var expectedId = Guid.NewGuid();

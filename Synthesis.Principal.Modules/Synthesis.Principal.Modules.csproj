@@ -350,8 +350,9 @@
     <Compile Include="Constants\GroupIds.cs" />
     <Compile Include="Constants\ResponseReasons.cs" />
     <Compile Include="Controllers\Exceptions\IdpUserProvisioningException.cs" />
-    <Compile Include="Controllers\Exceptions\PromotionNotPossibleException.cs" />
-    <Compile Include="Controllers\Exceptions\UserAlreadyPromotedException.cs" />
+    <Compile Include="Controllers\Exceptions\EmailNotInTenantDomainException.cs" />
+    <Compile Include="Controllers\Exceptions\AssignUserToTenantException.cs" />
+    <Compile Include="Controllers\Exceptions\UserAlreadyMemberOfTenantException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseNotAvailableException.cs" />
     <Compile Include="Controllers\Exceptions\LicenseAssignmentFailedException.cs" />
     <Compile Include="Controllers\Exceptions\PromotionFailedException.cs" />

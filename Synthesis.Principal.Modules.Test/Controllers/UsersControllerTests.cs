@@ -326,7 +326,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task AutoProvisionRefreshGroupsFailsAndThrowsPromotionFailedException()
+        public async Task AutoProvisionRefreshGroupsAsync_OnPromotionFailure_ThrowsPromotionFailedException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
@@ -1314,8 +1314,49 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.False(result);
         }
 
+        #region PromoteGuestUserAsync
+
         [Fact]
-        public async Task PromoteGuestAutoShouldFaileIfNoLicenceAvailableAsync()
+        public async Task PromoteGuestUserAsync_WithValidRequest_Succeeds()
+        {
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+
+            var exception = await Record.ExceptionAsync(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+
+            Assert.Null(exception);
+        }
+
+        [Fact]
+        public async Task PromoteGuestUserAsync_WithValidRequest_SendsWelcomeEmail()
+        {
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+
+            await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
+
+            _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
+        }
+
+        [Fact]
+        public async Task PromoteGuestUserAsync_IfUserNotFound_ThrowsException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(default(User));
+
+            var tenantId = Guid.NewGuid();
+            var userid = Guid.NewGuid();
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task PromoteGuestUserAsync_IfAutoAndNoLicenseAvailable_ThrowsException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
@@ -1331,7 +1372,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task PromoteGuestManuallyShouldFaileIfNoLicenceAvailableAsync()
+        public async Task PromoteGuestUserAsync_IfNotAutoAndNoLicenceAvailable_ThrowsException()
         {
             _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Failed });
@@ -1357,7 +1398,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task PromoteGuestManuallyShouldFailIfIfEmailIsNotWhitelistedAsync()
+        public async Task PromoteGuestUserAsync_IfUserDomainNotInTenantDomain_ThrowsException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@testtest.com" });
@@ -1372,13 +1413,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
 
             var userid = Guid.NewGuid();
-            await Assert.ThrowsAsync<PromotionNotPossibleException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<EmailNotInTenantDomainException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
-        public async Task PromoteGuestManuallyShouldFailIfIfUserEmailIsEmptyAsync()
+        public async Task PromoteGuestUserAsync_IfUserEmailIsEmpty_ThrowsException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid() });
@@ -1387,13 +1428,13 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new List<LicenseSummaryDto>());
 
             var userid = Guid.NewGuid();
-            await Assert.ThrowsAsync<PromotionNotPossibleException>(() => _controller.PromoteGuestUserAsync(userid, Guid.NewGuid() /*_defaultTenantId*/, LicenseType.UserLicense, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<EmailNotInTenantDomainException>(() => _controller.PromoteGuestUserAsync(userid, Guid.NewGuid(), LicenseType.UserLicense, _defaultClaimsPrincipal));
 
             _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
-        public async Task PromoteGuestManuallyShouldFailIfIfUserIsAlreadyInTenantAsync()
+        public async Task PromoteGuestUserAsync_IfUserIsAlreadyInTenantAsync_ThrowsException()
         {
             _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "a@test.com" });
@@ -1408,8 +1449,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var userid = Guid.NewGuid();
 
-            await Assert.ThrowsAsync<UserAlreadyPromotedException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
+            await Assert.ThrowsAsync<UserAlreadyMemberOfTenantException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
         }
+        #endregion
 
         [Fact]
         public async Task GetGroupsForUserSuccess()
@@ -1448,21 +1490,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                                .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupIdsByUserIdAsync((Guid)userId));
         }
-
-        [Fact]
-        public async Task PromoteGuestSuccssTestAsync()
-        {
-            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
-            var tenantId = Guid.NewGuid();
-            var userid = Guid.NewGuid();
-            var promoteResponse = await _controller.PromoteGuestUserAsync(userid, tenantId, LicenseType.UserLicense, _defaultClaimsPrincipal);
-
-            _emailApiMock.Verify(m => m.SendWelcomeEmail(It.IsAny<UserEmailRequest>()));
-
-            Assert.Equal(PromoteGuestResultCode.Success, promoteResponse);
-        }
-
+        
         [Fact]
         public async Task RemoveUserFromPermissionGroupSuccess()
         {
