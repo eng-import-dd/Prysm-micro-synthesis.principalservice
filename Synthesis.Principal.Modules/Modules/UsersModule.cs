@@ -97,7 +97,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, Routing.PromoteUser, CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError/*, HttpStatusCode.NotFound*/)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(CanPromoteUser.Example());
 
             CreateRoute("GetUserIdsByGroupId", HttpMethod.Get, Routing.UserIdsByGroupId, GetUserIdsByGroupIdAsync)
