@@ -791,12 +791,12 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException ex)
             {
-                Logger.Error("Failed to promote guest user to licensed user.", ex);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
                 return Response.BadRequest($"User={input.userId} not found.");
             }
             catch (LicenseNotAvailableException ex)
             {
-                Logger.Error("Failed to promote guest user to licensed user.", ex);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
                 return new PromoteGuestResponse
                 {
                     UserId = input.userId,
@@ -805,7 +805,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (UserAlreadyMemberOfTenantException ex)
             {
-                Logger.Warning("User-promoted status did not change.", ex);
+                Logger.Info("User-promoted status did not change.", ex);
                 return new PromoteGuestResponse
                 {
                     UserId = input.userId,
@@ -814,7 +814,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (EmailNotInTenantDomainException ex)
             {
-                Logger.Error("Failed to promote guest user to licensed user.", ex);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
                 return new PromoteGuestResponse
                 {
                     UserId = input.userId,
@@ -823,7 +823,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (AssignUserToTenantException ex)
             {
-                Logger.Error("Failed to promote guest user to licensed user.", ex);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
                 return new PromoteGuestResponse
                 {
                     UserId = input.userId,
@@ -832,7 +832,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (LicenseAssignmentFailedException ex)
             {
-                Logger.Error("Failed to promote guest user to licensed user.", ex);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
                 return new PromoteGuestResponse
                 {
                     UserId = input.userId,
