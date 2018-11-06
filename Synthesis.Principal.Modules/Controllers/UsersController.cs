@@ -637,11 +637,6 @@ namespace Synthesis.PrincipalService.Controllers
                 {
                     await PromoteGuestUserAsync(userId, model.TenantId, LicenseType.UserLicense, claimsPrincipal, true);
                 }
-                catch (UserAlreadyMemberOfTenantException ex)
-                {
-                    // It's ok that the user is already assigned a user license since that's what we wanted in the first place
-                    _logger.Warning("User already promoted to licensed user.", ex);
-                }
                 catch (Exception ex)
                 {
                     throw new PromotionFailedException($"Failed to promote user={userId}", ex);

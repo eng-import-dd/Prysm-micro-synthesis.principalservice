@@ -240,7 +240,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while trying to lock user={userId}.", ex);
+                Logger.Info($"Validation failed while trying to lock user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
@@ -293,7 +293,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while trying to create a User resource.", ex);
+                Logger.Info("Validation failed while trying to create a User resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -341,7 +341,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                Logger.Info("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -376,7 +376,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to send a guest verification email.", ex);
+                Logger.Info("Validation failed while attempting to send a guest verification email.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (EmailAlreadyVerifiedException ex)
@@ -420,7 +420,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting user by id={userId}.", ex);
+                Logger.Info($"Validation failed while getting user by id={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -453,7 +453,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while getting user names.", ex);
+                Logger.Info("Validation failed while getting user names.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -541,7 +541,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting user by id={userId} basic.", ex);
+                Logger.Info($"Validation failed while getting user by id={userId} basic.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -581,7 +581,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting user by username or email={userName}.", ex);
+                Logger.Info($"Validation failed while getting user by username or email={userName}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -617,7 +617,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting users for tenant={TenantId}.", ex);
+                Logger.Info($"Validation failed while getting users for tenant={TenantId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -653,7 +653,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to GetUsersByIds.", ex);
+                Logger.Info("Validation failed while attempting to GetUsersByIds.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -688,7 +688,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while updating user={userId}.", ex);
+                Logger.Info($"Validation failed while updating user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
@@ -723,7 +723,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while deleting user={userId}.", ex);
+                Logger.Info($"Validation failed while deleting user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -749,7 +749,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while checking if user with email={email} can be promoted.", ex);
+                Logger.Info($"Validation failed while checking if user with email={email} can be promoted.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -786,7 +786,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while promoting guest user={input.userId}.", ex);
+                Logger.Info($"Validation failed while promoting guest user={input.userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException ex)
@@ -872,7 +872,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting users for tenant={TenantId}.", ex);
+                Logger.Info($"Validation failed while getting users for tenant={TenantId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -909,7 +909,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while AutoProvisionRefreshGroups.", ex);
+                Logger.Info("Validation failed while AutoProvisionRefreshGroups.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (IdpUserProvisioningException ex)
@@ -956,7 +956,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while creating a user group.", ex);
+                Logger.Info("Validation failed while creating a user group.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (InvalidOperationException)
@@ -991,7 +991,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting user ids by groupId={groupId}.", ex);
+                Logger.Info($"Validation failed while getting user ids by groupId={groupId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -1023,7 +1023,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while getting group ids by userId={userId}.", ex);
+                Logger.Info($"Validation failed while getting group ids by userId={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -1059,7 +1059,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while removing user={userId} from permission group={groupId}.", ex);
+                Logger.Info($"Validation failed while removing user={userId} from permission group={groupId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (DocumentNotFoundException ex)
@@ -1090,7 +1090,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error($"Validation failed while trying to get a license type for user={userId}.", ex);
+                Logger.Info($"Validation failed while trying to get a license type for user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
