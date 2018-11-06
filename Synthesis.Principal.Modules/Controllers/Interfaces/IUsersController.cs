@@ -29,7 +29,7 @@ namespace Synthesis.PrincipalService.Controllers
         /// <param name="licenseType">Type of license to assign to the user</param>
         /// <param name="claimsPrincipal">Principal who can manage licenses</param>
         /// <param name="autoPromote">Force using license type regardless of Claims Principal rights</param>
-        /// <returns>Task to await</returns>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         /// <exception cref="ValidationFailedException">Thrown when invalid params are passed in</exception>
         /// <exception cref="LicenseNotAvailableException">Thrown when no license is available to assign to a user</exception>
         /// <exception cref="NotFoundException">Thrown when the user cannot be found</exception>

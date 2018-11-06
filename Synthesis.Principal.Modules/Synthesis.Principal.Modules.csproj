@@ -422,7 +422,6 @@
     <Compile Include="Validators\UpdateMachineRequestValidator.cs" />
     <Compile Include="Validators\UpdateUserRequestValidator.cs" />
     <Compile Include="Validators\UserIdValidator.cs" />
-    <Compile Include="Validators\PromoteUserValidator.cs" />
     <Compile Include="Validators\UserNameValidator.cs" />
     <Compile Include="Validators\GuidValidator.cs" />
   </ItemGroup>
