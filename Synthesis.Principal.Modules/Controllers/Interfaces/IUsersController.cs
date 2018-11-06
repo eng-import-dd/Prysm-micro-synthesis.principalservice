@@ -22,7 +22,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task DeleteUserAsync(Guid userId);
 
         /// <summary>
-        /// Promotes a guest user to a fully licensed user
+        /// Begins an asynchronous operation that promotes a guest user to a fully licensed user.
         /// </summary>
         /// <param name="userId">Guid of the user to promote</param>
         /// <param name="tenantId">The Guid of the tenant to add the user to</param>
