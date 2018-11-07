@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Script.Services;
 using FluentValidation;
 using Nancy;
 using Nancy.ErrorHandling;
@@ -22,6 +23,7 @@ using Synthesis.PrincipalService.Controllers.Exceptions;
 using Synthesis.PrincipalService.Exceptions;
 using Synthesis.PrincipalService.Extensions;
 using Synthesis.PrincipalService.InternalApi.Constants;
+using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 
@@ -95,7 +97,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("CanPromoteUser", HttpMethod.Get, Routing.PromoteUser, CanPromoteUserAsync)
                 .Description("States whether a user can be promoted")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
                 .ResponseFormat(CanPromoteUser.Example());
 
             CreateRoute("GetUserIdsByGroupId", HttpMethod.Get, Routing.UserIdsByGroupId, GetUserIdsByGroupIdAsync)
@@ -162,7 +164,8 @@ namespace Synthesis.PrincipalService.Modules
             CreateRoute("PromoteGuest", HttpMethod.Post, Routing.PromoteGuest, PromoteGuestAsync)
                 .Description("Promotes a Guest User")
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
-                .RequestFormat(LicenseType.UserLicense);
+                .RequestFormat(LicenseType.UserLicense)
+                .ResponseFormat(PromoteGuestResponse.Example());
 
             CreateRoute("AutoProvisionRefreshGroups", HttpMethod.Post, Routing.AutoProvisionRefreshGroups, AutoProvisionRefreshGroupsAsync)
                 .Description("Autoprovisions the refresh groups")
@@ -237,7 +240,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Error occured", ex);
+                Logger.Info($"Validation failed while trying to lock user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
@@ -290,7 +293,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Info("Bad request while creating user", ex);
+                Logger.Info("Validation failed while trying to create a User resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -338,7 +341,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to create a GuestUser resource.", ex);
+                Logger.Info("Validation failed while attempting to create a GuestUser resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -373,7 +376,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Info("Validation failed while attempting to create a GuestUser resource.", ex);
+                Logger.Info("Validation failed while attempting to send a guest verification email.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (EmailAlreadyVerifiedException ex)
@@ -417,7 +420,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Info("Bad request getting user by id", ex);
+                Logger.Info($"Validation failed while getting user by id={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -450,7 +453,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Info("Bad request getting user names", ex);
+                Logger.Info("Validation failed while getting user names.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -538,7 +541,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Info("Bad request while getting basic user information", ex);
+                Logger.Info($"Validation failed while getting user by id={userId} basic.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -573,16 +576,17 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (NotFoundException ex)
             {
-                Logger.Info("User not found while getting user by username or email", ex);
+                Logger.Info($"User not found while getting user by username or email={userName}", ex);
                 return Response.NotFound(ResponseReasons.NotFoundUser);
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while getting user by username or email={userName}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to get user information by username (or email) from tenant '{TenantId}' as principal '{PrincipalId}' due to an unhandled exception", ex);
+                Logger.Error($"Failed to get user information by username (or email) from tenant='{TenantId}' as principal='{PrincipalId}' due to an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
             }
         }
@@ -613,6 +617,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while getting users for tenant={TenantId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -648,7 +653,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
-                Logger.Error("Validation failed while attempting to GetUsersByIds.", ex);
+                Logger.Info("Validation failed while attempting to GetUsersByIds.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -683,6 +688,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while updating user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
@@ -717,6 +723,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while deleting user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -731,23 +738,19 @@ namespace Synthesis.PrincipalService.Modules
             await RequiresAccess()
                 .ExecuteAsync(cancellationToken);
 
+            string email = Request.Query["email"];
+
             try
             {
-                string email = Request.Query["email"];
-
                 var result = await _userController.CanPromoteUserAsync(email, TenantId);
                 return Negotiate
                     .WithModel(result)
                     .WithStatusCode(HttpStatusCode.OK);
             }
-            catch (ValidationException ex)
+            catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while checking if user with email={email} can be promoted.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
-            }
-            catch (NotFoundException ex)
-            {
-                Logger.Error("User not found", ex);
-                return Response.NotFound();
             }
             catch (Exception ex)
             {
@@ -768,32 +771,77 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (Exception ex)
             {
-                Logger.Error("Binding failed while attempting to promote guest", ex);
+                Logger.Error("Binding failed while attempting to promote guest user to licensed user.", ex);
                 return Response.BadRequestBindingException();
             }
 
             try
             {
                 await _userController.PromoteGuestUserAsync(input.userId, TenantId, licenseType, Context.CurrentUser);
-
-                return Negotiate
-                    .WithStatusCode(HttpStatusCode.OK);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.Success
+                };
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while promoting guest user={input.userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            catch (PromotionFailedException ex)
+            catch (NotFoundException ex)
             {
-                return Response.Forbidden(ResponseReasons.PromotionFailed, "FAILED", ex.Message);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
+                return Response.BadRequest($"User={input.userId} not found.");
+            }
+            catch (LicenseNotAvailableException ex)
+            {
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
+                };
+            }
+            catch (UserAlreadyMemberOfTenantException ex)
+            {
+                Logger.Info("User-promoted status did not change.", ex);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.UserAlreadyPromoted
+                };
+            }
+            catch (EmailNotInTenantDomainException ex)
+            {
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
+            }
+            catch (AssignUserToTenantException ex)
+            {
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.Failed
+                };
             }
             catch (LicenseAssignmentFailedException ex)
             {
-                return Response.Forbidden(ResponseReasons.LicenseAssignmentFailed, "FAILED", ex.Message);
+                Logger.Info("Failed to promote guest user to licensed user.", ex);
+                return new PromoteGuestResponse
+                {
+                    UserId = input.userId,
+                    ResultCode = PromoteGuestResultCode.FailedToAssignLicense
+                };
             }
             catch (Exception ex)
             {
-                Logger.Error("Failed to promote a user due to an error", ex);
+                Logger.Error("Failed to promote guest user to licensed user due to an error.", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorCreateUser);
             }
         }
@@ -824,6 +872,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while getting users for tenant={TenantId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -860,6 +909,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Validation failed while AutoProvisionRefreshGroups.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (IdpUserProvisioningException ex)
@@ -906,6 +956,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info("Validation failed while creating a user group.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (InvalidOperationException)
@@ -940,6 +991,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while getting user ids by groupId={groupId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -971,6 +1023,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while getting group ids by userId={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (Exception ex)
@@ -1006,6 +1059,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while removing user={userId} from permission group={groupId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (DocumentNotFoundException ex)
@@ -1036,6 +1090,7 @@ namespace Synthesis.PrincipalService.Modules
             }
             catch (ValidationFailedException ex)
             {
+                Logger.Info($"Validation failed while trying to get a license type for user={userId}.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
             catch (NotFoundException)
