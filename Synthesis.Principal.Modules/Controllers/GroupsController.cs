@@ -198,7 +198,7 @@ namespace Synthesis.PrincipalService.Controllers
             // A list of the Groups which belong to the current user's tenant (excluding the SuperAdmin group)
             var groupRepository = await _groupRepositoryAsyncLazy;
             return await groupRepository.CreateItemQuery()
-                .Where(g => g.TenantId == tenantId && g.Type != GroupType.Default && g.Id != GroupIds.SuperAdminGroupId)
+                .Where(g => g.TenantId == tenantId && g.Type != GroupType.Default)
                 .ToListAsync(cancellationToken);
         }
 
