@@ -10,7 +10,6 @@ using Synthesis.EventBus.Events;
 using Synthesis.Logging;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Validation;
-using Synthesis.PrincipalService.Constants;
 using Synthesis.PrincipalService.InternalApi.Constants;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Services;
@@ -195,7 +194,7 @@ namespace Synthesis.PrincipalService.Controllers
 
         public async Task<IEnumerable<Group>> GetGroupsForTenantAsync(Guid tenantId, CancellationToken cancellationToken)
         {
-            // A list of the Groups which belong to the current user's tenant (excluding the SuperAdmin group)
+            // A list of the Groups which belong to the current user's tenant
             var groupRepository = await _groupRepositoryAsyncLazy;
             return await groupRepository.CreateItemQuery()
                 .Where(g => g.TenantId == tenantId && g.Type != GroupType.Default)
