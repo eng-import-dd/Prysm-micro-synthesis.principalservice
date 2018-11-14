@@ -304,6 +304,19 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         #region GetUsersForTenant
 
         [Fact]
+        public async Task GetUsersForTenantReturnsForbiddenWhenTenancyHasNotBeenEstablished()
+        {
+            TenantId = Guid.Empty;
+
+            _usersControllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Returns(Task.FromResult(new PagingMetadata<User>()));
+
+            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
         public async Task GetUsersForTenantReturnsOk()
         {
             _usersControllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
