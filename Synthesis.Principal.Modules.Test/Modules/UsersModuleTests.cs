@@ -11,7 +11,6 @@ using Nancy.Testing;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
-using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Controllers.Exceptions;
@@ -322,6 +321,25 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersForBasicReturnsBadRequest()
+        {
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, "invalid body"));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersForBasicReturnsInternalServerError()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .Throws<Exception>();
+
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
         #endregion
 
