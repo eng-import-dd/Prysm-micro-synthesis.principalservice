@@ -578,6 +578,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateFullUserAssignsIsTenantlessGuestToFalse()
+        {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User u, CancellationToken c) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            var createUserRequest = CreateUserRequest.Example();
+            createUserRequest.TenantId = tenantId;
+
+            await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+
+            _userRepositoryMock.Verify(x => x.CreateItemAsync(It.Is<User>(u => !u.IsTenantlessGuest), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
         public async Task CreateUserAsync_WhenCurrentUserDoesNotHaveCanManageLicensePermission_UserIsAssignedDefaultLicenseType()
         {
             var tenantId = Guid.NewGuid();
@@ -907,7 +931,32 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
 
-            var users = Enumerable.Range(0, 3).Select(i => new User { Id = Guid.NewGuid(), Email = $"a{i}@test.com" }).ToList();
+            var users = Enumerable.Range(0, 3).Select(i => new User { Id = Guid.NewGuid(), IsTenantlessGuest = true, Email = $"a{i}@test.com" }).ToList();
+
+            _userRepositoryMock.SetupCreateItemQuery(o => users);
+
+            var tenantId = Guid.NewGuid();
+            var userFilteringOptions = new UserFilteringOptions();
+
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new[] { new TenantDomain { Domain = "test.com" } }));
+
+            var result = await _controller.GetGuestUsersForTenantAsync(tenantId, userFilteringOptions);
+
+            Assert.Equal(3, result.List.Count);
+            Assert.Equal(3, result.FilteredRecords);
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantExcludesTenantedUsers()
+        {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            var users = Enumerable.Range(0, 3).Select(i => new User { IsTenantlessGuest = true, Id = Guid.NewGuid(), Email = $"a{i}@test.com" }).ToList();
+            users.Add(new User { IsTenantlessGuest = false, Id = Guid.NewGuid(), Email = $"a3@test.com" });
 
             _userRepositoryMock.SetupCreateItemQuery(o => users);
 
@@ -1330,6 +1379,24 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task PromoteGuestUserAssignsIsTenantlessGuestToFalse()
+        {
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
+
+            _defaultUser.Email = "t@test.com";
+            _defaultUser.IsTenantlessGuest = true;
+
+            _userRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_defaultUser);
+
+            await _controller.PromoteGuestUserAsync(_defaultUser.Id.GetValueOrDefault(), Guid.NewGuid(), LicenseType.UserLicense, _defaultClaimsPrincipal);
+
+            _userRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => !u.IsTenantlessGuest), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
         public async Task PromoteGuestUserAsync_WithValidRequest_SendsWelcomeEmail()
         {
             _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
@@ -1394,7 +1461,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var userid = Guid.NewGuid();
             await Assert.ThrowsAsync<LicenseAssignmentFailedException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
 
-            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [Fact]
@@ -1760,6 +1827,26 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var result = await _controller.CreateGuestUserAsync(request);
 
             Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task CreateGuestForUninvitedUserAssignsIsTenantlessGuestToTrue()
+        {
+            var tenantId = Guid.NewGuid();
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(User.GuestUserExample());
+
+            var request = CreateUserRequest.Example();
+            request.TenantId = tenantId;
+
+            await _controller.CreateGuestUserAsync(request);
+
+            _userRepositoryMock.Verify(x => x.CreateItemAsync(It.Is<User>(u => u.IsTenantlessGuest), It.IsAny<CancellationToken>()));
         }
 
         [Fact]
