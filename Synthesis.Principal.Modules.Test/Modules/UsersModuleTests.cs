@@ -313,7 +313,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUsersForBasicReturnsOk()
+        public async Task GetUsersBasicReturnsOk()
         {
             _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
                 .ReturnsAsync(new PagingMetadata<BasicUser>());
@@ -324,7 +324,18 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUsersForBasicReturnsBadRequest()
+        public async Task GetUsersBasicReturnsUnauthorized()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .ReturnsAsync(new PagingMetadata<BasicUser>());
+
+            var response = await UnauthenticatedBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicReturnsBadRequest()
         {
             var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, "invalid body"));
 
@@ -332,7 +343,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task GetUsersForBasicReturnsInternalServerError()
+        public async Task GetUsersBasicReturnsInternalServerError()
         {
             _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
                 .Throws<Exception>();
