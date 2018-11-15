@@ -770,15 +770,6 @@ namespace Synthesis.PrincipalService.Controllers
                 })
                 .Where(x => x.IsTenantlessGuest);
 
-            var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (!userIdsInTenant.IsSuccess())
-            {
-                throw new InvalidOperationException($"Could not fetch guests for {tenantId}, error fetching userids: {userIdsInTenant.ResponseCode} - {userIdsInTenant.ReasonPhrase}");
-            }
-
-            var userids = userIdsInTenant.Payload.ToList();
-            userQuery = userQuery.Where(u => !userids.Contains(u.Id.Value));
-
             var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
             if (!tenantDomainsResponse.IsSuccess())
             {
