@@ -478,8 +478,12 @@ namespace Synthesis.PrincipalService.Modules
             }
 
             await RequiresAccess()
-                .WithTenantIdExpansion(ctx => TenantId)
                 .ExecuteAsync(cancellationToken);
+
+            if (TenantId == Guid.Empty)
+            {
+                return Response.Forbidden("Tenancy must be established before users can be obtained");
+            }
 
             try
             {

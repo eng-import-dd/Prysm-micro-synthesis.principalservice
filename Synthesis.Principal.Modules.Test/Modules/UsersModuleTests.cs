@@ -11,7 +11,6 @@ using Nancy.Testing;
 using Synthesis.DocumentStorage;
 using Synthesis.Nancy.MicroService;
 using Synthesis.Nancy.MicroService.Constants;
-using Synthesis.Nancy.MicroService.Entity;
 using Synthesis.Nancy.MicroService.Validation;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Controllers.Exceptions;
@@ -300,6 +299,61 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion GetUserById
+
+        #region GetUsersBasic
+
+        [Fact]
+        public async Task GetUsersBasicReturnsForbiddenWhenTenancyHasNotBeenEstablished()
+        {
+            TenantId = Guid.Empty;
+
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicReturnsOk()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .ReturnsAsync(new PagingMetadata<BasicUser>());
+
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicReturnsUnauthorized()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .ReturnsAsync(new PagingMetadata<BasicUser>());
+
+            var response = await UnauthenticatedBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicReturnsBadRequest()
+        {
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, "invalid body"));
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersBasicReturnsInternalServerError()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .Throws<Exception>();
+
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        #endregion
 
         #region GetUsersForTenant
 
