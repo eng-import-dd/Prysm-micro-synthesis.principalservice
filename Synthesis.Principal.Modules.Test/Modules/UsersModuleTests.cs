@@ -301,20 +301,31 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
         #endregion GetUserById
 
-        #region GetUsersForTenant
+        #region GetUsersBasic
 
         [Fact]
-        public async Task GetUsersForTenantReturnsForbiddenWhenTenancyHasNotBeenEstablished()
+        public async Task GetUsersBasicReturnsForbiddenWhenTenancyHasNotBeenEstablished()
         {
             TenantId = Guid.Empty;
 
-            _usersControllerMock.Setup(m => m.GetUsersForTenantAsync(It.IsAny<UserFilteringOptions>(), It.IsAny<Guid>(), It.IsAny<Guid>()))
-                .Returns(Task.FromResult(new PagingMetadata<User>()));
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
-            var response = await UserTokenBrowser.Post(Routing.GetUsers, ctx => BuildRequest(ctx, new UserFilteringOptions()));
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetUsersForBasicReturnsOk()
+        {
+            _usersControllerMock.Setup(m => m.GetUsersBasicAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserFilteringOptions>()))
+                .ReturnsAsync(new PagingMetadata<BasicUser>());
+
+            var response = await UserTokenBrowser.Post(Routing.UsersBasic, ctx => BuildRequest(ctx, new UserFilteringOptions()));
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
+        #endregion
+
+        #region GetUsersForTenant
 
         [Fact]
         public async Task GetUsersForTenantReturnsOk()
