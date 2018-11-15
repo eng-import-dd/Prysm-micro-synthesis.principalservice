@@ -154,6 +154,7 @@ namespace Synthesis.PrincipalService.Controllers
                 IsLocked = false,
                 LdapId = model.LdapId,
                 LicenseType = model.LicenseType,
+                IsTenantlessGuest = false,
                 IsEmailVerified = !model.EmailVerificationRequired,
                 EmailVerifiedAt = !model.EmailVerificationRequired ? DateTime.UtcNow : new DateTime?()
             };
@@ -451,7 +452,8 @@ namespace Synthesis.PrincipalService.Controllers
                 IsEmailVerified = false,
                 IsIdpUser = model.IsIdpUser,
                 IsLocked = false,
-                Groups = new List<Guid>()
+                Groups = new List<Guid>(),
+                IsTenantlessGuest = true
             };
 
             user.Groups.AddRange(new List<Guid>
@@ -577,6 +579,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             var userRepository = await _userRepositoryAsyncLazy;
             var user = await userRepository.GetItemAsync(userId, DefaultQueryOptions);
+
             if (user == null)
             {
                 throw new NotFoundException($"User={userId} not found.");
@@ -591,6 +594,9 @@ namespace Synthesis.PrincipalService.Controllers
             {
                 throw new EmailNotInTenantDomainException($"User={userId} email domain is not in the tenant domain.");
             }
+
+            user.IsTenantlessGuest = false;
+            await userRepository.UpdateItemAsync(userId, user);
 
             await AssignGuestUserToTenant(user, tenantId);
 
@@ -755,26 +761,32 @@ namespace Synthesis.PrincipalService.Controllers
             }
 
             var userRepository = await _userRepositoryAsyncLazy;
-            var userQuery = userRepository.CreateItemQuery(new BatchOptions
-            {
-                BatchSize = userFilteringOptions.PageSize,
-                ContinuationToken = userFilteringOptions.ContinuationToken,
-                PartitionKey = DefaultPartitionKey
-            });
+            var userQuery = userRepository
+                .CreateItemQuery(new BatchOptions
+                {
+                    BatchSize = userFilteringOptions.PageSize,
+                    ContinuationToken = userFilteringOptions.ContinuationToken,
+                    PartitionKey = DefaultPartitionKey
+                })
+                .Where(x => x.IsTenantlessGuest);
 
             var userIdsInTenant = await _tenantApi.GetUserIdsByTenantIdAsync(tenantId);
-            if (userIdsInTenant.IsSuccess())
+            if (!userIdsInTenant.IsSuccess())
             {
-                var userids = userIdsInTenant.Payload.ToList();
-                userQuery = userQuery.Where(u => !userids.Contains(u.Id.Value));
+                throw new InvalidOperationException($"Could not fetch guests for {tenantId}, error fetching userids: {userIdsInTenant.ResponseCode} - {userIdsInTenant.ReasonPhrase}");
             }
 
+            var userids = userIdsInTenant.Payload.ToList();
+            userQuery = userQuery.Where(u => !userids.Contains(u.Id.Value));
+
             var tenantDomainsResponse = await _tenantApi.GetTenantDomainsAsync(tenantId);
-            if (tenantDomainsResponse.IsSuccess() && tenantDomainsResponse.Payload.Any())
+            if (!tenantDomainsResponse.IsSuccess())
             {
-                var tenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
-                userQuery = userQuery.Where(u => tenantDomains.Contains(u.EmailDomain));
+                throw new InvalidOperationException($"Could not fetch guests for {tenantId}, error fetching domains: {tenantDomainsResponse.ResponseCode} - {tenantDomainsResponse.ReasonPhrase}");
             }
+
+            var tenantDomains = tenantDomainsResponse.Payload.Select(d => d.Domain).ToList();
+            userQuery = userQuery.Where(u => tenantDomains.Contains(u.EmailDomain));
 
             if (!string.IsNullOrEmpty(userFilteringOptions.SearchValue))
             {
