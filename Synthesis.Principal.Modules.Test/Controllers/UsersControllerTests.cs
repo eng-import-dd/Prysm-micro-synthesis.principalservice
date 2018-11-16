@@ -909,9 +909,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         {
             _userRepositoryMock.SetupCreateItemQuery();
 
-            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
-
             _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new[] { new TenantDomain { Domain = "test.com" } }));
 
@@ -927,7 +924,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task GetGuestUsersForTenantSuccess()
+        public async Task GetGuestUsersThrowsInvalidOperationExceptionIfDomainsCannotBeFetched()
         {
             _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
 
@@ -938,8 +935,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             var userFilteringOptions = new UserFilteringOptions();
 
-            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.InternalServerError, new[] { new TenantDomain { Domain = "test.com" } }));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.GetGuestUsersForTenantAsync(tenantId, userFilteringOptions));
+        }
+
+        [Fact]
+        public async Task GetGuestUsersForTenantSuccess()
+        {
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups());
+
+            var users = Enumerable.Range(0, 3).Select(i => new User { Id = Guid.NewGuid(), IsTenantlessGuest = true, Email = $"a{i}@test.com" }).ToList();
+
+            _userRepositoryMock.SetupCreateItemQuery(o => users);
+
+            var tenantId = Guid.NewGuid();
+            var userFilteringOptions = new UserFilteringOptions();
 
             _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new[] { new TenantDomain { Domain = "test.com" } }));
@@ -962,9 +974,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             var tenantId = Guid.NewGuid();
             var userFilteringOptions = new UserFilteringOptions();
-
-            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, new List<Guid>().AsEnumerable()));
 
             _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new[] { new TenantDomain { Domain = "test.com" } }));
