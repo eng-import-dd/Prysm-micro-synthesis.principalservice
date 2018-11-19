@@ -595,6 +595,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new EmailNotInTenantDomainException($"User={userId} email domain is not in the tenant domain.");
             }
 
+            user.Username = user.Email;
             user.IsTenantlessGuest = false;
             await userRepository.UpdateItemAsync(userId, user);
 
