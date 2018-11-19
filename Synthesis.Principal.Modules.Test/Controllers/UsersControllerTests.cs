@@ -1406,6 +1406,23 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task PromoteGuestUserAssignsUsernameFromEmail()
+        {
+            _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<TenantDomain>>(HttpStatusCode.OK, new List<TenantDomain> { new TenantDomain { Domain = "test.com" } }));
+
+            _defaultUser.Email = "t@test.com";
+
+            _userRepositoryMock
+                .Setup(x => x.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(_defaultUser);
+
+            await _controller.PromoteGuestUserAsync(_defaultUser.Id.GetValueOrDefault(), Guid.NewGuid(), LicenseType.UserLicense, _defaultClaimsPrincipal);
+
+            _userRepositoryMock.Verify(x => x.UpdateItemAsync(It.IsAny<Guid>(), It.Is<User>(u => u.Username == _defaultUser.Email), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+        }
+
+        [Fact]
         public async Task PromoteGuestUserAsync_WithValidRequest_SendsWelcomeEmail()
         {
             _tenantApiMock.Setup(m => m.GetTenantDomainsAsync(It.IsAny<Guid>()))
