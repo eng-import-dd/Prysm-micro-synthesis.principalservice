@@ -527,7 +527,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetUserByIdBasicAsync(dynamic input, CancellationToken cancellationToken)
         {
-            Guid userId = input.Id;
+            Guid userId = input.userId;
 
             await RequiresAccess()
                 .WithPrincipalIdExpansion(ctx => userId)
