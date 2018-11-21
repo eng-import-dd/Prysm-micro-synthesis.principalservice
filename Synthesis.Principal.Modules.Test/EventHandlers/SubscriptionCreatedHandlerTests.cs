@@ -36,7 +36,7 @@ namespace Synthesis.PrincipalService.Modules.Test.EventHandlers
 
             await _target.HandleEventAsync(subscription);
 
-            _eventServiceMock.Verify(s => s.PublishAsync(It.IsAny<ServiceBusEvent<Group>>()), Times.Exactly(2));
+            _eventServiceMock.Verify(s => s.PublishAsync(It.Is<ServiceBusEvent<Group>>(e => e.Payload.Type == GroupType.TenantAdmin || e.Payload.Type == GroupType.Basic)), Times.Exactly(2));
         }
 
         [Fact]
