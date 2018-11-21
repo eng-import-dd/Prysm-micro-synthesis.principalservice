@@ -221,7 +221,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta014\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta060\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta062\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta057\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -234,6 +234,9 @@
     </Reference>
     <Reference Include="Synthesis.SnapGridService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.SnapGridService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.SnapGridService.InternalApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.SubscriptionService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.SubscriptionService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.SubscriptionService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta024\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
@@ -310,6 +313,8 @@
     <Compile Include="Controllers\UserInvitesControllerTests.cs" />
     <Compile Include="Controllers\UsersControllerTests.cs" />
     <Compile Include="Email\EmailSendingServiceTests.cs" />
+    <Compile Include="EventHandlers\SubscriptionCreatedHandlerTests.cs" />
+    <Compile Include="EventHandlers\SubscriptionTypeChangedHandlerTests.cs" />
     <Compile Include="Modules\BaseModuleTests.cs" />
     <Compile Include="Modules\GroupsModuleTests.cs" />
     <Compile Include="Modules\MachinesModuleTests.cs" />
