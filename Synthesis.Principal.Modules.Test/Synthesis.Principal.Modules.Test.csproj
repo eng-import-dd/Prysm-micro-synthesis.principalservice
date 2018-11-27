@@ -248,6 +248,9 @@
       <HintPath>..\packages\Synthesis.Tracking.Correlations.1.0.1\lib\net452\Synthesis.Tracking.Correlations.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Synthesis.TrialService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.TrialService.InternalApi.1.0.0-beta029\lib\net452\Synthesis.TrialService.InternalApi.dll</HintPath>
+    </Reference>
     <Reference Include="Synthesis.WorkspaceService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.WorkspaceService.InternalApi.1.0.0-beta019\lib\net452\Synthesis.WorkspaceService.InternalApi.dll</HintPath>
     </Reference>
