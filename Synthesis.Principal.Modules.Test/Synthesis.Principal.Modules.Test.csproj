@@ -316,6 +316,7 @@
     <Compile Include="Controllers\UserInvitesControllerTests.cs" />
     <Compile Include="Controllers\UsersControllerTests.cs" />
     <Compile Include="Email\EmailSendingServiceTests.cs" />
+    <Compile Include="EventHandlers\SignupUserCreatedEventHandlerTests.cs" />
     <Compile Include="EventHandlers\SubscriptionCreatedHandlerTests.cs" />
     <Compile Include="EventHandlers\SubscriptionTypeChangedHandlerTests.cs" />
     <Compile Include="Modules\BaseModuleTests.cs" />
