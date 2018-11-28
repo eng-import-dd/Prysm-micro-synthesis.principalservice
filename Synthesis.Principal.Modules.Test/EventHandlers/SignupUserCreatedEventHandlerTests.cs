@@ -26,7 +26,7 @@ namespace Synthesis.PrincipalService.Modules.Test.EventHandlers
         }
 
         [Fact]
-        public async Task SignUpUserCreatedEventHandler_Updates_UserGroup()
+        public async Task HandleEventAsync_WhenGroupTypeTenantAdmin_UserGroupUpdated()
         {
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -47,7 +47,7 @@ namespace Synthesis.PrincipalService.Modules.Test.EventHandlers
         }
 
         [Fact]
-        public async Task SignUpUserCreatedEventHandler_Doesnot_Update_UserGroup()
+        public async Task HandleEventAsync_WhenGroupTypeNotTenantAdmin_UserGroupNotUpdated()
         {
             var tenantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
