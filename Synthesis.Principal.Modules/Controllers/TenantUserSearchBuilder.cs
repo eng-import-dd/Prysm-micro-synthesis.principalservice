@@ -29,7 +29,14 @@ namespace Synthesis.PrincipalService.Controllers
         public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
         {
             var userRepository = await _userRepositoryAsyncLazy;
-            var query = userRepository.CreateItemQuery(UsersController.DefaultBatchOptions);
+            var batchOptions = UsersController.DefaultBatchOptions;
+
+            if (filteringOptions.FetchAllPages)
+            {
+                batchOptions.BatchSize = -1;
+            }
+
+            var query = userRepository.CreateItemQuery(batchOptions);
             query = await BuildWhereClauseAsync(query, currentUserId, userIds, filteringOptions);
             var batch = BuildOrderByClause(filteringOptions, query);
             return batch;
