@@ -31,7 +31,7 @@ namespace Synthesis.PrincipalService.Controllers
             var userRepository = await _userRepositoryAsyncLazy;
             var batchOptions = UsersController.DefaultBatchOptions;
 
-            if (filteringOptions.FetchAll)
+            if (filteringOptions.FetchAllPages)
             {
                 batchOptions.BatchSize = -1;
             }
