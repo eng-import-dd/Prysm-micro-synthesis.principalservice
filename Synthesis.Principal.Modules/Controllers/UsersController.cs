@@ -12,6 +12,7 @@ using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
+using Synthesis.EventBus.Events;
 using Synthesis.Http.Microservice;
 using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.IdentityService.InternalApi.Models;
@@ -1193,11 +1194,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new AssignUserToTenantException($"Error while adding userId={user.Id} to tenantId={tenantId}.  Reason={result.ReasonPhrase}");
             }
 
-            _eventService.Publish(new ServiceBusEvent<Guid>
-            {
-                Name = EventNames.UserPromoted,
-                Payload = user.Id.GetValueOrDefault()
-            });
+            _eventService.Publish(EventNames.UserPromoted, user);
         }
 
         private bool IsBuiltInOnPremTenant(Guid? tenantId)
