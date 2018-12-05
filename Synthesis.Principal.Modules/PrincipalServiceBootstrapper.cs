@@ -239,8 +239,7 @@ namespace Synthesis.PrincipalService
                 .Keyed<IMicroserviceHttpClient>(nameof(ServiceToServiceClient))
                 .AsSelf();
 
-            builder.RegisterType<SynthesisHttpClient>()
-                .As<IHttpClient>();
+            builder.RegisterType<SynthesisHttpClient>().As<IHttpClient>().SingleInstance();;
 
             builder.RegisterType<HttpClientConfiguration>()
                 .As<IHttpClientConfiguration>();
