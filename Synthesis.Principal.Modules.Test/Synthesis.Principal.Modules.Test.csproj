@@ -145,8 +145,8 @@
     <Reference Include="Nancy.Testing, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Testing.2.0.0-clinteastwood\lib\net452\Nancy.Testing.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
@@ -180,6 +180,9 @@
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta017\lib\net452\Synthesis.EventBus.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.FeatureFlags, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.FeatureFlags.1.0.0-beta006\lib\net452\Synthesis.FeatureFlags.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
@@ -221,7 +224,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta014\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta064\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta065\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta057\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -236,7 +239,7 @@
       <HintPath>..\packages\Synthesis.SnapGridService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.SnapGridService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.SubscriptionService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.SubscriptionService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.SubscriptionService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.SubscriptionService.InternalApi.1.0.0-beta005\lib\net452\Synthesis.SubscriptionService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta025\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>

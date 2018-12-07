@@ -54,6 +54,12 @@
     <Reference Include="Castle.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
       <HintPath>..\packages\Castle.Core.4.3.1\lib\net45\Castle.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Common.Logging, Version=3.4.1.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Common.Logging.3.4.1\lib\net40\Common.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Common.Logging.Core, Version=3.4.1.0, Culture=neutral, PublicKeyToken=af08829b84f0328e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Common.Logging.Core.3.4.1\lib\net40\Common.Logging.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Confluent.Kafka, Version=0.11.6.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Confluent.Kafka.0.11.6-RC2\lib\net45\Confluent.Kafka.dll</HintPath>
     </Reference>
@@ -163,8 +169,14 @@
     <Reference Include="Nancy.Metadata.Modules, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Nancy.Metadata.Modules.2.0.0-clinteastwood\lib\net452\Nancy.Metadata.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="rox-core, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\rox-core.4.2.0\lib\net451\rox-core.dll</HintPath>
+    </Reference>
+    <Reference Include="rox-server, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\rox-server.4.2.0\lib\net451\rox-server.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis.StrongName, Version=1.2.6.0, Culture=neutral, PublicKeyToken=c219ff1ca8c2ce46, processorArchitecture=MSIL">
       <HintPath>..\packages\StackExchange.Redis.StrongName.1.2.6\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
@@ -207,6 +219,15 @@
     </Reference>
     <Reference Include="Synthesis.EventBus.Kafka.Autofac, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.Kafka.Autofac.1.0.0-beta007\lib\net452\Synthesis.EventBus.Kafka.Autofac.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.FeatureFlags, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.FeatureFlags.1.0.0-beta006\lib\net452\Synthesis.FeatureFlags.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.FeatureFlags.Feature.TryNBuy, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.FeatureFlags.Feature.TryNBuy.1.0.0-beta003\lib\net452\Synthesis.FeatureFlags.Feature.TryNBuy.dll</HintPath>
+    </Reference>
+    <Reference Include="Synthesis.FeatureFlags.Rollout, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.FeatureFlags.Rollout.1.0.0-beta003\lib\net452\Synthesis.FeatureFlags.Rollout.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
@@ -254,7 +275,7 @@
       <HintPath>..\packages\Synthesis.PolicyEvaluator.Autofac.1.0.0-beta014\lib\net452\Synthesis.PolicyEvaluator.Autofac.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.PrincipalService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta064\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.PrincipalService.InternalApi.1.0.0-beta065\lib\net452\Synthesis.PrincipalService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta057\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
@@ -272,7 +293,7 @@
       <HintPath>..\packages\Synthesis.SnapGridService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.SnapGridService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.SubscriptionService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.SubscriptionService.InternalApi.1.0.0-beta004\lib\net452\Synthesis.SubscriptionService.InternalApi.dll</HintPath>
+      <HintPath>..\packages\Synthesis.SubscriptionService.InternalApi.1.0.0-beta005\lib\net452\Synthesis.SubscriptionService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.TenantService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta025\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
@@ -371,6 +392,7 @@
     <Compile Include="EventHandlers\SignupUserCreatedEventHandler.cs" />
     <Compile Include="EventHandlers\SubscriptionCreatedHandler.cs" />
     <Compile Include="EventHandlers\SubscriptionTypeChangedHandler.cs" />
+    <Compile Include="Exceptions\MaxTeamSizeExceededException.cs" />
     <Compile Include="Requests\ChangeMachineTenantRequest.cs" />
     <Compile Include="Services\CloudShim.cs" />
     <Compile Include="Services\ICloudShim.cs" />

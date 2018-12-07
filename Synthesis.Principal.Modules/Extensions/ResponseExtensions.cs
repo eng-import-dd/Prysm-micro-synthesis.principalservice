@@ -105,6 +105,20 @@ namespace Synthesis.PrincipalService.Extensions
             return response;
         }
 
+        /// <summary>
+        /// A static method that returns a Response object with a 403 forbidden error http status code. This method should be used when returning a custom reason phrase.
+        /// </summary>
+        /// <param name="formatter"></param>
+        /// <param name="reasonPhrase"></param>
+        /// <returns>Nancy.Response</returns>
+        public static Response MaxTeamSizeExceeded(this IResponseFormatter formatter, string reasonPhrase)
+        {
+            var response = FormatResponse(formatter, ErrorCodes.TenantMappingFailed, ErrorMessages.MaxTeamSizeExceeded);
+            response.ReasonPhrase = reasonPhrase;
+            response.StatusCode = HttpStatusCode.Forbidden;
+            return response;
+        }
+
         private static Response FormatResponse(this IResponseFormatter formatter, string responseCode, string errorMessage)
         {
             return formatter.AsJson(new FailedResponse

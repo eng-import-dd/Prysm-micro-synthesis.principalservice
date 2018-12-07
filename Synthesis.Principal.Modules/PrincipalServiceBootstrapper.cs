@@ -62,6 +62,9 @@ using Synthesis.Tracking.ApplicationInsights;
 using Synthesis.Tracking.Web;
 using IObjectSerializer = Synthesis.Serialization.IObjectSerializer;
 using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
+using Synthesis.FeatureFlags.Rollout;
+using Synthesis.FeatureFlags.Interfaces;
+using Synthesis.SubscriptionService.InternalApi.Api;
 
 namespace Synthesis.PrincipalService
 {
@@ -224,6 +227,22 @@ namespace Synthesis.PrincipalService
                 };
             });
 
+            //Feature Flags
+            builder.Register(c =>
+            {
+                var reader = c.Resolve<IAppSettingsReader>();
+                return new RolloutConfiguration()
+                {
+                    ServiceUrl = reader.SafeGetValue<string>("Rollout.Url"),
+                    ApiKey = reader.SafeGetValue<string>("Rollout.ApiKey"),
+                    Enabled = reader.SafeGetValue("FeatureFlagsEnabled", false)
+                };
+            });
+
+            builder.RegisterType<RolloutFeatureFlagProvider>()
+                .As<IFeatureFlagProvider>()
+                .SingleInstance();
+
             // Certificate provider that provides the JWT validation key to the token validator.
             builder.RegisterType<IdentityServiceCertificateProvider>()
                 .WithParameter(new ResolvedParameter(
@@ -370,6 +389,8 @@ namespace Synthesis.PrincipalService
                 .WithParameter("serviceUrlSettingName", "Email.Url")
                 .As<IEmailApi>();
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>().InstancePerRequest();
+            builder.RegisterType<SubscriptionApi>()
+                .As<ISubscriptionApi>();
         }
 
         private static void RegisterLogging(ContainerBuilder builder)

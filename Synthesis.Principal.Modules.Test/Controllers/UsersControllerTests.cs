@@ -16,6 +16,9 @@ using Synthesis.DocumentStorage.TestTools.Mocks;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
+using Synthesis.FeatureFlags;
+using Synthesis.FeatureFlags.Defenitions;
+using Synthesis.FeatureFlags.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.IdentityService.InternalApi.Models;
@@ -40,6 +43,7 @@ using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.SubscriptionService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
@@ -67,6 +71,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IEmailSendingService> _emailSendingMock = new Mock<IEmailSendingService>();
         private readonly Mock<ISuperAdminService> _superadminServiceMock = new Mock<ISuperAdminService>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
+        private readonly Mock<IFeatureFlagProvider> _featureFlagProviderMock = new Mock<IFeatureFlagProvider>();
+        private readonly Mock<ISubscriptionApi> _subscriptionApiMock = new Mock<ISubscriptionApi>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
@@ -110,6 +116,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString())
             }));
 
+            _featureFlagProviderMock.Setup(x => x.GetFeatureFlag(It.IsAny<string>())).Returns(new DisabledBooleanFeatureFlag(new BooleanFeatureFlagDefinition("", false)));
+
             _controller = new UsersController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
                 _eventServiceMock.Object,
@@ -124,7 +132,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
         }
 
         private void SetupTestData()
@@ -905,6 +915,90 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateUserAsync_WhenTryNBuyDisabled_DoesnotFetchSubscription()
+        {
+            var tenantId = Guid.NewGuid();
+
+            _userRepositoryMock
+                .SetupCreateItemQuery();
+
+            _userRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User u, CancellationToken c) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _featureFlagProviderMock
+                .Setup(x => x.GetEnabled(It.IsAny<string>()))
+                .Returns(false);
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+            
+            await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Never());
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_WhenTryNBuyDisabled_FetchesSubscription()
+        {
+            var tenantId = Guid.NewGuid();
+
+            _userRepositoryMock
+                .SetupCreateItemQuery();
+
+            _userRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User u, CancellationToken c) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _featureFlagProviderMock
+                .Setup(x => x.GetEnabled(It.IsAny<string>()))
+                .Returns(false);
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Once());
+        }
+
+        [Fact]
         public async Task GetGuestUserForTenantReturnsEmptyResult()
         {
             _userRepositoryMock.SetupCreateItemQuery();
@@ -1280,7 +1374,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385") };
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));
@@ -1306,7 +1402,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3") };
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));

@@ -296,6 +296,11 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Info("Validation failed while trying to create a User resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
+            catch(MaxTeamSizeExceededException e)
+            {
+                Logger.Info("Failed to create user, maximum team size exceeded", e);
+                return Response.MaxTeamSizeExceeded(e.Message);
+            }
             catch (Exception ex)
             {
                 Logger.Error("Failed to create user resource due to an error", ex);

@@ -12,6 +12,9 @@ using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
+using Synthesis.FeatureFlags;
+using Synthesis.FeatureFlags.Feature.TryNBuy;
+using Synthesis.FeatureFlags.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.IdentityService.InternalApi.Models;
@@ -31,6 +34,7 @@ using Synthesis.PrincipalService.InternalApi.Enums;
 using Synthesis.PrincipalService.InternalApi.Models;
 using Synthesis.PrincipalService.Services;
 using Synthesis.PrincipalService.Validators;
+using Synthesis.SubscriptionService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
 using Synthesis.Threading.Tasks;
@@ -59,6 +63,8 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IEmailSendingService _emailSendingService;
         private readonly IPolicyEvaluator _policyEvaluator;
         private readonly ISuperAdminService _superAdminService;
+        private readonly IFeatureFlagProvider _featureFlagProvider;
+        private readonly ISubscriptionApi _subscriptionApi;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UsersController" /> class.
@@ -93,7 +99,9 @@ namespace Synthesis.PrincipalService.Controllers
             ITenantApi tenantApi,
             IPolicyEvaluator policyEvaluator,
             ISuperAdminService superAdminService,
-            IIdentityUserApi identityUserApi)
+            IIdentityUserApi identityUserApi,
+            IFeatureFlagProvider featureFlagProvider,
+            ISubscriptionApi subscriptionApi)
         {
             _userRepositoryAsyncLazy = new AsyncLazy<IRepository<User>>(() => repositoryFactory.CreateRepositoryAsync<User>());
             _groupRepositoryAsyncLazy = new AsyncLazy<IRepository<Group>>(() => repositoryFactory.CreateRepositoryAsync<Group>());
@@ -111,6 +119,8 @@ namespace Synthesis.PrincipalService.Controllers
             _policyEvaluator = policyEvaluator;
             _emailSendingService = emailSendingService;
             _superAdminService = superAdminService;
+            _featureFlagProvider = featureFlagProvider;
+            _subscriptionApi = subscriptionApi;
         }
 
         internal static PartitionKey DefaultPartitionKey => new PartitionKey(Undefined.Value);
@@ -138,6 +148,24 @@ namespace Synthesis.PrincipalService.Controllers
             if (IsBuiltInOnPremTenant(tenantId))
             {
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
+            }
+
+            if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
+            {
+                var activeUserCount = await GetUserCountAsync(tenantId, principal.GetPrincipialId(), new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
+                var tenantSubscription = await _subscriptionApi.GetSubscriptionById(tenantId);
+                if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
+                {
+                    var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
+                    if (teamSize != 0 && activeUserCount >= teamSize)
+                    {
+                        throw new MaxTeamSizeExceededException($"Could not add user: {model.Email} as maximum team size: {teamSize} is reached");
+                    }
+                }
+                else
+                {
+                    throw new Exception("Could not find subscription for the tenant");
+                }
             }
 
             var newUser = new User
