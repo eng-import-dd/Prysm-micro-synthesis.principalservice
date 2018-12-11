@@ -65,6 +65,7 @@ using RequestHeaders = Synthesis.Http.Microservice.RequestHeaders;
 using Synthesis.FeatureFlags.Rollout;
 using Synthesis.FeatureFlags.Interfaces;
 using Synthesis.SubscriptionService.InternalApi.Api;
+using Synthesis.FeatureFlags.Feature.TryNBuy;
 
 namespace Synthesis.PrincipalService
 {
@@ -239,9 +240,17 @@ namespace Synthesis.PrincipalService
                 };
             });
 
-            builder.RegisterType<RolloutFeatureFlagProvider>()
-                .As<IFeatureFlagProvider>()
-                .SingleInstance();
+            builder.Register(c =>
+            {
+                var configuration = c.Resolve<RolloutConfiguration>();
+                var rolloutFeatureFlagProvider = new RolloutFeatureFlagProvider(configuration);
+                rolloutFeatureFlagProvider
+                .RegisterFeatureFlag(TryNBuyFeature.GetFlagDefinition())
+                .InitializeAsync().Wait();
+                return rolloutFeatureFlagProvider;
+            })
+            .As<IFeatureFlagProvider>()
+            .SingleInstance();
 
             // Certificate provider that provides the JWT validation key to the token validator.
             builder.RegisterType<IdentityServiceCertificateProvider>()
