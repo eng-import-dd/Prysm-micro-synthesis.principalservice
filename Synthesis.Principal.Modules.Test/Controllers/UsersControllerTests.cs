@@ -73,6 +73,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
         private readonly Mock<IFeatureFlagProvider> _featureFlagProviderMock = new Mock<IFeatureFlagProvider>();
         private readonly Mock<ISubscriptionApi> _subscriptionApiMock = new Mock<ISubscriptionApi>();
+        private readonly Mock<IBooleanFeatureFlag> _enabledFeatureFlagMock = new Mock<IBooleanFeatureFlag>();
+        private readonly Mock<IBooleanFeatureFlag> _disabledFeatureFlagMock = new Mock<IBooleanFeatureFlag>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
@@ -116,7 +118,25 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString())
             }));
 
-            _featureFlagProviderMock.Setup(x => x.GetFeatureFlag(It.IsAny<string>())).Returns(new DisabledBooleanFeatureFlag(new BooleanFeatureFlagDefinition("", false)));
+            _enabledFeatureFlagMock
+                .SetupGet(x => x.Name)
+                .Returns("TryNBuy");
+
+            _enabledFeatureFlagMock
+                .SetupGet(x => x.IsEnabled)
+                .Returns(true);
+
+            _disabledFeatureFlagMock
+                .SetupGet(x => x.Name)
+                .Returns(string.Empty);
+
+            _disabledFeatureFlagMock
+                .SetupGet(x => x.IsEnabled)
+                .Returns(false);
+
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_disabledFeatureFlagMock.Object);
 
             _controller = new UsersController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
@@ -915,7 +935,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateUserAsync_WhenTryNBuyDisabled_DoesnotFetchSubscription()
+        public async Task CreateUserAsync_WhenTryNBuyFeatureDisabled_DoesnotFetchSubscription()
         {
             var tenantId = Guid.NewGuid();
 
@@ -936,10 +956,6 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _groupRepositoryMock
                 .SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
-
-            _featureFlagProviderMock
-                .Setup(x => x.GetEnabled(It.IsAny<string>()))
-                .Returns(false);
 
             var createUserRequest = new CreateUserRequest
             {
@@ -957,7 +973,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
-        public async Task CreateUserAsync_WhenTryNBuyDisabled_FetchesSubscription()
+        public async Task CreateUserAsync_WhenTryNBuyFeatureEnabled_FetchesSubscription()
         {
             var tenantId = Guid.NewGuid();
 
@@ -980,8 +996,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
 
             _featureFlagProviderMock
-                .Setup(x => x.GetEnabled(It.IsAny<string>()))
-                .Returns(false);
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_enabledFeatureFlagMock.Object);
 
             var createUserRequest = new CreateUserRequest
             {
