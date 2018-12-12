@@ -16,6 +16,9 @@ using Synthesis.DocumentStorage.TestTools.Mocks;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
+using Synthesis.FeatureFlags;
+using Synthesis.FeatureFlags.Defenitions;
+using Synthesis.FeatureFlags.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.IdentityService.InternalApi.Models;
@@ -40,6 +43,8 @@ using Synthesis.PrincipalService.Validators;
 using Synthesis.ProjectService.InternalApi.Api;
 using Synthesis.ProjectService.InternalApi.Enumerations;
 using Synthesis.ProjectService.InternalApi.Models;
+using Synthesis.SubscriptionService.InternalApi.Api;
+using Synthesis.SubscriptionService.InternalApi.Models;
 using Synthesis.TenantService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Models;
 using Xunit;
@@ -67,6 +72,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         private readonly Mock<IEmailSendingService> _emailSendingMock = new Mock<IEmailSendingService>();
         private readonly Mock<ISuperAdminService> _superadminServiceMock = new Mock<ISuperAdminService>();
         private readonly Mock<IPolicyEvaluator> _policyEvaluatorMock = new Mock<IPolicyEvaluator>();
+        private readonly Mock<IFeatureFlagProvider> _featureFlagProviderMock = new Mock<IFeatureFlagProvider>();
+        private readonly Mock<ISubscriptionApi> _subscriptionApiMock = new Mock<ISubscriptionApi>();
+        private readonly Mock<IBooleanFeatureFlag> _enabledFeatureFlagMock = new Mock<IBooleanFeatureFlag>();
+        private readonly Mock<IBooleanFeatureFlag> _disabledFeatureFlagMock = new Mock<IBooleanFeatureFlag>();
 
         private readonly UsersController _controller;
         private readonly IMapper _mapper;
@@ -110,6 +119,30 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, Guid.NewGuid().ToString())
             }));
 
+            _enabledFeatureFlagMock
+                .SetupGet(x => x.Name)
+                .Returns("TryNBuy");
+
+            _enabledFeatureFlagMock
+                .SetupGet(x => x.IsEnabled)
+                .Returns(true);
+
+            _disabledFeatureFlagMock
+                .SetupGet(x => x.Name)
+                .Returns(string.Empty);
+
+            _disabledFeatureFlagMock
+                .SetupGet(x => x.IsEnabled)
+                .Returns(false);
+
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_disabledFeatureFlagMock.Object);
+
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Subscription.Example()));
+
             _controller = new UsersController(_repositoryFactoryMock.Object,
                 _validatorLocatorMock.Object,
                 _eventServiceMock.Object,
@@ -124,7 +157,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
         }
 
         private void SetupTestData()
@@ -905,6 +940,150 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task CreateUserAsync_WhenTryNBuyFeatureDisabled_DoesnotFetchSubscription()
+        {
+            var tenantId = Guid.NewGuid();
+
+            SetUpMocksForTryNBuyFeature(tenantId, false);
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Never());
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_WhenTryNBuyFeatureEnabled_FetchesSubscription()
+        {
+            var tenantId = Guid.NewGuid();
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Once());
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_WhenSubscriptionApiFails_ThrowsException()
+        {
+            var tenantId = Guid.NewGuid();
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, (Subscription)null));
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            await Assert.ThrowsAsync<Exception>(() => _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_WhenTeamSizeExceedsMaxTeamSize_ThrowsTeamSizeExceededException()
+        {
+            var tenantId = Guid.NewGuid();
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 2;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            await Assert.ThrowsAsync<MaxTeamSizeExceededException>(() => _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_WhenTeamSizeLesserThanMaxTeamSize_UserIsCreated()
+        {
+            var tenantId = Guid.NewGuid();
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 50;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            var createUserRequest = new CreateUserRequest
+            {
+                FirstName = "first",
+                LastName = "last",
+                Email = "a@b.com",
+                LdapId = "ldap",
+                TenantId = tenantId,
+                UserType = UserType.Trial
+            };
+
+            var user = await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
+            Assert.NotNull(user);
+        }
+
+        private void SetUpMocksForTryNBuyFeature(Guid tenantId, bool isFeatureEnabled)
+        {
+            _userRepositoryMock
+                .SetupCreateItemQuery();
+
+            _userRepositoryMock
+                .Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User u, CancellationToken c) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            _userRepositoryMock
+                .Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User { Id = Guid.NewGuid(), Email = "user@nodomain.com" });
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(isFeatureEnabled ? _enabledFeatureFlagMock.Object : _disabledFeatureFlagMock.Object);
+
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+        }
+
+        [Fact]
         public async Task GetGuestUserForTenantReturnsEmptyResult()
         {
             _userRepositoryMock.SetupCreateItemQuery();
@@ -1280,7 +1459,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("2D907264-8797-4666-A8BB-72FE98733385") };
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));
@@ -1306,7 +1487,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 _tenantApiMock.Object,
                 _policyEvaluatorMock.Object,
                 _superadminServiceMock.Object,
-                _identityUserApiMock.Object);
+                _identityUserApiMock.Object,
+                _featureFlagProviderMock.Object,
+                _subscriptionApiMock.Object);
 
             var createUserRequest = new CreateUserRequest { FirstName = "first", LastName = "last", Email = "a@b.com", LdapId = "ldap", TenantId = Guid.Parse("DBAE315B-6ABF-4A8B-886E-C9CC0E1D16B3") };
             var ex = await Assert.ThrowsAsync<ValidationFailedException>(() => controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal));

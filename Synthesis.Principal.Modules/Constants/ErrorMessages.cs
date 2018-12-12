@@ -10,5 +10,6 @@
         public const string EmailAlreadyVerified = "Did not send email because the email address is already verified";
         public const string EmailRecentlySent = "Did not send email becuase it was already sent recently";
         public const string SendEmailFailed = "An error occurred while tryign to send an email";
+        public const string MaxTeamSizeExceeded = "Could not add user to the team as maximum team size is reached";
     }
 }

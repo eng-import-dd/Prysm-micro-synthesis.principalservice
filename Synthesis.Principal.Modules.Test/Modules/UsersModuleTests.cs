@@ -229,6 +229,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             _usersControllerMock.Verify(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()));
         }
 
+        [Fact]
+        public async Task CreateUserAsync_WhenMaxTeamSizeExceededExceptionIsThrown_ReturnsForbidden()
+        {
+            _usersControllerMock.Setup(m => m.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<ClaimsPrincipal>()))
+                           .Throws(new MaxTeamSizeExceededException());
+
+            var response = await UserTokenBrowser.Post(Routing.Users, ctx => BuildRequest(ctx, CreateUserRequest.Example()));
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
         #endregion CreateUser
 
         #region GetUserById
