@@ -247,6 +247,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 return Response.NotFound(ResponseReasons.NotFoundUser);
             }
+            catch (MaxTeamSizeExceededException e)
+            {
+                Logger.Info("Failed to create user, maximum team size exceeded", e);
+                return Response.MaxTeamSizeExceeded(e.Message);
+            }
             catch (Exception ex)
             {
                 Logger.Error("Failed to Lock/Unlock user resource due to an error", ex);
