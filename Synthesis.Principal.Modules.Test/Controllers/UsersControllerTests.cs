@@ -381,6 +381,65 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         [Fact]
+        public async Task AutoProvisionRefreshGroupsAsync_WhenTeamSizeExceedsLimit_ThrowsMaxTeamSizeExceededExceptionIsThrown()
+        {
+            var tenantId = Guid.NewGuid();
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 2;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser",
+                IsGuestUser = true
+            };
+            await Assert.ThrowsAsync<MaxTeamSizeExceededException>(() => _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, _defaultClaimsPrincipal));
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsAsync_WhenTemsizeLessThanLimit_ReturnsProvisionedUser()
+        {
+            var tenantId = Guid.NewGuid();
+
+            _userRepositoryMock.SetupCreateItemQuery();
+
+            SetUpMocksForTryNBuyFeature(tenantId, true);
+
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 10;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((User u, CancellationToken c) =>
+                {
+                    u.Id = Guid.NewGuid();
+                    return u;
+                });
+
+            _groupRepositoryMock.SetupCreateItemQuery(o => GetBuiltInGroups(tenantId));
+
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+
+            var idpUserRequest = new IdpUserRequest
+            {
+                FirstName = "TestUser",
+                LastName = "TestUser"
+            };
+
+            var result = await _controller.AutoProvisionRefreshGroupsAsync(idpUserRequest, tenantId, _defaultClaimsPrincipal);
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
         public async Task AutoProvisionRefreshGroupsAsync_WhenSuccessful_ReturnsProvisionedUser()
         {
             var tenantId = Guid.NewGuid();
@@ -1727,7 +1786,8 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             await Assert.ThrowsAsync<UserAlreadyMemberOfTenantException>(() => _controller.PromoteGuestUserAsync(userid, _defaultTenantId, LicenseType.UserLicense, _defaultClaimsPrincipal));
         }
-        #endregion
+
+        #endregion PromoteGuestUserAsync
 
         [Fact]
         public async Task GetGroupsForUserSuccess()
@@ -1766,7 +1826,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                                .ThrowsAsync(new ValidationFailedException(new List<ValidationFailure>()));
             await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetGroupIdsByUserIdAsync((Guid)userId));
         }
-        
+
         [Fact]
         public async Task RemoveUserFromPermissionGroupSuccess()
         {

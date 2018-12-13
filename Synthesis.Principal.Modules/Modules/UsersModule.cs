@@ -296,7 +296,7 @@ namespace Synthesis.PrincipalService.Modules
                 Logger.Info("Validation failed while trying to create a User resource.", ex);
                 return Response.BadRequestValidationFailed(ex.Errors);
             }
-            catch(MaxTeamSizeExceededException e)
+            catch (MaxTeamSizeExceededException e)
             {
                 Logger.Info("Failed to create user, maximum team size exceeded", e);
                 return Response.MaxTeamSizeExceeded(e.Message);
@@ -930,6 +930,11 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("Failed to auto provision and refresh groups", ex);
                 return Response.Forbidden(ResponseReasons.PromotionFailed);
+            }
+            catch (MaxTeamSizeExceededException ex)
+            {
+                Logger.Info("Failed to create user, maximum team size exceeded", ex);
+                return Response.MaxTeamSizeExceeded(ex.Message);
             }
             catch (Exception ex)
             {

@@ -363,7 +363,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
-        #endregion
+        #endregion GetUsersBasic
 
         #region GetUsersForTenant
 
@@ -988,7 +988,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         #region AutoProvisionRefreshGroups
 
         [Fact]
-        public async Task AutoProvisionRefreshGroupsReturnUser()
+        public async Task AutoProvisionRefreshGroups_IfSuccess_ReturnUser()
         {
             var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, new IdpUserRequest()));
 
@@ -996,7 +996,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task AutoProvisionRefreshGroupsReturnsInternalServerErrorIfUnhandledExceptionIsThrown()
+        public async Task AutoProvisionRefreshGroups_IfUnhandledExceptionIsThrown_ReturnsInternalServerError()
         {
             _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Throws(new Exception());
@@ -1007,7 +1007,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         [Fact]
-        public async Task AutoProvisionRefreshGroupsWithInvalidBodyReturnsBadRequest()
+        public async Task AutoProvisionRefreshGroups_WithInvalidBody_ReturnsBadRequest()
         {
             _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
                            .Returns(Task.FromResult(new User()));
@@ -1016,6 +1016,17 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Equal(ResponseText.BadRequestBindingException, response.ReasonPhrase);
+        }
+
+        [Fact]
+        public async Task AutoProvisionRefreshGroupsAsync_WhenMaxTeamSizeExceededExceptionIsThrown_ReturnsForbidden()
+        {
+            _usersControllerMock.Setup(m => m.AutoProvisionRefreshGroupsAsync(It.IsAny<IdpUserRequest>(), It.IsAny<Guid>(), It.IsAny<ClaimsPrincipal>()))
+                .Throws(new MaxTeamSizeExceededException(""));
+
+            var response = await UserTokenBrowser.Post(Routing.AutoProvisionRefreshGroups, ctx => BuildRequest(ctx, new IdpUserRequest()));
+
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         #endregion AutoProvisionRefreshGroups
