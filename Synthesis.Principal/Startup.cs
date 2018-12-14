@@ -6,6 +6,7 @@ using Synthesis.Owin.Security;
 using Synthesis.Nancy.MicroService.Middleware;
 using Synthesis.PrincipalService.Owin;
 using Synthesis.Tracking.Web;
+using System;
 
 namespace Synthesis.PrincipalService
 {
@@ -31,6 +32,26 @@ namespace Synthesis.PrincipalService
             app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
             app.UseMiddlewareFromContainer<GuestContextMiddleware>();
             app.UseStageMarker(PipelineStage.Authenticate);
+
+            if (app.Properties.TryGetValue("Microsoft.Owin.Host.HttpListener.OwinHttpListener", out var listener))
+            {
+                var l = listener as Microsoft.Owin.Host.HttpListener.OwinHttpListener;
+                if (l != null)
+                {
+                    l.GetRequestProcessingLimits(out int x, out int y);
+                    l.SetRequestQueueLimit((256 * Environment.ProcessorCount) * 2);
+                    l.SetRequestProcessingLimits(256 * Environment.ProcessorCount, y);
+                }
+            }
+
+            if (app.Properties.TryGetValue("System.Net.HttpListener", out listener))
+            {
+                var l = listener as System.Net.HttpListener;
+                if (l != null)
+                {
+                    l.TimeoutManager.IdleConnection = TimeSpan.FromSeconds(45);
+                }
+            }
 
             app.UseNancy(options =>
             {
