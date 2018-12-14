@@ -113,7 +113,7 @@ namespace Synthesis.PrincipalService.Extensions
         /// <returns>Nancy.Response</returns>
         public static Response MaxTeamSizeExceeded(this IResponseFormatter formatter, string reasonPhrase)
         {
-            var response = FormatResponse(formatter, ErrorCodes.TenantMappingFailed, ErrorMessages.MaxTeamSizeExceeded);
+            var response = FormatResponse(formatter, ErrorCodes.MaxTeamSizeExceeded, ErrorMessages.MaxTeamSizeExceeded);
             response.ReasonPhrase = reasonPhrase;
             response.StatusCode = HttpStatusCode.Forbidden;
             return response;
