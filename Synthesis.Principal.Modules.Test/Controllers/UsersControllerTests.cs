@@ -1555,6 +1555,114 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             Assert.False(result);
         }
 
+        [Fact]
+        public async Task LockOrUnlockAsync_WhenUnlockingUserWithTryNBuyFeatureDisabled_DoesnotFetchSubscription()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+            var userId = Guid.NewGuid();
+            var result = await _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false);
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(It.IsAny<Guid>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task LockOrUnlockAsync_WhenUnlockingUserWithTryNBuyFeatureEnabled_FetchesSubscription()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_enabledFeatureFlagMock.Object);
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+            var userId = Guid.NewGuid();
+            var result = await _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false);
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(It.IsAny<Guid>()), Times.Once());
+        }
+
+        [Fact]
+        public async Task LockOrUnlockAsync_WhenUnlockingAndSubscriptionApiFails_ThrowsException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_enabledFeatureFlagMock.Object);
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, (Subscription)null));
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<Exception>(() => _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false));
+        }
+
+        [Fact]
+        public async Task LockOrUnlockAsync_WhenUnlockingAndTeamSizeExceedsMaxTeamSize_ThrowsTeamSizeExceededException()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_enabledFeatureFlagMock.Object);
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 2;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+            var userId = Guid.NewGuid();
+            await Assert.ThrowsAsync<MaxTeamSizeExceededException>(() => _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false));
+        }
+
+        [Fact]
+        public async Task LockOrUnlockAsync_WhenUnlockingAndTeamSizeDoesnotExceedMaxTeamSize_UserIsUnlocked()
+        {
+            _userRepositoryMock.Setup(m => m.GetItemAsync(It.IsAny<Guid>(), It.IsAny<QueryOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new User());
+            _licenseApiMock.Setup(m => m.AssignUserLicenseAsync(It.IsAny<UserLicenseDto>()))
+                .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
+            _featureFlagProviderMock
+                .Setup(x => x.GetFeatureFlag(It.IsAny<string>()))
+                .Returns(_enabledFeatureFlagMock.Object);
+            _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
+            var subscription = Subscription.Example();
+            subscription.MaxTeamSize = 50;
+            _subscriptionApiMock
+                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
+
+            var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
+            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(batchMock.Object);
+            var userId = Guid.NewGuid();
+            var result = await _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false);
+            _userRepositoryMock.Verify(m => m.UpdateItemAsync(It.IsAny<Guid>(), It.IsAny<User>(), It.IsAny<UpdateOptions>(), It.IsAny<CancellationToken>()));
+            Assert.True(result);
+        }
+
         #region PromoteGuestUserAsync
 
         [Fact]

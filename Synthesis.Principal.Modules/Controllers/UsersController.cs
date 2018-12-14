@@ -151,23 +151,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
-            if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
-            {
-                var activeUserCount = await GetUserCountAsync(tenantId, principal.GetPrincipialId(), new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
-                var tenantSubscription = await _subscriptionApi.GetSubscriptionById(tenantId);
-                if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
-                {
-                    var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
-                    if (teamSize != 0 && activeUserCount >= teamSize)
-                    {
-                        throw new MaxTeamSizeExceededException($"Could not add user: {model.Email} as maximum team size: {teamSize} is reached");
-                    }
-                }
-                else
-                {
-                    throw new Exception("Could not find subscription for the tenant");
-                }
-            }
+            await CheckMaxTeamSizeAsync(tenantId, principal.GetPrincipialId(), model.Email);
 
             var newUser = new User
             {
@@ -890,6 +874,11 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(new[] { new ValidationFailure("IsLocked", "The final superadmin user cannot be locked") });
             }
 
+            if(!@lock)
+            {
+                await CheckMaxTeamSizeAsync(tenantId, userId, isAdd: false);
+            }
+
             return await UpdateLockUserDetailsInDbAsync(userId, tenantId, @lock);
         }
 
@@ -1538,6 +1527,34 @@ namespace Synthesis.PrincipalService.Controllers
         private async Task<bool> CanManageUserLicensesAsync(ClaimsPrincipal principal)
         {
             return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageUserLicenses);
+        }
+
+        private async Task CheckMaxTeamSizeAsync(Guid tenantId, Guid userId, string emailId = null, bool isAdd = true)
+        {
+            if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
+            {
+                var activeUserCount = await GetUserCountAsync(tenantId, userId, new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
+                var tenantSubscription = await _subscriptionApi.GetSubscriptionById(tenantId);
+                if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
+                {
+                    var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
+                    if (teamSize != 0 && activeUserCount >= teamSize)
+                    {
+                        if (isAdd)
+                        {
+                            throw new MaxTeamSizeExceededException($"Could not add user: {emailId} as maximum team size: {teamSize} is reached");
+                        }
+                        else
+                        {
+                            throw new MaxTeamSizeExceededException($"Could not unlock user as maximum team size: {teamSize} is reached");
+                        }
+                    }
+                }
+                else
+                {
+                    throw new Exception("Could not find subscription for the tenant");
+                }
+            }
         }
     }
 }

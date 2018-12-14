@@ -692,6 +692,16 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         }
 
+        [Fact]
+        public async Task LockUserAsync_WhenMaxTeamSizeExceededExceptionIsThrown_ReturnsForbidden()
+        {
+            _usersControllerMock.Setup(m => m.LockOrUnlockUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
+                           .Throws(new MaxTeamSizeExceededException());
+
+            var response = await UserTokenBrowser.Post(string.Format(Routing.LockUserBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), ctx => BuildRequest(ctx, new User()));
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
         #endregion LockUser
 
         #region CanPromoteUser
