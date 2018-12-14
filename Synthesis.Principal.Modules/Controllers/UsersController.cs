@@ -151,7 +151,7 @@ namespace Synthesis.PrincipalService.Controllers
                 throw new ValidationFailedException(new[] { new ValidationFailure(nameof(model.TenantId), "Users cannot be created under provisioning tenant") });
             }
 
-            await CheckMaxTeamSizeAsync(tenantId, principal.GetPrincipialId());
+            await CheckMaxTeamSizeAsync(tenantId, principal.GetPrincipialId(), model.Email);
 
             var newUser = new User
             {
@@ -876,7 +876,7 @@ namespace Synthesis.PrincipalService.Controllers
 
             if(!@lock)
             {
-                await CheckMaxTeamSizeAsync(tenantId, userId);
+                await CheckMaxTeamSizeAsync(tenantId, userId, isAdd: false);
             }
 
             return await UpdateLockUserDetailsInDbAsync(userId, tenantId, @lock);
@@ -1529,7 +1529,7 @@ namespace Synthesis.PrincipalService.Controllers
             return await _policyEvaluator.HasExplicitPermissionAsync(principal, SynthesisPermission.CanManageUserLicenses);
         }
 
-        private async Task CheckMaxTeamSizeAsync(Guid tenantId, Guid userId)
+        private async Task CheckMaxTeamSizeAsync(Guid tenantId, Guid userId, string emailId = null, bool isAdd = true)
         {
             if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
             {
@@ -1540,7 +1540,14 @@ namespace Synthesis.PrincipalService.Controllers
                     var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
                     if (teamSize != 0 && activeUserCount >= teamSize)
                     {
-                        throw new MaxTeamSizeExceededException($"Could not unlock user as maximum team size: {teamSize} is reached");
+                        if (isAdd)
+                        {
+                            throw new MaxTeamSizeExceededException($"Could not add user: {emailId} as maximum team size: {teamSize} is reached");
+                        }
+                        else
+                        {
+                            throw new MaxTeamSizeExceededException($"Could not unlock user as maximum team size: {teamSize} is reached");
+                        }
                     }
                 }
                 else
