@@ -47,7 +47,7 @@ namespace Synthesis.PrincipalService
                 var l = listener as System.Net.HttpListener;
                 if (l != null)
                 {
-                    l.TimeoutManager.IdleConnection = TimeSpan.Zero
+                    l.TimeoutManager.IdleConnection = TimeSpan.Zero;
                 }
             }
 
