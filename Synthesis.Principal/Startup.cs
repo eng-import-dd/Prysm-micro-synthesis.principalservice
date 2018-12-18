@@ -33,25 +33,6 @@ namespace Synthesis.PrincipalService
             app.UseMiddlewareFromContainer<GuestContextMiddleware>();
             app.UseStageMarker(PipelineStage.Authenticate);
 
-            if (app.Properties.TryGetValue("Microsoft.Owin.Host.HttpListener.OwinHttpListener", out var listener))
-            {
-                var l = listener as Microsoft.Owin.Host.HttpListener.OwinHttpListener;
-                if (l != null)
-                {
-                    l.GetRequestProcessingLimits(out int maxAccepts, out int maxRequests);
-                    l.SetRequestProcessingLimits(25 * Environment.ProcessorCount, maxRequests);
-                }
-            }
-
-            if (app.Properties.TryGetValue("System.Net.HttpListener", out listener))
-            {
-                var l = listener as System.Net.HttpListener;
-                if (l != null)
-                {
-                    l.TimeoutManager.IdleConnection = TimeSpan.Zero;
-                }
-            }
-
             app.UseNancy(options =>
             {
                 options.Bootstrapper = new PrincipalServiceBootstrapper();
