@@ -1158,6 +1158,18 @@ namespace Synthesis.PrincipalService.Controllers
             return new VerifyUserEmailResponse { Result = true };
         }
 
+        public async Task<List<BasicUser>> GetTeamOwnersAsync(Guid tenantId)
+        {
+            var validationResult = _validatorLocator.Validate<TenantIdValidator>(tenantId);
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationFailedException(validationResult.Errors);
+            }
+
+            var teamOwners = await GetTenantAdminsByIdAsync(tenantId);
+            return _mapper.Map<List<User>, List<BasicUser>>(teamOwners);
+        }
+
         private static void TrimNameOfUser(User user)
         {
             if (!string.IsNullOrEmpty(user.FirstName))

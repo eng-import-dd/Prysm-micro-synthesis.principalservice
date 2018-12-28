@@ -26,6 +26,7 @@ namespace Synthesis.PrincipalService.Constants
         public const string InternalServerErrorSuperAdminCheck = "An error occurred while attempting to check if the user is a superadmin";
 
         public const string InternalServerErrorGetLicenseTypeForUser = "An error occurred while retrieving user license type. Failed to connect to License Service.";
+        public const string InternalServerErrorGetTeamOwners = "An error occurred retrieving the team owners";
 
         // Not found
         public const string NotFoundUser = "User Not Found";
