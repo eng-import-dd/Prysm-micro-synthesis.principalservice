@@ -1269,5 +1269,45 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
         }
 
         #endregion SendGuestVerificationEmailAsync
+
+        #region GetTeamOwnersAsync
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenSuccessful_ReturnsOk()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new List<BasicUser> { BasicUser.Example()});
+
+            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenValidationFails_ReturnsBadRequest()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
+                .Throws(new ValidationFailedException(new List<ValidationFailure>()));
+
+            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenException_ReturnsInternalServerError()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
+                .Throws(new Exception());
+
+            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+
+            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        #endregion
     }
 }

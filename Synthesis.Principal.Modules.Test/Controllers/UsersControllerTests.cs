@@ -2610,5 +2610,88 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
         }
 
         #endregion VerifyEmail
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenValidationFails_ThrowValidationFailedException()
+        {
+            _validatorMock.Setup(m => m.Validate(Guid.Empty))
+                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+
+            await Assert.ThrowsAsync<ValidationFailedException>(() => _controller.GetTeamOwnersAsync(Guid.Empty));
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenNoAdminGroupFoundForTenant_ThrowsException()
+        {
+            _validatorMock.Setup(m => m.Validate(Guid.Empty))
+                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(x => new List<Group> { new Group { Type = GroupType.Basic} });
+
+            await Assert.ThrowsAsync<Exception>(() => _controller.GetTeamOwnersAsync(Guid.NewGuid()));
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenMultipleAdminGroupsFoundForTenant_ThrowsInvalidOperationException()
+        {
+            var tenantId = Guid.NewGuid();
+            _validatorMock.Setup(m => m.Validate(Guid.Empty))
+                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(x => new List<Group> { new Group { Type = GroupType.TenantAdmin, TenantId = tenantId }, new Group { Type = GroupType.TenantAdmin, TenantId = tenantId } });
+
+            await Assert.ThrowsAsync<Exception>(() => _controller.GetTeamOwnersAsync(tenantId));
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenTenantApiFails_ThrowsNotFoundException()
+        {
+            var tenantId = Guid.NewGuid();
+            _validatorMock.Setup(m => m.Validate(Guid.Empty))
+                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(x => new List<Group> { new Group { Type = GroupType.TenantAdmin, TenantId = tenantId } });
+
+            _tenantApiMock
+                .Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.NotFound, new Http.Microservice.Models.ErrorResponse()));
+
+            await Assert.ThrowsAsync<NotFoundException>(() => _controller.GetTeamOwnersAsync(tenantId));
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_ReturnsTeamOwners()
+        {
+            var tenantId = Guid.NewGuid();
+            var adminGroupId = Guid.NewGuid();
+            var basicGroupId = Guid.NewGuid();
+
+            _validatorMock.Setup(m => m.Validate(Guid.Empty))
+                .Returns(new ValidationResult(new List<ValidationFailure> { new ValidationFailure("", "") }));
+            var users = new List<User> { User.Example(), User.Example(), User.Example() };
+            users[0].Groups = new List<Guid> { adminGroupId, basicGroupId };
+            users[1].Groups = new List<Guid> { basicGroupId };
+            users[2].Groups = new List<Guid> { basicGroupId };
+
+            _groupRepositoryMock
+                .SetupCreateItemQuery(x => new List<Group>
+                {
+                    new Group { Type = GroupType.TenantAdmin, TenantId = tenantId, Id = adminGroupId },
+                    new Group { Type = GroupType.Basic, TenantId = tenantId, Id = basicGroupId}
+                });
+
+            _tenantApiMock
+                .Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, users.Select(x => x.Id.Value)));
+
+            _userRepositoryMock
+                .SetupCreateItemQuery(x => users);
+
+            var result = await _controller.GetTeamOwnersAsync(tenantId);
+            Assert.Single(result);
+        }
     }
 }
