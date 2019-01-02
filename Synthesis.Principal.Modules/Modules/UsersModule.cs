@@ -181,7 +181,7 @@ namespace Synthesis.PrincipalService.Modules
 
             CreateRoute("GetTeamOwners", HttpMethod.Get, Routing.TeamOwners, GetTeamOwnersAsync, c => c.Request.Query.ContainsKey("tenantId"))
                 .Description("Retrieves list of team owners")
-                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
                 .ResponseFormat(new List<BasicUser> { BasicUser.Example() });
         }
 
