@@ -1279,7 +1279,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(new List<BasicUser> { BasicUser.Example()});
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.TeamOwners,
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.Query("tenantId", "f629f87c-366d-4790-ac34-964e3558bdcd");
+                });
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -1291,7 +1298,14 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
                 .Throws(new ValidationFailedException(new List<ValidationFailure>()));
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.TeamOwners,
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.Query("tenantId", "f629f87c-366d-4790-ac34-964e3558bdcd");
+                });
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
@@ -1303,9 +1317,35 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
                 .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
                 .Throws(new Exception());
 
-            var response = await UserTokenBrowser.Get(string.Format(Routing.TeamOwnersBase, "f629f87c-366d-4790-ac34-964e3558bdcd"), BuildRequest);
+            var response = await UserTokenBrowser.Get(Routing.TeamOwners,
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.Query("tenantId", "f629f87c-366d-4790-ac34-964e3558bdcd");
+                });
 
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenTeamOwnersNotFound_ReturnNotFound()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
+                .Throws(new NotFoundException());
+
+            var response = await UserTokenBrowser.Get(Routing.TeamOwners,
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.Query("tenantId", "f629f87c-366d-4790-ac34-964e3558bdcd");
+                });
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         #endregion

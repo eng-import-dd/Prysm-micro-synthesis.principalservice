@@ -40,6 +40,8 @@ namespace Synthesis.PrincipalService.Constants
 
         public const string TenantNotFound = "Tenant Not Found";
 
+        public const string TeamOwnersNotFound = "Team Owner(s) Not Found";
+
         //Promote Guest
         public const string PromotionFailed = "Failed to promote the user";
         public static string LicenseAssignmentFailed = "Failed to assign the license";

@@ -179,10 +179,9 @@ namespace Synthesis.PrincipalService.Modules
                 .RequestFormat(VerifyUserEmailRequest.Example())
                 .ResponseFormat(VerifyUserEmailResponse.Example());
 
-            CreateRoute("GetTeamOwners", HttpMethod.Get, Routing.TeamOwners, GetTeamOwnersAsync)
+            CreateRoute("GetTeamOwners", HttpMethod.Get, Routing.TeamOwners, GetTeamOwnersAsync, c => c.Request.Query.ContainsKey("tenantId"))
                 .Description("Retrieves list of team owners")
                 .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError)
-                .RequestFormat(Guid.NewGuid())
                 .ResponseFormat(new List<BasicUser> { BasicUser.Example() });
         }
 
@@ -1135,7 +1134,7 @@ namespace Synthesis.PrincipalService.Modules
 
         private async Task<object> GetTeamOwnersAsync(dynamic input, CancellationToken cancellationToken)
         {
-            Guid tenantId = input.Id;
+            Guid tenantId = Request.Query.tenantId;
 
             await RequiresAccess()
                 .ExecuteAsync(cancellationToken);
@@ -1143,6 +1142,10 @@ namespace Synthesis.PrincipalService.Modules
             try
             {
                 return await _userController.GetTeamOwnersAsync(tenantId);
+            }
+            catch(NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.TeamOwnersNotFound);
             }
             catch (ValidationFailedException ex)
             {
