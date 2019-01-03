@@ -38,7 +38,7 @@ namespace Synthesis.PrincipalService
                 var l = listener as Microsoft.Owin.Host.HttpListener.OwinHttpListener;
                 if (l != null)
                 {
-                    l.SetRequestQueueLimit(100);
+                    l.SetRequestQueueLimit(500);
                     l.SetRequestProcessingLimits(100 * Environment.ProcessorCount, Int32.MaxValue);
                 }
             }
@@ -48,8 +48,8 @@ namespace Synthesis.PrincipalService
                 var l = listener as System.Net.HttpListener;
                 if (l != null)
                 {
-                    l.TimeoutManager.IdleConnection = TimeSpan.FromSeconds(15);
-                    l.TimeoutManager.RequestQueue = TimeSpan.FromSeconds(1);
+                    l.TimeoutManager.IdleConnection = TimeSpan.FromSeconds(30);
+                    l.TimeoutManager.RequestQueue = TimeSpan.FromSeconds(5);
                 }
             }
             app.UseStageMarker(PipelineStage.MapHandler);
