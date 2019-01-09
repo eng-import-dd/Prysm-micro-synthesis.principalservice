@@ -1137,6 +1137,7 @@ namespace Synthesis.PrincipalService.Modules
             Guid tenantId = Request.Query.tenantId;
 
             await RequiresAccess()
+                .WithTenantIdExpansion(ctx => tenantId)
                 .ExecuteAsync(cancellationToken);
 
             try
