@@ -178,6 +178,11 @@ namespace Synthesis.PrincipalService.Modules
                 .StatusCodes(HttpStatusCode.Created, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.BadRequest, HttpStatusCode.InternalServerError)
                 .RequestFormat(VerifyUserEmailRequest.Example())
                 .ResponseFormat(VerifyUserEmailResponse.Example());
+
+            CreateRoute("GetTeamOwners", HttpMethod.Get, Routing.TeamOwners, GetTeamOwnersAsync, c => c.Request.Query.ContainsKey("tenantId"))
+                .Description("Retrieves list of team owners")
+                .StatusCodes(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden, HttpStatusCode.InternalServerError, HttpStatusCode.NotFound)
+                .ResponseFormat(new List<BasicUser> { BasicUser.Example() });
         }
 
         private async Task<object> VerifyEmailAsync(dynamic input, CancellationToken cancellationToken)
@@ -1124,6 +1129,34 @@ namespace Synthesis.PrincipalService.Modules
             {
                 Logger.Error("GetLicenseTypeForUser threw an unhandled exception", ex);
                 return Response.InternalServerError(ResponseReasons.InternalServerErrorGetUser);
+            }
+        }
+
+        private async Task<object> GetTeamOwnersAsync(dynamic input, CancellationToken cancellationToken)
+        {
+            Guid tenantId = Request.Query.tenantId;
+
+            await RequiresAccess()
+                .WithTenantIdExpansion(ctx => tenantId)
+                .ExecuteAsync(cancellationToken);
+
+            try
+            {
+                return await _userController.GetTeamOwnersAsync(tenantId);
+            }
+            catch(NotFoundException)
+            {
+                return Response.NotFound(ResponseReasons.TeamOwnersNotFound);
+            }
+            catch (ValidationFailedException ex)
+            {
+                Logger.Info($"Validation failed while getting team owners for tenant id={tenantId}.", ex);
+                return Response.BadRequestValidationFailed(ex.Errors);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to get team owners for tenant id='{tenantId}' due to an unhandled exception", ex);
+                return Response.InternalServerError(ResponseReasons.InternalServerErrorGetTeamOwners);
             }
         }
 

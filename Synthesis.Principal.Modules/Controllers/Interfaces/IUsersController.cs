@@ -72,5 +72,7 @@ namespace Synthesis.PrincipalService.Controllers
         Task<VerifyUserEmailResponse> VerifyEmailAsync(VerifyUserEmailRequest verifyRequest);
 
         Task SendGuestVerificationEmailAsync(GuestVerificationEmailRequest request);
+
+        Task<List<BasicUser>> GetTeamOwnersAsync(Guid tenantId);
     }
 }
