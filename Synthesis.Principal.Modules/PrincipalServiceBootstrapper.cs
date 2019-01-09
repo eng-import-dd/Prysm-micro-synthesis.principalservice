@@ -25,6 +25,7 @@ using Synthesis.Configuration.Infrastructure;
 using Synthesis.Configuration.Shared;
 using Synthesis.DocumentStorage;
 using Synthesis.DocumentStorage.DocumentDB;
+using Synthesis.DocumentStorage.Migrations;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EventBus;
 using Synthesis.EventBus.Kafka.Autofac;
@@ -212,7 +213,21 @@ namespace Synthesis.PrincipalService
                     RuThroughput = settings.GetValue<int>("Principal.DocumentDB.RuThroughput"),
                 };
             });
-            builder.RegisterType<DocumentDbRepositoryFactory>().As<IRepositoryFactory>().SingleInstance();
+
+            builder.Register(c => new RepositoryMigrationsConfiguration
+            {
+                MigrationsAssembly = typeof(PrincipalServiceBootstrapper).Assembly,
+                MigrationsNamespace = $"{typeof(PrincipalServiceBootstrapper).Namespace}.Migrations"
+            });
+
+            builder.RegisterType<DocumentClientFactory>().As<IDocumentClientFactory>().SingleInstance();
+
+            builder.RegisterType<DocumentDbRepositoryFactory>()
+                .WithParameter(new ResolvedParameter(
+                    (p, c) => p.Name == "migrationsConfiguration",
+                    (p, c) => c.Resolve<RepositoryMigrationsConfiguration>()))
+                .As<IRepositoryFactory>().SingleInstance();
+
             builder.RegisterType<DocumentFileReader>().As<IDocumentFileReader>();
             builder.RegisterType<DefaultDocumentDbConfigurationProvider>().As<IDocumentDbConfigurationProvider>();
             builder.RegisterInstance(Assembly.GetExecutingAssembly());
