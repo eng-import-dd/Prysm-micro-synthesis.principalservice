@@ -1348,6 +1348,25 @@ namespace Synthesis.PrincipalService.Modules.Test.Modules
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
+        [Fact]
+        public async Task GetTeamOwnersAsync_WhenNoBearerToken_ReturnsUnauthorized()
+        {
+            _usersControllerMock
+                .Setup(uc => uc.GetTeamOwnersAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(new List<BasicUser> { BasicUser.Example() });
+
+            var response = await UnauthenticatedBrowser.Get(Routing.TeamOwners,
+                with =>
+                {
+                    with.HttpRequest();
+                    with.Header("Accept", "application/json");
+                    with.Header("Content-Type", "application/json");
+                    with.Query("tenantId", "f629f87c-366d-4790-ac34-964e3558bdcd");
+                });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
         #endregion
     }
 }
