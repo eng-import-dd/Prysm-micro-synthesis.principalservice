@@ -160,8 +160,8 @@
     <Reference Include="Synthesis.Cache, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Cache.2.1.0-beta003\lib\net452\Synthesis.Cache.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Configuration, Version=1.0.0.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Configuration.1.0.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
+    <Reference Include="Synthesis.Configuration, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Configuration.1.0.1\lib\net452\Synthesis.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Configuration.Shared, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Configuration.Shared.1.0.0-beta004\lib\net452\Synthesis.Configuration.Shared.dll</HintPath>
@@ -175,8 +175,8 @@
     <Reference Include="Synthesis.DocumentStorage.TestTools, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.TestTools.1.0.0-beta006\lib\net452\Synthesis.DocumentStorage.TestTools.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.0-beta019\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
+    <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.1\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EventBus, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EventBus.1.0.1-beta017\lib\net452\Synthesis.EventBus.dll</HintPath>
@@ -187,11 +187,11 @@
     <Reference Include="Synthesis.Guest.ProjectContext, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Guest.ProjectContext.1.0.0-beta004\lib\net452\Synthesis.Guest.ProjectContext.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Http, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.1.1.0-beta003\lib\net452\Synthesis.Http.dll</HintPath>
+    <Reference Include="Synthesis.Http, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Http.2.0.0\lib\net452\Synthesis.Http.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Http.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0-beta029\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Http.Microservice.1.0.0\lib\net452\Synthesis.Http.Microservice.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.IdentityService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.IdentityService.InternalApi.1.0.0-beta009\lib\net452\Synthesis.IdentityService.InternalApi.dll</HintPath>
@@ -229,8 +229,8 @@
     <Reference Include="Synthesis.ProjectService.InternalApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.ProjectService.InternalApi.1.0.0-beta059\lib\net452\Synthesis.ProjectService.InternalApi.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Serialization, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Serialization.1.0.7\lib\net452\Synthesis.Serialization.dll</HintPath>
+    <Reference Include="Synthesis.Serialization, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Serialization.1.1.0\lib\net452\Synthesis.Serialization.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Serialization.Json, Version=1.0.11.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Serialization.Json.1.0.11-beta001\lib\net452\Synthesis.Serialization.Json.dll</HintPath>
@@ -245,7 +245,7 @@
       <HintPath>..\packages\Synthesis.TenantService.InternalApi.1.0.1-beta025\lib\net452\Synthesis.TenantService.InternalApi.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Threading, Version=1.1.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Threading.1.1.1-beta001\lib\net452\Synthesis.Threading.dll</HintPath>
+      <HintPath>..\packages\Synthesis.Threading.1.1.1\lib\net452\Synthesis.Threading.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Tracking.Correlations, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Tracking.Correlations.1.0.1\lib\net452\Synthesis.Tracking.Correlations.dll</HintPath>
