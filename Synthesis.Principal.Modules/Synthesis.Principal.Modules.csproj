@@ -205,8 +205,8 @@
     <Reference Include="Synthesis.DocumentStorage, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.DocumentStorage.1.0.1\lib\net452\Synthesis.DocumentStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.1\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
+    <Reference Include="Synthesis.DocumentStorage.DocumentDB, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.DocumentStorage.DocumentDB.1.0.2\lib\net452\Synthesis.DocumentStorage.DocumentDB.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.EmailService.InternalApi, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.EmailService.InternalApi.1.0.1\lib\net452\Synthesis.EmailService.InternalApi.dll</HintPath>
@@ -247,8 +247,8 @@
     <Reference Include="Synthesis.Logging, Version=2.0.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Logging.2.0.5\lib\net452\Synthesis.Logging.dll</HintPath>
     </Reference>
-    <Reference Include="Synthesis.Logging.Log4Net, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.6\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
+    <Reference Include="Synthesis.Logging.Log4Net, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Synthesis.Logging.Log4Net.1.0.7\lib\net452\Synthesis.Logging.Log4Net.dll</HintPath>
     </Reference>
     <Reference Include="Synthesis.Microservice, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Synthesis.Microservice.1.0.0\lib\net452\Synthesis.Microservice.dll</HintPath>
