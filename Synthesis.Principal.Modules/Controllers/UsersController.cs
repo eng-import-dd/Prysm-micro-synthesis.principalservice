@@ -677,7 +677,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
             {
                 var activeUserCount = await GetUserCountAsync(tenantId, Guid.Empty, new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
-                var tenantSubscription = await _subscriptionApi.GetSubscriptionById(tenantId);
+                var tenantSubscription = await _subscriptionApi.GetSubscriptionAsync(tenantId);
                 if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
                 {
                     var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
@@ -1564,7 +1564,7 @@ namespace Synthesis.PrincipalService.Controllers
             if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
             {
                 var activeUserCount = await GetUserCountAsync(tenantId, userId, new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
-                var tenantSubscription = await _subscriptionApi.GetSubscriptionById(tenantId);
+                var tenantSubscription = await _subscriptionApi.GetSubscriptionAsync(tenantId);
                 if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
                 {
                     var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();

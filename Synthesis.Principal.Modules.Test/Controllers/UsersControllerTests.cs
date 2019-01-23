@@ -140,7 +140,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .Returns(_disabledFeatureFlagMock.Object);
 
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, Subscription.Example()));
 
             _controller = new UsersController(_repositoryFactoryMock.Object,
@@ -389,7 +389,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 2;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             var idpUserRequest = new IdpUserRequest
@@ -413,7 +413,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 10;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             _userRepositoryMock.Setup(m => m.CreateItemAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
@@ -1016,7 +1016,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             };
 
             await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
-            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Never());
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionAsync(tenantId), Times.Never());
         }
 
         [Fact]
@@ -1035,7 +1035,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             };
 
             await _controller.CreateUserAsync(createUserRequest, _defaultClaimsPrincipal);
-            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(tenantId), Times.Once());
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionAsync(tenantId), Times.Once());
         }
 
         [Fact]
@@ -1044,7 +1044,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var tenantId = Guid.NewGuid();
             SetUpMocksForTryNBuyFeature(tenantId, true);
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, (Subscription)null));
 
             var createUserRequest = new CreateUserRequest
@@ -1068,7 +1068,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 2;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             var createUserRequest = new CreateUserRequest
@@ -1092,7 +1092,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 50;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             var createUserRequest = new CreateUserRequest
@@ -1623,7 +1623,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(new LicenseResponse { ResultCode = LicenseResponseResultCode.Success });
             var userId = Guid.NewGuid();
             var result = await _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false);
-            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(It.IsAny<Guid>()), Times.Never());
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionAsync(It.IsAny<Guid>()), Times.Never());
         }
 
         [Fact]
@@ -1644,7 +1644,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 .ReturnsAsync(batchMock.Object);
             var userId = Guid.NewGuid();
             var result = await _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false);
-            _subscriptionApiMock.Verify(x => x.GetSubscriptionById(It.IsAny<Guid>()), Times.Once());
+            _subscriptionApiMock.Verify(x => x.GetSubscriptionAsync(It.IsAny<Guid>()), Times.Once());
         }
 
         [Fact]
@@ -1660,7 +1660,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             _tenantApiMock.Setup(m => m.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create<IEnumerable<Guid>>(HttpStatusCode.OK, new List<Guid> { Guid.NewGuid() }));
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.NotFound, (Subscription)null));
 
             var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
@@ -1685,7 +1685,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 2;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
@@ -1710,7 +1710,7 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var subscription = Subscription.Example();
             subscription.MaxTeamSize = 50;
             _subscriptionApiMock
-                .Setup(x => x.GetSubscriptionById(It.IsAny<Guid>()))
+                .Setup(x => x.GetSubscriptionAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, subscription));
 
             var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
