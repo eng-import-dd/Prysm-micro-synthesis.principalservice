@@ -1140,6 +1140,9 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
 
             _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
                 .ReturnsAsync(batchMock.Object);
+
+            _queryRunnerMock.Setup(x => x.Count(It.IsAny<IQueryable<User>>()))
+                .Returns(batchMock.Object.Count());
         }
 
         [Fact]
@@ -1691,6 +1694,10 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
             var batchMock = WrapUsersInBatchMock(new List<User> { new User(), new User(), new User() });
             _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
                 .ReturnsAsync(batchMock.Object);
+
+            _queryRunnerMock.Setup(x => x.Count(It.IsAny<IQueryable<User>>()))
+                .Returns(batchMock.Object.Count());
+
             var userId = Guid.NewGuid();
             await Assert.ThrowsAsync<MaxTeamSizeExceededException>(() => _controller.LockOrUnlockUserAsync(userId, _defaultTenantId, false));
         }
