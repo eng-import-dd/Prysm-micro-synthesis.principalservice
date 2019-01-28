@@ -1099,9 +1099,10 @@ namespace Synthesis.PrincipalService.Controllers
 
             var query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
             var batch = await _queryRunner.RunQuery(query);
+
             var userList = batch.ToList();
 
-            var filteredRecords = userList.Count;
+            var filteredRecords = _queryRunner.Count(query);
 
             if (userFilteringOptions.PageSize < 1)
             {
