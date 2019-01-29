@@ -12,7 +12,6 @@ using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
-using Synthesis.EventBus.Events;
 using Synthesis.FeatureFlags;
 using Synthesis.FeatureFlags.Feature.TryNBuy;
 using Synthesis.FeatureFlags.Interfaces;
@@ -674,24 +673,6 @@ namespace Synthesis.PrincipalService.Controllers
 
         private async Task<User> AutoProvisionUserAsync(IdpUserRequest model, Guid tenantId, ClaimsPrincipal claimsPrincipal)
         {
-            if (_featureFlagProvider.GetEnabled(TryNBuyFeature.FlagName))
-            {
-                var activeUserCount = await GetUserCountAsync(tenantId, Guid.Empty, new UserFilteringOptions { IncludeInactive = false, FetchAllPages = true });
-                var tenantSubscription = await _subscriptionApi.GetSubscriptionAsync(tenantId);
-                if (tenantSubscription.IsSuccess() && tenantSubscription.Payload != null)
-                {
-                    var teamSize = tenantSubscription.Payload.MaxTeamSize.GetValueOrDefault();
-                    if (teamSize != 0 && activeUserCount >= teamSize)
-                    {
-                        throw new MaxTeamSizeExceededException($"Could not add user: {model.EmailId} as maximum team size: {teamSize} is reached");
-                    }
-                }
-                else
-                {
-                    throw new Exception("Could not find subscription for the tenant");
-                }
-            }
-
             var createUserRequest = new CreateUserRequest
             {
                 Email = model.EmailId,
