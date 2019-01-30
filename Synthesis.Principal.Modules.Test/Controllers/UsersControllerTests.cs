@@ -2385,38 +2385,94 @@ namespace Synthesis.PrincipalService.Modules.Test.Controllers
                 PageSize = 3
             };
 
+            var createPage = new Func<List<User>>(() => new List<User>
+            {
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() },
+                new User { Id = Guid.NewGuid() }
+            });
+
+            var pageOne = createPage();
+            var pageTwo = createPage();
+
             _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, pageOne.Concat(pageTwo).Select(c => c.Id.GetValueOrDefault())));
 
-            var batchMock = WrapUsersInBatchMock(_allUsers);
-
-            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
-                .ReturnsAsync(batchMock.Object);
+            _queryRunnerMock
+                .SetupSequence(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(WrapUsersInBatchMock(pageOne).Object)
+                .ReturnsAsync(WrapUsersInBatchMock(pageTwo).Object);
 
             var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
 
-            Assert.Equal(result.List[0], _allUsers[3]);
+            Assert.Equal(result.List[0], pageTwo[0]);
         }
 
         [Fact]
-        public async Task GetTenantUsersFromDbReturnsCorrectNumberOfUsersWhenPageSizeIsSpecified()
+        public async Task GetTenantUsersFromDbQueriesCosmosAndDiscardsAllPagesUntilDesiredOneIsReached()
         {
             var filteringOptions = new UserFilteringOptions
             {
-                PageSize = 3
+                PageNumber = 3,
+                PageSize = 1
             };
 
+            var createPage = new Func<List<User>>(() => new List<User>
+            {
+                new User { Id = Guid.NewGuid() }
+            });
+
+            var pageOne = createPage();
+            var pageTwo = createPage();
+            var pageThree = createPage();
+
             _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
-                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, _allUsers.Select(y => y.Id ?? Guid.Empty)));
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, pageOne.Concat(pageTwo).Concat(pageThree).Select(c => c.Id.GetValueOrDefault())));
 
-            var batchMock = WrapUsersInBatchMock(_allUsers);
-
-            _queryRunnerMock.Setup(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
-                .ReturnsAsync(batchMock.Object);
+            _queryRunnerMock
+                .SetupSequence(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(WrapUsersInBatchMock(pageOne).Object)
+                .ReturnsAsync(WrapUsersInBatchMock(pageTwo).Object)
+                .ReturnsAsync(WrapUsersInBatchMock(pageThree).Object);
 
             var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
 
-            Assert.Equal(3, result.List.Count);
+            _queryRunnerMock
+                .Verify(x => x.RunQuery(It.IsAny<IQueryable<User>>()), Times.Exactly(3));
+
+            Assert.Equal(pageThree.First(), result.List.First());
+        }
+
+        [Fact]
+        public async Task GetTenantUsersFromDbPullsBackFirstPageIfPageIsNotSupplied()
+        {
+            var filteringOptions = new UserFilteringOptions
+            {
+                PageSize = 1
+            };
+
+            var createPage = new Func<List<User>>(() => new List<User>
+            {
+                new User { Id = Guid.NewGuid() }
+            });
+
+            var pageOne = createPage();
+            var pageTwo = createPage();
+
+            _tenantApiMock.Setup(x => x.GetUserIdsByTenantIdAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(MicroserviceResponse.Create(HttpStatusCode.OK, pageOne.Concat(pageTwo).Select(c => c.Id.GetValueOrDefault())));
+
+            _queryRunnerMock
+                .SetupSequence(x => x.RunQuery(It.IsAny<IQueryable<User>>()))
+                .ReturnsAsync(WrapUsersInBatchMock(pageOne).Object)
+                .ReturnsAsync(WrapUsersInBatchMock(pageTwo).Object);
+
+            var result = await _controller.GetTenantUsersFromDbAsync(Guid.NewGuid(), Guid.NewGuid(), filteringOptions);
+
+            _queryRunnerMock
+                .Verify(x => x.RunQuery(It.IsAny<IQueryable<User>>()), Times.Once);
+
+            Assert.Equal(pageOne.First(), result.List.First());
         }
 
         [Fact]

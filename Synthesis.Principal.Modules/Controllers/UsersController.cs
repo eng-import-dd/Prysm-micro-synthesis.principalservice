@@ -1079,35 +1079,27 @@ namespace Synthesis.PrincipalService.Controllers
             var totalRecords = tenantUsers.Count;
 
             var query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
-            var batch = await _queryRunner.RunQuery(query);
-
-            var userList = batch.ToList();
 
             var filteredRecords = _queryRunner.Count(query);
 
-            if (userFilteringOptions.PageSize < 1)
+            var pagesToFetch = userFilteringOptions.PageNumber == default(int) ? 1 : userFilteringOptions.PageNumber;
+
+            // Fake 'Skip' via pulling back the number of chunks (each representing a page) and discarding them
+            for (var i = 1; i < pagesToFetch; i++)
             {
-                return new PagingMetadata<User>
-                {
-                    FilteredRecords = filteredRecords,
-                    TotalRecords = totalRecords,
-                    List = userList,
-                    SearchValue = userFilteringOptions.SearchValue
-                };
+                query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
+                var batch = await _queryRunner.RunQuery(query);
+                userFilteringOptions.ContinuationToken = batch.ContinuationToken;
             }
 
-            if (userFilteringOptions.PageNumber >= 1)
-            {
-                userList = userList.Skip((userFilteringOptions.PageNumber - 1) * userFilteringOptions.PageSize).ToList();
-            }
-
-            userList = userList.Take(userFilteringOptions.PageSize).ToList();
+            query = await _searchBuilder.BuildSearchQueryAsync(currentUserId, tenantUsers, userFilteringOptions);
+            var currentSet = (await _queryRunner.RunQuery(query)).ToList();
 
             return new PagingMetadata<User>
             {
                 FilteredRecords = filteredRecords,
                 TotalRecords = totalRecords,
-                List = userList,
+                List = currentSet,
                 SearchValue = userFilteringOptions.SearchValue
             };
         }
