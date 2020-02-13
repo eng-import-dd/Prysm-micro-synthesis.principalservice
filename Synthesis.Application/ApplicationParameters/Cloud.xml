@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Application xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Name="fabric:/PrincipalApp" xmlns="http://schemas.microsoft.com/2011/01/fabric">
-  <Parameters>
-    <Parameter Name="Principal_InstanceCount" Value="-1" />
-    <Parameter Name="SSLCertThumbprint" Value="9DB1351BAEE6E6897CCC29C1D413A4A7FA41E975" />
-    <Parameter Name="SSLCertName" Value="synthesize" />
-  </Parameters>
-</Application>

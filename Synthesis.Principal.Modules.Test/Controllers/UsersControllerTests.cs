@@ -17,7 +17,7 @@ using Synthesis.EmailService.InternalApi.Api;
 using Synthesis.EmailService.InternalApi.Models;
 using Synthesis.EventBus;
 using Synthesis.FeatureFlags;
-using Synthesis.FeatureFlags.Defenitions;
+using Synthesis.FeatureFlags.Definitions;
 using Synthesis.FeatureFlags.Interfaces;
 using Synthesis.Http.Microservice;
 using Synthesis.IdentityService.InternalApi.Api;

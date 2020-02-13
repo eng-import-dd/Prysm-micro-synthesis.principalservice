@@ -39,7 +39,7 @@ namespace Synthesis.PrincipalService.Email
 
         private static string GetContent(string relativePath)
         {
-            var absolutePath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, relativePath);
+            var absolutePath = Path.Combine(AppContext.BaseDirectory, relativePath);
             using (var streamReader = new StreamReader(absolutePath))
             {
                 var content = streamReader.ReadToEnd();

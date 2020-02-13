@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Http;
 using Newtonsoft.Json;
 using Synthesis.License.Manager.Exceptions;
 using Synthesis.License.Manager.Models;
@@ -169,10 +168,10 @@ namespace Synthesis.License.Manager
             if (!response.IsSuccessStatusCode)
             {
                 response.ReasonPhrase = string.Format(HttpErrorFormat, response.StatusCode, route);
-                throw new HttpResponseException(response);
+                throw new InvalidOperationException(response.ReasonPhrase);
             }
 
-            var result = await response.Content.ReadAsAsync<ServiceResult<T>>();
+            var result = JsonConvert.DeserializeObject<ServiceResult<T>>(await response.Content.ReadAsStringAsync());
 
             if (result.ResultCode != ResultCode.Success)
             {

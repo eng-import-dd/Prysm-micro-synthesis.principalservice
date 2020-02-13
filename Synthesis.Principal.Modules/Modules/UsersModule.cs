@@ -4,8 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Script.Services;
-using FluentValidation;
 using Nancy;
 using Nancy.ErrorHandling;
 using Nancy.ModelBinding;

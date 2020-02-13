@@ -1,62 +1,67 @@
-using Microsoft.Owin.Cors;
-using Microsoft.Owin.Extensions;
-using Owin;
-using Synthesis.ApplicationInsights.Owin;
-using Synthesis.Owin.Security;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Nancy.Owin;
+using Synthesis.Nancy.Autofac;
+using Synthesis.Nancy.Autofac.Module.Middleware.Owin;
 using Synthesis.Nancy.MicroService.Middleware;
-using Synthesis.PrincipalService.Owin;
+using Synthesis.Owin.Security;
+using Synthesis.PrincipalService.Modules;
 using Synthesis.Tracking.Web;
-using System;
 
 namespace Synthesis.PrincipalService
 {
-    public static class Startup
+    public class Startup
     {
-        // This code configures Web API. The Startup class is specified as a type
-        // parameter in the WebApp.Start method.
-        public static void ConfigureApp(IAppBuilder app)
+        public IConfiguration Configuration { get; private set; }
+
+        public ILifetimeScope AutofacContainer { get; private set; }
+
+        public Startup(IConfiguration configuration)
         {
-            app.UseCors(CorsOptions.AllowAll);
+            Configuration = configuration;
+        }
 
-            // Enables IoC for OwinMiddlware implementations. This method allows us to control
-            // the order of our middleware.
-            app.UseAutofacLifetimeScopeInjector(PrincipalServiceBootstrapper.RootContainer);
+        // ConfigureContainer is where you can register things directly
+        // with Autofac. This runs after ConfigureServices so the things
+        // here will override registrations made in ConfigureServices.
+        // Don't build the container; that gets done for you by the factory.
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+            // Register your own things directly with Autofac, like:
+            builder.RegisterModule<PrincipalAutofacModule>();
+        }
+        
+        // This method gets called by the runtime. Use this method to add services to the container.
+        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+            services.AddOptions();
+        }
 
-            app.UseMiddlewareFromContainer<GlobalExceptionHandlerMiddleware>();
-            app.UseMiddlewareFromContainer<ResourceNotFoundMiddleware>();
-            app.UseMiddlewareFromContainer<CorrelationScopeMiddleware>();
-
-            // This middleware performs our authentication and populates the user principal.
-            app.UseMiddlewareFromContainer<SynthesisAuthenticationMiddleware>();
-            app.UseApplicationInsightsTracking();
-            app.UseMiddlewareFromContainer<ImpersonateTenantMiddleware>();
-            app.UseMiddlewareFromContainer<GuestContextMiddleware>();
-            app.UseStageMarker(PipelineStage.Authenticate);
-
-            if (app.Properties.TryGetValue("Microsoft.Owin.Host.HttpListener.OwinHttpListener", out var listener))
-            {
-                var l = listener as Microsoft.Owin.Host.HttpListener.OwinHttpListener;
-                if (l != null)
-                {
-                    l.SetRequestQueueLimit(500);
-                    l.SetRequestProcessingLimits(100 * Environment.ProcessorCount, Int32.MaxValue);
-                }
-            }
-
-            if (app.Properties.TryGetValue("System.Net.HttpListener", out listener))
-            {
-                var l = listener as System.Net.HttpListener;
-                if (l != null)
-                {
-                    l.TimeoutManager.IdleConnection = TimeSpan.FromSeconds(30);
-                    l.TimeoutManager.RequestQueue = TimeSpan.FromSeconds(5);
-                }
-            }
-            app.UseStageMarker(PipelineStage.MapHandler);
-            app.UseNancy(options =>
-            {
-                options.Bootstrapper = new PrincipalServiceBootstrapper();
-            });
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            AutofacContainer = app.ApplicationServices.GetAutofacRoot();
+            
+            //app.UseCors(CorsOptions.AllowAll);
+            app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+            app.UseMiddleware<ResourceNotFoundMiddleware>();
+            app.UseMiddleware<CorrelationScopeMiddleware>();
+            app.UseMiddleware<SynthesisAuthenticationMiddleware>();
+            //app.UseApplicationInsightsTracking();
+            app.UseMiddleware<ImpersonateTenantMiddleware>();
+            app.UseMiddleware<GuestContextMiddleware>();
+            //app.UseStageMarker(PipelineStage.Authenticate);
+            //app.UseStageMarker(PipelineStage.MapHandler);
+            app.UseOwin(x => 
+                x.UseNancy(opt => 
+                    opt.Bootstrapper = new AutofacNancyBootstrapper(AutofacContainer)));
         }
     }
 }
