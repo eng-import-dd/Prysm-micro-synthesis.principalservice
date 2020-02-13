@@ -6,6 +6,9 @@ using AutoMapper;
 using Synthesis.Configuration;
 using Synthesis.DocumentStorage;
 using Synthesis.EmailService.InternalApi.Api;
+using Synthesis.FeatureFlags.Feature.TryNBuy;
+using Synthesis.FeatureFlags.Interfaces;
+using Synthesis.FeatureFlags.Rollout;
 using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
@@ -91,6 +94,31 @@ namespace Synthesis.PrincipalService.Modules
             builder.RegisterType<EmailSendingService>().As<IEmailSendingService>().InstancePerRequest();
             builder.RegisterType<SubscriptionApi>()
                 .As<ISubscriptionApi>();
+            
+            //Feature Flags
+            builder.Register(c =>
+            {
+                var reader = c.Resolve<IAppSettingsReader>();
+                return new RolloutConfiguration()
+                {
+                    ServiceUrl = reader.SafeGetValue<string>("Rollout.Url"),
+                    ApiKey = reader.SafeGetValue<string>("Rollout.ApiKey"),
+                    Enabled = reader.SafeGetValue("FeatureFlagsEnabled", false)
+                };
+            });
+
+            builder.Register(c =>
+                {
+                    var configuration = c.Resolve<RolloutConfiguration>();
+                    var rolloutFeatureFlagProvider = new RolloutFeatureFlagProvider(configuration);
+                    rolloutFeatureFlagProvider
+                        .RegisterFeatureFlag(TryNBuyFeature.GetFlagDefinition())
+                        .InitializeAsync().Wait();
+                    return rolloutFeatureFlagProvider;
+                })
+                .As<IFeatureFlagProvider>()
+                .SingleInstance();
+
         }
     }
 }
