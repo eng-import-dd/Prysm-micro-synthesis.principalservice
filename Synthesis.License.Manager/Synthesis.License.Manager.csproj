@@ -5,9 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Synthesis.Configuration.Shared" Version="1.0.1" />
-    <PackageReference Include="Synthesis.Http" Version="2.0.2" />
-    <PackageReference Include="Synthesis.Logging" Version="2.0.6" />
+    <PackageReference Include="Synthesis.Configuration.Shared" Version="1.0.2.3" />
+    <PackageReference Include="Synthesis.Http" Version="2.0.2.6" />
+    <PackageReference Include="Synthesis.Logging" Version="2.0.6.2" />
     <PackageReference Include="Synthesis.PrincipalService.InternalApi" Version="1.0.4" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
   </ItemGroup>

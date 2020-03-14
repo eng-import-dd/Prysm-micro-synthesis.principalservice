@@ -13,6 +13,7 @@ using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Microservice.Health;
+using Synthesis.Nancy.Autofac.Module.DocumentDb;
 using Synthesis.Nancy.Autofac.Module.Microservice;
 using Synthesis.PrincipalService.Controllers;
 using Synthesis.PrincipalService.Email;
@@ -25,7 +26,7 @@ using Synthesis.SubscriptionService.InternalApi.Api;
 using Synthesis.TenantService.InternalApi.Api;
 using Module = Autofac.Module;
 
-namespace Synthesis.PrincipalService.Modules
+namespace Synthesis.PrincipalService
 {
     public class PrincipalAutofacModule : Module
     {
@@ -33,10 +34,10 @@ namespace Synthesis.PrincipalService.Modules
         {
             var dbConfigDictionary = new Dictionary<string, string>
             {
-                {"AuthKey", "SnapGrid.DocumentDb.AuthKey" },
-                {"EndPoint","SnapGrid.DocumentDb.Endpoint" },
-                {"DatabaseName", "SnapGrid.DocumentDb.DatabaseName"},
-                {"RuThroughput", "SnapGrid.DocumentDb.RuThroughput" }
+                {DocumentDbAutofacModule.AuthKey, "Principal.DocumentDb.AuthKey"},
+                {DocumentDbAutofacModule.Endpoint, "Principal.DocumentDb.Endpoint"},
+                {DocumentDbAutofacModule.DatabaseName, "Principal.DocumentDb.DatabaseName"},
+                {DocumentDbAutofacModule.RuThroughput, "Principal.DocumentDb.RuThroughput"}
             };
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 
                 ServiceInformation.ServiceName, 

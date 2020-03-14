@@ -6,17 +6,17 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nancy.Owin;
+using Synthesis.ApplicationInsights.AspCoreNet;
+using Synthesis.AspNetCore.Security.Middleware;
 using Synthesis.Nancy.Autofac;
-using Synthesis.Nancy.Autofac.Module.Middleware.Owin;
-using Synthesis.Nancy.MicroService.Middleware;
-using Synthesis.Owin.Security;
-using Synthesis.PrincipalService.Modules;
+using Synthesis.Nancy.Autofac.Module.Middleware.AspNetCore;
 using Synthesis.Tracking.Web;
 
 namespace Synthesis.PrincipalService
 {
     public class Startup
     {
+        private const string AllowAllOrigins = "AllowAllOrigins";
         public IConfiguration Configuration { get; private set; }
 
         public ILifetimeScope AutofacContainer { get; private set; }
@@ -41,6 +41,11 @@ namespace Synthesis.PrincipalService
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+            // we should probably restrict this to the most narrow scope possible, but
+            // it's setup this way since we are porting existing functionality to get that
+            // working.  This will be revisited after we have everything running again.
+            services.AddCors(options => options.AddPolicy(AllowAllOrigins, 
+                builder => builder.AllowAnyOrigin()));
             services.AddOptions();
         }
 
@@ -49,16 +54,13 @@ namespace Synthesis.PrincipalService
         {
             AutofacContainer = app.ApplicationServices.GetAutofacRoot();
             
-            //app.UseCors(CorsOptions.AllowAll);
+            app.UseCors(AllowAllOrigins);
             app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
-            app.UseMiddleware<ResourceNotFoundMiddleware>();
             app.UseMiddleware<CorrelationScopeMiddleware>();
             app.UseMiddleware<SynthesisAuthenticationMiddleware>();
-            //app.UseApplicationInsightsTracking();
+            app.UseApplicationInsightsTracking();
             app.UseMiddleware<ImpersonateTenantMiddleware>();
             app.UseMiddleware<GuestContextMiddleware>();
-            //app.UseStageMarker(PipelineStage.Authenticate);
-            //app.UseStageMarker(PipelineStage.MapHandler);
             app.UseOwin(x => 
                 x.UseNancy(opt => 
                     opt.Bootstrapper = new AutofacNancyBootstrapper(AutofacContainer)));

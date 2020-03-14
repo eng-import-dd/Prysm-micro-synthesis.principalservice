@@ -1,4 +1,4 @@
-namespace Synthesis.PrincipalService.Modules
+namespace Synthesis.PrincipalService
 {
     public class ServiceInformation
     {
