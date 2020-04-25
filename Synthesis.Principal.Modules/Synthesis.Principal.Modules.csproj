@@ -6,30 +6,30 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="9.0.0" />
-    <PackageReference Include="Synthesis.EventBus.Kafka.Autofac" Version="1.0.7.2" />
-    <PackageReference Include="Synthesis.Nancy.Autofac" Version="1.0.1" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.DocumentDb" Version="1.0.1.3" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Logging" Version="1.0.2.4" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Microservice" Version="1.0.1.3" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Middleware" Version="1.0.4.6" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.ProjectGuestContext" Version="1.1.0.5" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Redis" Version="1.0.0.2" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.RequestHeaders" Version="2.0.0.4" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Serialization" Version="1.0.0.2" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.ServiceToService" Version="1.0.2" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.TokenValidator" Version="1.0.1.3" />
-    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Validation" Version="1.0.0.2" />
-    <PackageReference Include="Synthesis.PolicyEvaluator.Autofac" Version="1.0.3" />
-    <PackageReference Include="Synthesis.Tracking.ApplicationInsights" Version="1.0.2.12" />
-    <PackageReference Include="Synthesis.FeatureFlags.Feature.TryNBuy" Version="1.0.0.2" />
-    <PackageReference Include="Synthesis.FeatureFlags.Rollout" Version="1.0.0.5" />
-    <PackageReference Include="Synthesis.Validators" Version="2.0.6.2" />
-    <PackageReference Include="Synthesis.AspectRatioService.InternalApi" Version="1.0.2.4" />
-    <PackageReference Include="Synthesis.EmailService.InternalApi" Version="1.0.2.3" />
-    <PackageReference Include="Synthesis.PrincipalService.InternalApi" Version="1.0.4" />
-    <PackageReference Include="Synthesis.ProjectService.InternalApi" Version="1.0.2" />
-    <PackageReference Include="Synthesis.SubscriptionService.InternalApi" Version="1.0.5" />
-    <PackageReference Include="Synthesis.TrialService.InternalApi" Version="1.0.1" />
+    <PackageReference Include="Synthesis.EventBus.Kafka.Autofac" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.DocumentDb" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Logging" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Microservice" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Middleware" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.ProjectGuestContext" Version="[1.1.*,1.2)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Redis" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.RequestHeaders" Version="[2.0.*,2.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Serialization" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.ServiceToService" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.TokenValidator" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Validation" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.PolicyEvaluator.Autofac" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Tracking.ApplicationInsights" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.FeatureFlags.Feature.TryNBuy" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.FeatureFlags.Rollout" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Validators" Version="[2.0.*,2.1)" />
+    <PackageReference Include="Synthesis.AspectRatioService.InternalApi" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.EmailService.InternalApi" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.PrincipalService.InternalApi" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.ProjectService.InternalApi" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.SubscriptionService.InternalApi" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.TrialService.InternalApi" Version="[1.0.*,1.1)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.License.Manager\Synthesis.License.Manager.csproj" />

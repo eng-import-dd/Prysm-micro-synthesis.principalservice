@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Owin" Version="3.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Nancy" Version="2.0.0" />
-    <PackageReference Include="Synthesis.Nancy.Autofac" Version="1.0.1" />
+    <PackageReference Include="Synthesis.Nancy.Autofac" Version="[1.0.*,1.1)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Synthesis.Principal.Modules\Synthesis.Principal.Modules.csproj" />
