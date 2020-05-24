@@ -23,7 +23,11 @@ namespace Synthesis.PrincipalService
 
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            var builder = new ConfigurationBuilder()
+                .AddConfiguration(configuration)
+                .AddJsonFile("secrets/principalsettings", optional: true)
+                .AddEnvironmentVariables();
+            Configuration = builder.Build();
         }
 
         // ConfigureContainer is where you can register things directly
@@ -32,6 +36,7 @@ namespace Synthesis.PrincipalService
         // Don't build the container; that gets done for you by the factory.
         public void ConfigureContainer(ContainerBuilder builder)
         {
+            builder.RegisterInstance(Configuration).As<IConfiguration>();
             // Register your own things directly with Autofac, like:
             builder.RegisterModule<PrincipalAutofacModule>();
         }
