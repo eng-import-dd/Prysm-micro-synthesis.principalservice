@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>Synthesis.Principal</RootNamespace>
+    <RootNamespace>Synthesis.PrincipalService</RootNamespace>
+    <AssemblyName>Synthesis.PrincipalService</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.9.4" />
