@@ -6,6 +6,9 @@
     <AssemblyName>Synthesis.PrincipalService</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="log4net.config" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Autofac" Version="4.9.4" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
