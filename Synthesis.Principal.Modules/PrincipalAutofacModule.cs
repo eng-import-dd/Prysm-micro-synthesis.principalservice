@@ -13,6 +13,7 @@ using Synthesis.IdentityService.InternalApi.Api;
 using Synthesis.License.Manager;
 using Synthesis.License.Manager.Interfaces;
 using Synthesis.Microservice.Health;
+using Synthesis.Nancy.Autofac.Module.Configuration;
 using Synthesis.Nancy.Autofac.Module.DocumentDb;
 using Synthesis.Nancy.Autofac.Module.Microservice;
 using Synthesis.PrincipalService.Controllers;
@@ -39,6 +40,7 @@ namespace Synthesis.PrincipalService
                 {DocumentDbAutofacModule.DatabaseName, "Principal.DocumentDb.DatabaseName"},
                 {DocumentDbAutofacModule.RuThroughput, "Principal.DocumentDb.RuThroughput"}
             };
+            builder.RegisterModule<ConfigurationAutofacModule>();
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 
                 ServiceInformation.ServiceName, 
                 ServiceInformation.ServiceNameShort,

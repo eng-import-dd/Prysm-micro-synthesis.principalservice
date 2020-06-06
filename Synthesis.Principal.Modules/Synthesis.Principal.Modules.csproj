@@ -8,6 +8,7 @@
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="Synthesis.EventBus.Kafka.Autofac" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac" Version="[1.0.*,1.1)" />
+    <PackageReference Include="Synthesis.Nancy.Autofac.Module.Configuration" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac.Module.DocumentDb" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac.Module.Logging" Version="[1.0.*,1.1)" />
     <PackageReference Include="Synthesis.Nancy.Autofac.Module.Microservice" Version="[1.0.*,1.1)" />
