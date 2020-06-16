@@ -19,11 +19,11 @@ namespace Synthesis.PrincipalService.Controllers
         private readonly IProjectAccessApi _projectApi;
         private readonly ILogger _logger;
 
-        public TenantUserSearchBuilder(IRepositoryFactory repositoryFactory, IProjectAccessApi projectApi, ILogger logger)
+        public TenantUserSearchBuilder(IRepositoryFactory repositoryFactory, IProjectAccessApi projectApi, ILoggerFactory loggerFactory)
         {
             _userRepositoryAsyncLazy = new AsyncLazy<IRepository<User>>(() => repositoryFactory.CreateRepositoryAsync<User>());
             _projectApi = projectApi;
-            _logger = logger;
+            _logger = loggerFactory.GetLogger(typeof(TenantUserSearchBuilder));
         }
 
         public async Task<IQueryable<User>> BuildSearchQueryAsync(Guid? currentUserId, List<Guid> userIds, UserFilteringOptions filteringOptions)
