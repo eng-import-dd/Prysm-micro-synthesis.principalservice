@@ -43,10 +43,11 @@ namespace Synthesis.PrincipalService
                 {DocumentDbAutofacModule.RuThroughput, "Principal.DocumentDb.RuThroughput"}
             };
             builder.RegisterModule<ConfigurationAutofacModule>();
+            
             builder.RegisterModule(new MicroserviceAutofacModule(dbConfigDictionary, 
                 ServiceInformation.ServiceName, 
                 ServiceInformation.ServiceNameShort,
-                Assembly.GetAssembly(GetType())));
+                GetType()));
 
             // event subscriber
             builder
